@@ -4,19 +4,23 @@ The game is native ES modules served as static files, with no bundler. `src/main
 
 ## This game
 
-A keyboard that plays every instrument in the GeneralUser GS SoundFont library (`soundfonts/GeneralUser-GS/*.sf2`).
+A keyboard that plays every instrument in the GeneralUser GS SoundFont library (`soundfonts/GeneralUser-GS/*.sf2`), and a rule-based composer that writes multi-instrument songs from a feeling and plays them as a grid of pianos with falling notes. The composing method is in [COMPOSING.md](COMPOSING.md).
 
 | File | Does |
 |---|---|
 | `src/lib/sf2.js` | parses a `.sf2` ArrayBuffer into presets → regions (key/velocity range, sample, merged generators) |
 | `src/lib/sf2-voice.js` | region + key + velocity → pitch, gain, pan, loop points, filter, volume envelope |
 | `src/lib/notes.js` | MIDI note names and black/white keys |
+| `src/lib/music-theory.js` | keys, modes, scale degrees, Roman-numeral chords, voice leading, a stable hash for tie-breaks |
+| `src/lib/midi-file.js` | writes a Standard MIDI File from a score (`just compose … --midi`) |
 | `src/platform/audio-engine.js` | the AudioContext and master volume, resumed on the first gesture |
 | `src/platform/midi.js` | Web MIDI input as note/cc messages |
 | `src/platform/input.js` | computer keys → semitone offsets, octave, instrument step, sustain |
 | `src/audio/soundfont.js` | downloads and caches `.sf2` files; `createInstrument(font, preset)` plays notes as Web Audio voices |
 | `src/audio/soundfont-catalog-data.js` | generated list of every preset and its file, so the menu doesn't need the file up front (`just catalog`) |
-| `src/features/keyboard/` | the playable piano: picker bar, on-screen keys, mouse/keys/MIDI input, its save slice |
+| `src/features/keyboard/` | the playable piano: picker bar, on-screen keys, mouse/keys/MIDI input, its save slice; steps aside while an activity runs |
+| `src/features/composer/` | song spec → score (`compose.js`, `melody.js`, `parts.js`, `meter.js`), the knowledge tables (`composer-data.js`, `patterns-data.js`), written songs (`songs-data.js`), audio-clock playback (`song-player.js`), the falling-notes grid (`song-view.js`) and its control bar; a playing song is an activity |
+| `tools/compose.mjs` | composes a song in Node: prints the plan and melody, writes a `.mid` (`just compose`) |
 
 The synth covers the parts of SF2 that matter for these files: key/velocity splits, preset+instrument generator merging, root key and tuning, loop modes, sample address offsets, static low-pass filter, pan, the DAHDSR volume envelope, and exclusive classes (drum kits). Modulators, LFOs, the modulation envelope, reverb and chorus sends are not implemented.
 

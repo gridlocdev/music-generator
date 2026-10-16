@@ -37,3 +37,8 @@ _deps:
 # rebuild src/audio/soundfont-catalog-data.js after adding or replacing .sf2 files
 catalog dir="soundfonts/GeneralUser-GS":
     node tools/sf2-catalog.mjs {{dir}}
+
+# compose a song without the browser: print its plan, optionally its melody and a .mid file
+# e.g. just compose first-light --melody --midi first-light.mid   ·   just compose feel:tender
+compose *args:
+    node tools/compose.mjs {{args}}

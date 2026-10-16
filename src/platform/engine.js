@@ -6,6 +6,7 @@ import * as E from 'littlejsengine';
 E.setShowSplashScreen(false);
 E.setCanvasClearColor(E.rgb(.08, .07, .12));
 E.setDebugWatermark(false);
+E.setDebugKey('Backquote');            // Esc stops a song and leaves the instrument list; ` opens the debug overlay
 E.setInputWASDEmulateDirection(false);  // W and S are piano keys, not arrows
 E.setSoundEnable(false);            // all sound is the SoundFont synth in audio/, on its own AudioContext
 

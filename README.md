@@ -7,9 +7,12 @@ just play     # serve on localhost:8000 and open the browser
 just check    # syntax + layer rules
 just test     # node --test
 just catalog  # regenerate the instrument list after changing the .sf2 files
+just compose first-light --melody --midi first-light.mid   # compose without a browser
 ```
 
 **Play:** `A S D F G H J K L ; '` are white keys and `W E T Y U O P` the black keys · `Z`/`X` octave · `↑`/`↓` instrument · `I` focuses the instrument list (arrows browse, `Esc` or `Enter` returns to playing) · hold `Space` to sustain · click or drag across the on-screen keys (lower on a key = louder) · **Connect MIDI** for a hardware keyboard (notes, velocity, sustain pedal).
+
+**Compose:** pick a written song or a feeling in the **Composer** bar and press **Play song**. The composer writes melody, countermelody, arpeggio, chords, pad, bass and drums by rule (no randomness: the same song always comes out the same), and shows every part as its own piano with the notes falling onto their keys. **Esc** stops. Songs are plain specs in `src/features/composer/songs-data.js`; they can also be played from the console (`composer.play({ title: 'Test', emotion: 'tender' })`) or a link (`#song=first-light`, `#feel=heroic`). How it composes and how to write a song: [docs/COMPOSING.md](docs/COMPOSING.md).
 
 The `.sf2` is 32 MB and downloads the first time you pick an instrument; it stays in memory afterwards.
 

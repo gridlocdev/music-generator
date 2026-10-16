@@ -21,4 +21,5 @@ export const input = {
     focusInstruments() { return keyWasPressed('KeyI'); },
     instrumentStep() { return +keyWasPressed('ArrowDown') - +keyWasPressed('ArrowUp'); },
     sustain() { return keyIsDown('Space'); },
+    cancel() { return keyWasPressed('Escape'); },
 };

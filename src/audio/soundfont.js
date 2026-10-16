@@ -78,23 +78,26 @@ export function createInstrument(font, preset)
 
     return {
         preset,
-        noteOn(key, velocity = 100)
+        // when: an AudioContext time to start at, for notes scheduled ahead (a song); omitted = now
+        noteOn(key, velocity = 100, when = 0)
         {
-            this.noteOff(key, true);
-            const voices = regionsFor(preset, key, velocity).map(r => startVoice(font, voiceParams(r, key, velocity), output));
+            this.noteOff(key, true, when);
+            const voices = regionsFor(preset, key, velocity).map(r => startVoice(font, voiceParams(r, key, velocity), output, when));
             // a new voice in an exclusive class chokes the others in it (open/closed hi-hat)
             for (const v of voices)
                 if (v.exclusiveClass)
                     for (const other of active)
-                        if (other.output === output && other.exclusiveClass === v.exclusiveClass && !voices.includes(other)) other.release(true);
+                        if (other.output === output && other.exclusiveClass === v.exclusiveClass && !voices.includes(other)) other.release(true, when);
             held.set(key, voices);
         },
         // fast = cut it short (retriggering the same key), ignoring the pedal
-        noteOff(key, fast = false)
+        noteOff(key, fast = false, when = 0)
         {
-            for (const v of held.get(key) ?? []) pedal && !fast ? sustained.add(v) : v.release(fast);
+            for (const v of held.get(key) ?? []) pedal && !fast ? sustained.add(v) : v.release(fast, when);
             held.delete(key);
         },
+        /** this instrument's own gain node, e.g. to set a part's level in a mix */
+        output,
         setSustain(on)
         {
             pedal = on;
@@ -113,10 +116,10 @@ export function createInstrument(font, preset)
     };
 }
 
-function startVoice(font, p, output)
+function startVoice(font, p, output, when = 0)
 {
     const ctx = audioEngine.context;
-    const t = ctx.currentTime;
+    const t = Math.max(ctx.currentTime, when);
     const source = ctx.createBufferSource();
     source.buffer = sampleBuffer(font, p.start, p.end, p.sampleRate);
     const rate = source.buffer.sampleRate;
@@ -170,18 +173,24 @@ function startVoice(font, p, output)
         exclusiveClass: p.exclusiveClass,
         // true once cut short; a voice in a normal release can still be cut short
         stopping: false,
-        release(fast = false)
+        // when: an AudioContext time to release at (never before the note starts); omitted = now
+        release(fast = false, when = 0)
         {
             if (voice.stopping || (releasedAt >= 0 && !fast)) return;
-            const now = ctx.currentTime;
+            // cut short before it has started (a song stopped with notes scheduled ahead): it never sounds
+            if (fast && when <= ctx.currentTime && t > ctx.currentTime) { voice.stopping = true; source.stop(); return; }
+            const now = Math.max(ctx.currentTime, when, t);
             releaseLevel = level(now);
             releasedAt = now;
             releaseTime = fast ? FAST_RELEASE : Math.max(p.env.release, MIN_RELEASE);
             voice.stopping = fast;
-            env.gain.cancelScheduledValues(now);
+            // hold keeps a release scheduled mid-attack from cancelling the attack ramp back to silence
+            if (env.gain.cancelAndHoldAtTime) env.gain.cancelAndHoldAtTime(now);
+            else env.gain.cancelScheduledValues(now);
             env.gain.setValueAtTime(releaseLevel, now);
             env.gain.setTargetAtTime(0, now, releaseTime / ENV_TIME_CONSTANTS);
-            if (p.loopMode === 3) source.loop = false;      // play the sample's tail after the loop
+            // play the sample's tail after the loop
+            if (p.loopMode === 3) setTimeout(()=> { source.loop = false; }, Math.max(0, now - ctx.currentTime) * 1000);
             source.stop(now + releaseTime + 0.05);
         },
     };

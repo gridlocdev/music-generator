@@ -41,6 +41,14 @@ function release(key)
     instrument?.noteOff(key);
 }
 
+function releaseAll()
+{
+    for (const key of [...down.keys()]) { down.set(key, 1); release(key); }
+    typed.clear();
+    mouseKey = -1;
+    dragging = false;
+}
+
 async function choose(index, state, events)
 {
     current = (index + entries.length) % entries.length;
@@ -113,8 +121,10 @@ export default {
 
         choose(Math.max(0, saved), state, events);
     },
-    update({ state, events })
+    update({ state, events, activity })
     {
+        // a takeover (a song playing) owns the screen and the keys; let go of anything held
+        if (activity.current) { releaseAll(); return; }
         fitCamera();
 
         const octave = input.octaveStep();
@@ -147,8 +157,9 @@ export default {
             if (hit) press(hit.key, hit.velocity);
         }
     },
-    render()
+    render({ activity })
     {
+        if (activity.current) return;
         drawPiano(key => down.has(key), octaveC(settings.octave), input.noteLabel);
     },
 };
