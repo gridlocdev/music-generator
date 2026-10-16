@@ -1,0 +1,14 @@
+{
+  "name": "soundfont-player",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "python3 -m http.server 8000",
+    "test": "node --test",
+    "check": "node tools/coupling-report.mjs --strict"
+  },
+  "dependencies": {
+    "littlejsengine": "1.21.0"
+  }
+}

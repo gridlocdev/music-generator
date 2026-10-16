@@ -1,0 +1,9 @@
+node_modules/
+
+# the SoundFont library (32 MB); see README.md
+soundfonts/
+.DS_Store
+
+# Claude Code: worktrees for isolated sessions, and personal settings
+.claude/worktrees/
+.claude/settings.local.json
