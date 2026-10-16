@@ -8,6 +8,7 @@ const GAP = 10;                 // pixels between panels
 const HEADER = 22;              // panel title height
 const MAX_NOTE_BEATS = 32;      // longest note; notes that started this long ago are skipped
 const ASPECT = 1.5;             // preferred panel width / height
+const FOOTER = 64;              // timeline height at the bottom; clicking anywhere in it seeks
 const BG = rgb(0.1, 0.09, 0.15), LANE = rgb(0.06, 0.055, 0.09), GRID = rgb(1, 1, 1, 0.06);
 const WHITE_KEY = rgb(0.93, 0.92, 0.9), BLACK_KEY = rgb(0.12, 0.11, 0.16), TEXT = rgb(0.85, 0.83, 0.92), DIM = rgb(0.55, 0.52, 0.65), SCENE = rgb(1, 0.85, 0.6);
 
@@ -47,8 +48,7 @@ export function drawSong(panels, score, beat, top)
     setCameraScale(1);
     setCameraPos(vec2(W / 2, H / 2));
 
-    const footer = 64;
-    const area = { x: GAP, y: top + GAP, w: W - GAP * 2, h: H - top - footer - GAP * 2 };
+    const area = { x: GAP, y: top + GAP, w: W - GAP * 2, h: H - top - FOOTER - GAP * 2 };
     const n = panels.length;
     // pick the column count whose panels come closest to the preferred shape
     let cols = 1, bestScore = Infinity;
@@ -64,7 +64,7 @@ export function drawSong(panels, score, beat, top)
 
     panels.forEach((p, i)=>
         drawPanel(p, area.x + (i % cols) * (pw + GAP), area.y + Math.floor(i / cols) * (ph + GAP), pw, ph, beat, window, score.beatsPerBar));
-    drawTimeline(score, beat, H - footer, footer);
+    drawTimeline(score, beat, H - FOOTER, FOOTER);
 }
 
 function drawPanel(p, x, y, w, h, beat, window, beatsPerBar)
@@ -132,6 +132,14 @@ function firstFrom(notes, beat)
     return lo;
 }
 
+/** the beat under a point in screen pixels (top-left origin) if it's on the timeline, else null */
+export function timelineBeatAt(score, px, py)
+{
+    if (py < H - FOOTER || py > H) return null;
+    const x = GAP, w = W - GAP * 2;
+    return Math.max(0, Math.min(1, (px - x) / w)) * score.beats;
+}
+
 // sections along the bottom, shaded by energy, with the playhead, the current section and chord
 function drawTimeline(score, beat, y, h)
 {
@@ -148,7 +156,7 @@ function drawTimeline(score, beat, y, h)
     const chord = score.chords.findLast(c => c.beat <= beat);
     const bar = Math.max(1, Math.floor(beat / score.beatsPerBar) + 1);
     text(`${score.title}  ·  ${section.label}  ·  ${chord && beat >= 0 ? chord.name : ''}`, x, y + 4, 16, TEXT);
-    text(`${score.genre ? `${score.genre} · ` : ''}${score.emotion} · ${score.key} ${score.mode} · ${score.tempo} bpm · bar ${bar}   (Esc stops)`, x + w, y + 4, 13, DIM, 'right');
+    text(`${score.genre ? `${score.genre} · ` : ''}${score.emotion} · ${score.key} ${score.mode} · ${score.tempo} bpm · bar ${bar}   (click or ←/→ to seek · Esc stops)`, x + w, y + 4, 13, DIM, 'right');
     // the story so far: this section's scene, or the song's premise when the section has none
     const line = section.scene || score.story;
     if (line) text(line, x, y + 25, 13, SCENE);

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { compose, parseMelody } from '../../src/features/composer/compose.js';
+import { compose, parseMelody, sectionSeek } from '../../src/features/composer/compose.js';
 import { EMOTIONS, FORMS, SECTIONS, RHYTHMS, CONTOURS, RANGES, MIX, ROLES } from '../../src/features/composer/composer-data.js';
 import { GROOVES, BASS, COMPING, ARPS, DRUM_KEYS } from '../../src/features/composer/patterns-data.js';
 import { SONGS as WRITTEN } from '../../src/features/composer/songs-data.js';
@@ -47,7 +47,11 @@ test('drum patterns are one bar of known drums', ()=>
             }
     for (const b of Object.values(BASS)) for (const [s, tone] of [...b.low, ...b.high]) assert.ok(s >= 0 && 'R358A'.includes(tone));
     for (const c of Object.values(CONTOURS)) assert.equal(c.length, 5);
-    for (const role of ROLES) assert.ok(MIX[role] > 0);
+    for (const role of ROLES)
+    {
+        const m = MIX[role];
+        assert.ok(m.volumeDb <= 0 && Math.abs(m.pan) < 1 && m.lowCut >= 20 && m.reverb >= 0 && m.delay >= 0, role);
+    }
 });
 
 test('composing is deterministic', ()=>
@@ -164,4 +168,15 @@ test('handwritten hooks put chord tones on strong beats', ()=>
             assert.ok(fit / strong >= 0.85, `${spec.id} ${sec.label}: ${fit}/${strong} strong-beat notes are chord tones`);
         }
     }
+});
+
+test('sectionSeek steps to the next section, back to this one, or to the previous one near its start', ()=>
+{
+    const sections = [{ beat: 0 }, { beat: 16 }, { beat: 48 }];
+    assert.equal(sectionSeek(sections, 20, 1), 48);
+    assert.equal(sectionSeek(sections, -0.5, 1), 16);          // during the lead-in
+    assert.equal(sectionSeek(sections, 50, 1), null);          // nothing after the last
+    assert.equal(sectionSeek(sections, 30, -1, 4), 16);        // well into a section: its start
+    assert.equal(sectionSeek(sections, 18, -1, 4), 0);         // just past its start: the one before
+    assert.equal(sectionSeek(sections, 2, -1, 4), 0);          // first section stays at the top
 });

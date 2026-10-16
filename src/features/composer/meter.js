@@ -25,8 +25,10 @@ export function velocity(song, role, energy, beatInSection)
 {
     const inBar = mod(beatInSection, song.beatsPerBar);
     const a = DYNAMICS.accent;
+    const frac = inBar - Math.floor(inBar);
     const accent = inBar < 1e-9 ? a.downbeat
-        : Math.abs(inBar - Math.round(inBar)) > 1e-9 ? a.offbeat
+        : Math.abs(frac - 0.5) < 1e-9 ? a.offbeat
+        : frac > 1e-9 && frac < 1 - 1e-9 ? a.sixteenth
         : song.beatsPerBar === 4 && Math.round(inBar) === 2 ? a.strong : a.weak;
     const v = (DYNAMICS.base + energy * DYNAMICS.span + DYNAMICS.role[role] + accent) * (0.6 + 0.6 * song.dynamics);
     return clamp(Math.round(v), 1, 127);

@@ -135,6 +135,7 @@ export function parseMelody(text)
 export function notatedMelody(text, total)
 {
     const { notes, beats } = parseMelody(text);
+    /** @type {{ beat: number, beats: number, degree: number, accidental: number, last?: boolean }[]} */
     const out = [];
     for (let start = 0; start < total && beats > 0; start += beats)
         for (const n of notes) if (start + n.beat < total) out.push({ ...n, beat: start + n.beat, beats: Math.min(n.beats, total - start - n.beat) });

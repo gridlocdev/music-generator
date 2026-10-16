@@ -10,6 +10,12 @@ export const absoluteCentsToHz = (c)=> 8.176 * 2 ** (c / 1200);
 // FluidSynth and most players copy that, and many fonts sound far too quiet without it.
 const ATTENUATION_SCALE = 0.4;
 
+// Soft notes are darker as well as quieter, as on a real instrument: the cutoff falls this many cents (three
+// octaves) from full velocity to none. SF2's default velocity→cutoff modulator does the same with 2400.
+export const VELOCITY_CUTOFF_CENTS = 3600;
+// at or above this the filter is fully open and is left out
+const OPEN_CUTOFF = 13500;
+
 /**
  * @returns {{ start: number, end: number, loopStart: number, loopEnd: number, loopMode: number,
  *   sampleRate: number, playbackRate: number, gain: number, pan: number,
@@ -27,7 +33,7 @@ export function voiceParams(region, key, velocity)
     const root = g[GEN.overridingRootKey] >= 0 ? g[GEN.overridingRootKey] : s.originalPitch;
     const cents = (key - root) * g[GEN.scaleTuning] + g[GEN.coarseTune] * 100 + g[GEN.fineTune] + s.pitchCorrection;
 
-    const fc = g[GEN.initialFilterFc];
+    const fc = g[GEN.initialFilterFc] - VELOCITY_CUTOFF_CENTS * (1 - velocity / 127);
     // keynum-to-hold/decay scale those times per key away from middle C
     const keyScale = (base, perKey)=> timecentsToSeconds(base + perKey * (60 - key));
 
@@ -42,7 +48,7 @@ export function voiceParams(region, key, velocity)
         // velocity curve: SF2's default velocity→attenuation modulator is close to a square law
         gain: centibelsToGain(g[GEN.initialAttenuation] * ATTENUATION_SCALE) * (velocity / 127) ** 2,
         pan: Math.max(-1, Math.min(1, g[GEN.pan] / 500)),
-        filter: fc < 13500 ? { hz: absoluteCentsToHz(fc), q: Math.max(0, g[GEN.initialFilterQ] / 10) } : null,
+        filter: fc < OPEN_CUTOFF ? { hz: absoluteCentsToHz(fc), q: Math.max(0, g[GEN.initialFilterQ] / 10) } : null,
         env: {
             delay: timecentsToSeconds(g[GEN.delayVolEnv]),
             attack: timecentsToSeconds(g[GEN.attackVolEnv]),

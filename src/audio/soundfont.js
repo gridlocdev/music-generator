@@ -65,13 +65,19 @@ export function findPreset(font, bank, program)
 }
 
 /**
- * One playable instrument: a preset from a loaded font, with its own output and sustain pedal.
+ * @typedef {{ rate: number, cents: number, delay: number, ramp: number }} Vibrato
+ *   pitch wobble in cents at `rate` Hz, starting `delay` seconds into the note and reaching full depth `ramp` later
  */
-export function createInstrument(font, preset)
+
+/**
+ * One playable instrument: a preset from a loaded font, with its own output and sustain pedal.
+ * @param {AudioNode} [destination]  where its output goes, e.g. a mixer channel; the master output by default
+ */
+export function createInstrument(font, preset, destination = audioEngine.output)
 {
     const ctx = audioEngine.context;
     const output = ctx.createGain();
-    output.connect(audioEngine.output);
+    output.connect(destination);
     const held = new Map();         // key → voices started by that key
     const sustained = new Set();    // voices whose key is up but the pedal holds them
     let pedal = false;
@@ -79,10 +85,11 @@ export function createInstrument(font, preset)
     return {
         preset,
         // when: an AudioContext time to start at, for notes scheduled ahead (a song); omitted = now
-        noteOn(key, velocity = 100, when = 0)
+        /** @param {{ vibrato?: Vibrato }} [opts] */
+        noteOn(key, velocity = 100, when = 0, opts = {})
         {
             this.noteOff(key, true, when);
-            const voices = regionsFor(preset, key, velocity).map(r => startVoice(font, voiceParams(r, key, velocity), output, when));
+            const voices = regionsFor(preset, key, velocity).map(r => startVoice(font, voiceParams(r, key, velocity), output, when, opts.vibrato));
             // a new voice in an exclusive class chokes the others in it (open/closed hi-hat)
             for (const v of voices)
                 if (v.exclusiveClass)
@@ -95,6 +102,21 @@ export function createInstrument(font, preset)
         {
             for (const v of held.get(key) ?? []) pedal && !fast ? sustained.add(v) : v.release(fast, when);
             held.delete(key);
+        },
+        /**
+         * Legato: the voices holding `fromKey` slide to `toKey` over `seconds` instead of a new note re-attacking.
+         * The sample stays the one picked for fromKey, so this suits steps and small leaps.
+         * @returns {boolean} false when fromKey isn't sounding (play a normal note instead)
+         */
+        glide(fromKey, toKey, when, seconds)
+        {
+            const voices = held.get(fromKey);
+            if (!voices?.length || fromKey === toKey) return false;
+            held.delete(fromKey);
+            this.noteOff(toKey, true, when);
+            for (const v of voices) v.bend(toKey - fromKey, when, seconds);
+            held.set(toKey, voices);
+            return true;
         },
         /** this instrument's own gain node, e.g. to set a part's level in a mix */
         output,
@@ -116,7 +138,7 @@ export function createInstrument(font, preset)
     };
 }
 
-function startVoice(font, p, output, when = 0)
+function startVoice(font, p, output, when = 0, vibrato = null)
 {
     const ctx = audioEngine.context;
     const t = Math.max(ctx.currentTime, when);
@@ -162,6 +184,19 @@ function startVoice(font, p, output, when = 0)
     node.connect(output);
     source.start(t);
 
+    // a player starts the note straight and lets the vibrato in afterwards; vibrato from the first instant sounds synthetic
+    let lfo = null;
+    if (vibrato)
+    {
+        lfo = new OscillatorNode(ctx, { frequency: vibrato.rate });
+        const depth = new GainNode(ctx, { gain: 0 });
+        depth.gain.setValueAtTime(0, t + vibrato.delay);
+        depth.gain.linearRampToValueAtTime(vibrato.cents, t + vibrato.delay + vibrato.ramp);
+        lfo.connect(depth).connect(source.detune);
+        lfo.start(t);
+    }
+    let bent = 0;       // semitones glided away from the note's own key
+
     // where the release started, so a later fast release can pick up from the level it had reached
     let releasedAt = -1, releaseLevel = 0, releaseTime = 0;
     const level = (now)=> releasedAt < 0
@@ -193,11 +228,20 @@ function startVoice(font, p, output, when = 0)
             if (p.loopMode === 3) setTimeout(()=> { source.loop = false; }, Math.max(0, now - ctx.currentTime) * 1000);
             source.stop(now + releaseTime + 0.05);
         },
+        // slides the pitch by `semitones` more, evenly in pitch (detune is in cents)
+        bend(semitones, when, seconds)
+        {
+            const at = Math.max(ctx.currentTime, when, t);
+            source.detune.setValueAtTime(bent * 100, at);
+            bent += semitones;
+            source.detune.linearRampToValueAtTime(bent * 100, at + seconds);
+        },
     };
     source.onended = ()=>
     {
         voice.stopping = true;
         env.disconnect();
+        if (lfo) { lfo.stop(); lfo.disconnect(); }
         const i = active.indexOf(voice);
         if (i >= 0) active.splice(i, 1);
     };

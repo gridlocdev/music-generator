@@ -140,6 +140,18 @@ function label(type, n, form, own = {})
     return (names[type] ?? `Section ${type}`) + (count > 1 ? ` ${n + 1}` : '');
 }
 
+/**
+ * The beat to jump to from `beat` when stepping through sections: +1 the next section's start, -1 this
+ * section's start, or the previous section's when within `grace` beats of this one's start (like a track skip).
+ * Returns null past the last section.
+ */
+export function sectionSeek(sections, beat, step, grace = 0)
+{
+    const i = Math.max(0, sections.findLastIndex(s => s.beat <= beat));
+    if (step > 0) return sections[i + 1]?.beat ?? null;
+    return beat - sections[i].beat > grace ? sections[i].beat : sections[Math.max(0, i - 1)].beat;
+}
+
 /** a short text summary of a score: sections, chords and each part's range and note count */
 export function describe(score)
 {

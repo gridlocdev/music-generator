@@ -57,3 +57,11 @@ test('envelope level follows delay, attack, hold and decay', async ()=>
     near(envelopeLevel(env, 1, 0.4 + 1), 0.5, 1e-4);      // -100 dB of the way to sustain after the decay time
     assert.ok(envelopeLevel(env, 1, 0.6) < 1 && envelopeLevel(env, 1, 0.6) > 0.5);
 });
+
+test('softer notes are darker: the cutoff falls with velocity', ()=>
+{
+    const hz = (v)=> voiceParams(region(), 60, v).filter?.hz ?? Infinity;
+    assert.equal(hz(127), Infinity);
+    assert.ok(hz(100) > hz(64) && hz(64) > hz(30));
+    assert.ok(hz(64) > 4000 && hz(64) < 10000, String(hz(64)));
+});

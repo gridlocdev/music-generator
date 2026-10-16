@@ -6,18 +6,37 @@
 //   composer.play('first-light')   composer.stop()   composer.compose(spec) → score
 // and from the URL: index.html#song=first-light, #feel=heroic, or #spec=<URI-encoded JSON spec> (plays on first click).
 import { input } from '../../platform/input.js';
-import { compose } from './compose.js';
+import { mousePosScreen, mouseWasPressed } from '../../platform/engine.js';
+import { compose, sectionSeek } from './compose.js';
 import { SONGS } from './songs-data.js';
 import { GENRE_SONGS } from './genre-songs-data.js';
 import { EMOTIONS } from './composer-data.js';
 import { loadBand, playScore } from './song-player.js';
-import { prepareView, drawSong } from './song-view.js';
+import { prepareView, drawSong, timelineBeatAt } from './song-view.js';
 import { createSongBar } from './song-bar.js';
 
 let settings;               // this feature's save slice
 let bar;
 let playing = null;         // { score, handle, panels } while a song plays
 let starting = 0;           // id of the newest play request, so a slow load can't start a song that was replaced
+
+const SEEK_GRACE_SECONDS = 2;   // ← within this long of a section's start goes to the one before
+
+// click the timeline to jump there; ← / → to step through sections
+function seekInput(score, handle)
+{
+    if (mouseWasPressed(0))
+    {
+        const beat = timelineBeatAt(score, mousePosScreen.x, mousePosScreen.y);
+        if (beat !== null) handle.seek(beat);
+    }
+    const step = input.sectionStep();
+    if (step)
+    {
+        const beat = sectionSeek(score.sections, handle.beat, step, SEEK_GRACE_SECONDS * score.tempo / 60);
+        if (beat !== null) handle.seek(beat);
+    }
+}
 
 // every choice in the menu: the written songs, then one song per feeling composed from its defaults alone
 const choices = [
@@ -53,7 +72,7 @@ async function play(what, { activity, events })
         bar.setStatus('');
         activity.start({
             name: 'song',
-            update() { if (handle.done || input.cancel()) activity.end(); },
+            update() { if (handle.done || input.cancel()) activity.end(); else seekInput(score, handle); },
             cleanup() { handle.stop(); if (playing?.handle === handle) playing = null; bar.setPlaying(false); document.body.classList.remove('song'); },
         });
         document.body.classList.add('song');

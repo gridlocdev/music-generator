@@ -309,7 +309,7 @@ Every song is built from up to seven parts, each with a job and a register (`ROL
 Orchestration rules:
 
 1. **Separate the registers.** Bass below C3, chords and pad around C4, melody above. Parts in the same register mask each other. The ranges above keep them apart.
-2. **One focus at a time.** The lead is loudest (+12 velocity, mix 1.0). The pad sits furthest back (−14, mix 0.45).
+2. **One focus at a time.** The lead is loudest (+12 velocity, fader −2 dB). The pad sits furthest back (−14, fader −9 dB, and the most reverb).
 3. **Contrast timbres.** Pair a breathy lead (flute) with plucked support (harp, piano), and a bowed lead (violin) with a struck one (piano, vibes). Avoid two instruments of the same family in the same register.
 4. **Match the instrument to the emotion.** Brass is bold, woodwinds intimate, plucked strings light, bowed strings emotional, synths modern or cold, bells magical, distortion aggressive.
 5. **Bass patterns** (`BASS`): roots on strong beats, fifths and octaves for motion, and an **approach note** (A) one step from the next chord's root at the end of the bar, to pull the ear into the change.
@@ -339,6 +339,21 @@ The resulting shape: the intro is pad only, the first verse adds chords, bass an
 - **Verses vary.** Each verse keeps its motif bars but swaps its answer-bar rhythm, the "change the melody slightly" rule.
 - **The last chorus can lift** a key: `lift: true` raises it a whole step, `lift: 1` a semitone. Every part follows, and the outro stays in the new key. This is the "truck driver's gear change": cheap and effective.
 - **Contrast before the end.** The bridge drops energy and changes harmony, so the final chorus hits harder by comparison.
+
+### Performance and mix
+
+The score stays on the grid. That's what the falling-notes view draws and what the `.mid` file holds. When a song plays, `perform.js` adds what a player would, and `mix-plan.js` sets up and moves the mix. Both are rules, with a hash where a choice is needed, so a song sounds the same every time. The tables are `EXPRESSION`, `MIX`, `DUCK` and `MOVEMENT` in `composer-data.js`.
+
+- **Velocity is tone as well as volume.** The synth squares velocity for loudness and lowers a low-pass cutoff by up to three octaves for soft notes (`VELOCITY_CUTOFF_CENTS` in `lib/sf2-voice.js`), so a soft note is darker, not just quieter. Section energy already sets velocity, so quiet sections are darker too.
+- **Accents** (`DYNAMICS.accent`): the downbeat is loudest, then beat 3, then the other beats, then offbeat eighths, then sixteenths, so busy hi-hats alternate loud and soft.
+- **Phrases breathe.** The lead and countermelody swell across each 4-bar phrase, and the last note of each phrase tapers off.
+- **Timing drifts a little.** Melodic parts move by up to 5–15 ms either way, and drums and bass stay exactly on the grid to hold the groove.
+- **Slides.** Fretless and synth bass, bowed strings, trombone and synth leads sometimes slide into a note a step or small leap from the last one, if it follows closely and isn't on a downbeat. The held voice bends to the new pitch rather than re-attacking, which is what makes a slide sound real.
+- **Vibrato arrives late.** Notes of 0.6 s or more on singing instruments (bowed strings, voices, brass, reeds, pipes, synth leads) start straight, and the vibrato fades in from 0.25 s.
+- **Channel strips** (`MIX`): each part has a fader in dB, a pan, a low cut (100–150 Hz on everything but bass and drums, to clear the mud) and sends to one shared reverb and one tempo-synced dotted-eighth delay. Lead, bass and drums sit in the centre, and the others spread from −0.45 to +0.4. Drums and bass stay nearly dry, and pads get the most reverb.
+- **Ducking** (`DUCK`): on each kick the bass dips 4 dB and the pad 3 dB for 100 ms, which gives a sidechain's clean low end without a compressor.
+- **Movement** (`MOVEMENT`): the pad, arpeggio and chords close a low-pass at the start of a build (a pre-chorus, or the last two bars of a section rising into a chorus) and open it across the build. Reverb sends grow in the bridge, in quiet sections and most of all in the outro.
+- **Master** (`platform/audio-engine.js`): the mix bus leaves 3 dB of headroom, then a little high-shelf air, a gentle glue compressor and a peak limiter.
 
 ## 9. The song spec: writing a song
 

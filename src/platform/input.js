@@ -21,5 +21,7 @@ export const input = {
     focusInstruments() { return keyWasPressed('KeyI'); },
     instrumentStep() { return +keyWasPressed('ArrowDown') - +keyWasPressed('ArrowUp'); },
     sustain() { return keyIsDown('Space'); },
+    // ← / → step through a song's sections
+    sectionStep() { return +keyWasPressed('ArrowRight') - +keyWasPressed('ArrowLeft'); },
     cancel() { return keyWasPressed('Escape'); },
 };

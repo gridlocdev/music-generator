@@ -19,6 +19,6 @@ export function startEngine({ init, update, updatePost, render = ()=>{}, renderP
 // `export ... from` keeps live bindings, so values the engine reassigns (mousePos, mainCanvasSize) stay current.
 export {
     vec2, rgb, drawRect, drawText, keyIsDown, keyWasPressed,
-    mousePos, mouseIsDown, mouseWasPressed, mouseWasReleased, mainCanvasSize,
+    mousePos, mousePosScreen, mouseIsDown, mouseWasPressed, mouseWasReleased, mainCanvasSize,
     setCameraPos, setCameraScale,
 } from 'littlejsengine';

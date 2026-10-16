@@ -174,7 +174,7 @@ export const MELODY_OCTAVE = 4;
 export const DYNAMICS = {
     base: 48, span: 52,
     role: { lead: 12, counter: -6, arp: -12, chords: -4, pad: -14, bass: 4, drums: 0 },
-    accent: { downbeat: 10, strong: 5, weak: 0, offbeat: -6 },
+    accent: { downbeat: 10, strong: 5, weak: 0, offbeat: -6, sixteenth: -12 },   // so busy hats alternate loud and soft
 };
 
 // ---- Melody -------------------------------------------------------------------------------------
@@ -227,8 +227,51 @@ export const MELODY_RULES = {
 };
 export const CADENCE_DEGREES = { half: [2, 5], full: [1], final: [1] };
 
-// part levels in the mix (instrument output gain), so the melody sits on top and the pad stays behind
-export const MIX = { lead: 1, counter: 0.7, arp: 0.5, chords: 0.6, pad: 0.45, bass: 0.9, drums: 0.8 };
+// ---- Performance ---------------------------------------------------------------------------------
+// What perform() adds to the written notes when a song plays. The score itself stays on the grid.
+export const EXPRESSION = {
+    // timing drift in milliseconds either way, per part; kick and bass stay tight to hold the groove
+    jitterMs: { lead: 12, counter: 10, arp: 5, chords: 8, pad: 15, bass: 0, drums: 0 },
+    // each 4-bar phrase of these parts swells by `swell` velocity from start to end, and its last note tapers by `taper`
+    phrase: { roles: ['lead', 'counter'], bars: 4, swell: 10, taper: 12 },
+    // legato slides on instruments that bend (fretless and synth bass, bowed strings, trombone, synth leads),
+    // into a note that follows the last one closely, by a step or small leap, off the downbeat; `chance` of those
+    glide: {
+        roles: ['lead', 'counter', 'bass'],
+        programs: [35, 38, 39, 40, 41, 42, 57, 80, 81, 82, 83, 84, 85, 86, 87],
+        maxInterval: 5, maxGapBeats: 0.25, minBeats: 0.5, chance: 0.35, seconds: 0.08,
+    },
+    // late-arriving vibrato on held notes, for voices that sing: bowed strings, voices, brass, reeds, pipes, synth leads
+    vibrato: {
+        roles: ['lead', 'counter'],
+        programs: [40, 41, 42, 43, 52, 53, 54, 56, 57, 58, 59, 60, 64, 65, 66, 67, 68, 69, 72, 73, 74, 75, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 110],
+        minSeconds: 0.6, rate: 5.5, rateSpread: 0.4, cents: 15, delay: 0.25, ramp: 0.35,
+    },
+};
+
+// ---- Mix -------------------------------------------------------------------------------------------
+// Each part's channel strip. volumeDb is the fader; pan −1..1; lowCut a high-pass in Hz, on everything but the kit
+// and bass, to keep mud out of the low end; reverb and delay are send levels into the shared buses.
+// Lead, bass and drums sit in the centre; the rest spread to the sides. Drums and bass stay dry, pads get the most reverb.
+export const MIX = {
+    lead:    { volumeDb: -2,  pan: 0,     lowCut: 150, reverb: 0.25, delay: 0.16 },
+    counter: { volumeDb: -5,  pan: 0.4,   lowCut: 120, reverb: 0.3,  delay: 0.06 },
+    arp:     { volumeDb: -8,  pan: -0.45, lowCut: 150, reverb: 0.3,  delay: 0.1 },
+    chords:  { volumeDb: -6,  pan: -0.3,  lowCut: 120, reverb: 0.2,  delay: 0 },
+    pad:     { volumeDb: -9,  pan: 0.3,   lowCut: 100, reverb: 0.55, delay: 0 },
+    bass:    { volumeDb: -2,  pan: 0,     lowCut: 20,  reverb: 0,    delay: 0 },
+    drums:   { volumeDb: -3,  pan: 0,     lowCut: 20,  reverb: 0.08, delay: 0 },
+};
+// On every kick, these parts dip by db for `seconds`: the clean, pumping low end of a sidechain, without one.
+export const DUCK = { keys: [35, 36], seconds: 0.1, attack: 0.01, db: { bass: 4, pad: 3 } };
+// How the mix moves through a song.
+//   sweep: the tone filter on these parts closes at the start of a build (a pre-chorus) and opens across it;
+//          a section rising into a chorus by `rise` energy or more sweeps over its last `bars` bars instead
+//   reverb: every send is scaled up in outros, contrasting sections (bridges) and quiet sections
+export const MOVEMENT = {
+    sweep: { roles: ['pad', 'arp', 'chords'], closed: 700, open: 20000, rise: 0.2, bars: 2 },
+    reverb: { ending: 1.6, contrast: 1.25, quiet: 1.3, quietBelow: 0.4 },
+};
 
 // ---- On screen ------------------------------------------------------------------------------------
 // one colour per part (rgb 0..1), and how many seconds of notes are visible above each keyboard
