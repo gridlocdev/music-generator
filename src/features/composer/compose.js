@@ -1,7 +1,7 @@
 // Song spec → multi-instrument score. Pure and deterministic: the same spec always gives the same notes.
 // Every choice is made by a rule from composer-data.js and patterns-data.js; where rules tie, a hash of the
 // song and position decides, so nothing is random. docs/COMPOSING.md describes the method and the spec format.
-import { pitchClass, degreeToKey, parseProgression, chordName } from '../../lib/music-theory.js';
+import { pitchClass, degreeToKey, parseProgression, chordName, chordPitchClasses } from '../../lib/music-theory.js';
 import { EMOTIONS, FORMS, SECTIONS, REPEAT_LIFT, ARRANGEMENT, ROLES, ROLE_NAMES, MELODY_OCTAVE } from './composer-data.js';
 import { GROOVES, ARPS } from './patterns-data.js';
 import { chordTimeline, velocity, applySwing, clamp } from './meter.js';
@@ -13,10 +13,10 @@ export { parseMelody } from './melody.js';
 /**
  * @typedef {{ key: number, beat: number, beats: number, vel: number }} Note
  * @typedef {{ role: string, name: string, program: number, bank: number, notes: Note[] }} Track
- * @typedef {{ title: string, emotion: string, key: string, mode: string, tempo: number, beatsPerBar: number,
+ * @typedef {{ title: string, genre: string, story: string, emotion: string, key: string, mode: string, tempo: number, beatsPerBar: number,
  *   beats: number, seconds: number, tracks: Track[],
- *   sections: { type: string, label: string, beat: number, beats: number, energy: number }[],
- *   chords: { beat: number, beats: number, name: string }[] }} Score
+ *   sections: { type: string, label: string, beat: number, beats: number, energy: number, scene: string }[],
+ *   chords: { beat: number, beats: number, name: string, tones: number[] }[] }} Score
  */
 
 /**
@@ -86,8 +86,10 @@ export function compose(spec)
             fill: !!nextType && (nextEnergy > energy + 0.05 || !!base.build),
             ending: !!base.ending && index === form.length - 1,
         };
-        sections.push({ type, label: label(type, n, form), beat, beats: bars * song.beatsPerBar, energy });
-        for (const c of timeline) chords.push({ beat: c.beat, beats: c.beats, name: chordName(c.chord, song.flats) });
+        const name = label(type, n, form, spec.names);
+        const scene = spec.scenes?.[name.toLowerCase()] ?? spec.scenes?.[`${type} ${n + 1}`] ?? spec.scenes?.[type] ?? '';
+        sections.push({ type, label: name, beat, beats: bars * song.beatsPerBar, energy, scene });
+        for (const c of timeline) chords.push({ beat: c.beat, beats: c.beats, name: chordName(c.chord, song.flats), tones: chordPitchClasses(c.chord) });
 
         // melody: written once per section type (and variant), then replayed, so choruses are recognisable
         const melodyCfg = over.melody === false ? null : base.melody && { ...base.melody, contour: over.contour ?? feel.contour?.[type] ?? base.melody.contour, ...pick(over, ['register', 'density']) };
@@ -122,7 +124,7 @@ export function compose(spec)
     for (const t of tracks) t.notes.sort((a, b)=> a.beat - b.beat || a.key - b.key);
 
     return {
-        title: spec.title ?? spec.id ?? 'Untitled', emotion, key: keyName, mode, tempo: song.tempo,
+        title: spec.title ?? spec.id ?? 'Untitled', genre: spec.genre ?? '', story: spec.story ?? '', emotion, key: keyName, mode, tempo: song.tempo,
         beatsPerBar: song.beatsPerBar, beats: beat, seconds: beat * 60 / song.tempo,
         tracks: tracks.filter(t => t.notes.length), sections, chords,
     };
@@ -130,9 +132,10 @@ export function compose(spec)
 
 const pick = (o, keys)=> Object.fromEntries(keys.filter(k => o[k] !== undefined).map(k => [k, o[k]]));
 
-function label(type, n, form)
+// 'Verse 2'; a spec's names override the defaults, e.g. { A: 'Blues chorus' }
+function label(type, n, form, own = {})
 {
-    const names = { intro: 'Intro', verse: 'Verse', pre: 'Pre-chorus', chorus: 'Chorus', post: 'Post-chorus', bridge: 'Bridge', outro: 'Outro' };
+    const names = { intro: 'Intro', verse: 'Verse', pre: 'Pre-chorus', chorus: 'Chorus', post: 'Post-chorus', bridge: 'Bridge', outro: 'Outro', ...own };
     const count = form.filter(t => t === type).length;
     return (names[type] ?? `Section ${type}`) + (count > 1 ? ` ${n + 1}` : '');
 }
@@ -140,12 +143,14 @@ function label(type, n, form)
 /** a short text summary of a score: sections, chords and each part's range and note count */
 export function describe(score)
 {
-    const lines = [`${score.title} — ${score.emotion}, ${score.key} ${score.mode}, ${score.tempo} bpm, ${score.beatsPerBar}/4, ${score.seconds.toFixed(0)} s`];
+    const lines = [`${score.title} — ${score.genre ? `${score.genre}, ` : ''}${score.emotion}, ${score.key} ${score.mode}, ${score.tempo} bpm, ${score.beatsPerBar}/4, ${score.seconds.toFixed(0)} s`];
     for (const s of score.sections)
     {
         const names = score.chords.filter(c => c.beat >= s.beat && c.beat < s.beat + s.beats).map(c => c.name);
         lines.push(`  ${s.label.padEnd(14)} bar ${String(s.beat / score.beatsPerBar + 1).padStart(3)}  energy ${s.energy.toFixed(2)}  ${names.join(' ')}`);
+        if (s.scene) lines.push(`  ${''.padEnd(14)} “${s.scene}”`);
     }
+    if (score.story) lines.splice(1, 0, `  ${score.story}`);
     for (const t of score.tracks)
     {
         const keys = t.notes.map(n => n.key);

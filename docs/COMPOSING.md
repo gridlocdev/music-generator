@@ -15,9 +15,11 @@ The tables in `composer-data.js` and `patterns-data.js` are this document in dat
 7. [Arrangement and orchestration](#7-arrangement-and-orchestration)
 8. [Energy, repetition and variation](#8-energy-repetition-and-variation)
 9. [The song spec: writing a song](#9-the-song-spec-writing-a-song)
-10. [Workflow and checklist](#10-workflow-and-checklist)
-11. [Analysing songs you like](#11-analysing-songs-you-like)
-12. [Reference tables](#12-reference-tables)
+10. [Genre recipes](#10-genre-recipes)
+11. [Telling a story with a song](#11-telling-a-story-with-a-song)
+12. [Workflow and checklist](#12-workflow-and-checklist)
+13. [Analysing songs you like](#13-analysing-songs-you-like)
+14. [Reference tables](#14-reference-tables)
 
 ---
 
@@ -266,6 +268,14 @@ pop, mid:   kick  X.....x.X.......      X accent · x normal · o ghost · . res
 | bounce | playful shuffle | pop pattern with swing and tambourine |
 | halftime | cinematic, heavy | snare only on 3; toms carry the pulse |
 | waltz | 3/4 | kick on 1, brushes on 2 and 3 |
+| bossa | bossa nova | rim clicks on the clave (3-3-4-3-3), soft kick on 1 and the "a" of 2 |
+| reggae | one drop | nothing on beat 1; kick and rim together on 3; light swing |
+| funk | sixteenth-note pocket | sixteenth hats with ghost notes, kick dancing around the one, ghost snares |
+| boomBap | lo-fi hip hop | lazy swung kick, fat snare on 2 and 4, room kit |
+| habanera | tango | dotted-eighth, sixteenth, two eighths: the habanera rhythm under everything |
+| train | country | brushes on every sixteenth, accents on 2 and 4, like wheels on rails |
+| synthwave | 80s | four-on-the-floor kick under a gated snare, electronic kit |
+| bodhran | celtic 3/4 | a frame drum rolling under the tune, tambourine on 2 |
 | none | no drums | — |
 
 Rules:
@@ -303,8 +313,8 @@ Orchestration rules:
 3. **Contrast timbres.** Pair a breathy lead (flute) with plucked support (harp, piano), and a bowed lead (violin) with a struck one (piano, vibes). Avoid two instruments of the same family in the same register.
 4. **Match the instrument to the emotion.** Brass is bold, woodwinds intimate, plucked strings light, bowed strings emotional, synths modern or cold, bells magical, distortion aggressive.
 5. **Bass patterns** (`BASS`): roots on strong beats, fifths and octaves for motion, and an **approach note** (A) one step from the next chord's root at the end of the bar, to pull the ear into the change.
-6. **Comping patterns** (`COMPING`): sustain (calm), push (anticipating beat 3, pop), pulse (quarters, tension), eighths (rock), offbeat (2 and 4 stabs, bounce or swing), march, waltz (beats 2 and 3). Below .5 energy every style sustains.
-7. **Arpeggio patterns** (`ARPS`): up, up-down, Alberti (low–high–mid–high, classical), broken, and ostinato (a repeated low note against the others, for tension).
+6. **Comping patterns** (`COMPING`): sustain (calm), push (anticipating beat 3, pop), pulse (quarters, tension), eighths (rock), offbeat (2 and 4 stabs, bounce or swing), march, waltz (beats 2 and 3), skank (reggae chops on 2 and 4), bubble (reggae organ on every offbeat), bossa (syncopated guitar), funk (sixteenth clav stabs), habanera. Below .5 energy the busy styles (push, pulse, eighths, march) sustain and funk drops to a skank (`COMP_QUIET`). The others keep their rhythm, because in reggae or bossa the rhythm *is* the genre.
+7. **Arpeggio patterns** (`ARPS`): up, up-down, Alberti (low–high–mid–high, classical), broken, ostinato (a repeated low note against the others, for tension), sixteenths (synth arpeggiator over two octaves), roll (banjo forward roll), and chip (an 8-bit chord faked by a very fast arpeggio).
 
 ### The arrangement curve
 
@@ -349,6 +359,13 @@ A song is a plain object. Only `title` (or `id`) and `emotion` are needed; every
     comp: 'push', arp: 'updown',    // keys of COMPING and ARPS
     power: false,                   // power chords
     form: 'ABCABC',                 // a key of FORMS, or a list: ['intro', 'verse', 'chorus', …]
+    names: { A: 'Blues chorus' },   // optional: what to call a section type on screen
+    genre: 'Bossa nova',            // optional: shown with the title
+    story: 'Rain on the awning…',   // optional: the song's premise, shown in the menu and on screen
+    scenes: {                       // optional: one line per section, shown while it plays
+        intro: '8:52 p.m.',         // keyed by label ('verse 2', 'blues chorus 1'), type and occurrence ('A 2'), or type
+        'chorus 3': 'He takes off his apron and asks the cook to dance.',
+    },
     lift: true,                     // last chorus up a whole step (or a number of semitones)
     band: { lead: 73, drums: 40, counter: null },   // GM programs per role; null removes a part
     sections: {
@@ -365,14 +382,73 @@ A song is a plain object. Only `title` (or `id`) and `emotion` are needed; every
 
 **Where specs go.**
 
-- In the game: add it to `SONGS` in `src/features/composer/songs-data.js`, and it appears in the Composer menu.
+- In the game: add it to `GENRE_SONGS` in `src/features/composer/genre-songs-data.js` or `SONGS` in `songs-data.js`, and it appears in the Composer menu. The tests check that a hand-written hook puts chord tones on at least 85% of its strong beats, and that every scene names a real section.
 - In the browser console, or from a page that embeds the game: `composer.play({ title: 'Test', emotion: 'tender', key: 'A' })`, `composer.play('first-light')`, `composer.stop()`, and `composer.compose(spec)` to get the score without playing it.
 - In a link: `index.html#song=first-light`, `#feel=heroic`, or `#spec=` followed by the URI-encoded JSON. Browsers need a click before sound, so the song starts on the first click or key press.
 - On the command line: `just compose first-light --melody --midi out.mid` prints the plan (sections, energy, chords, parts) and the melody bar by bar, and writes a Standard MIDI File any DAW can open. Run `just compose path/to/spec.json` for a spec saved as a file.
 
 **What comes out.** `compose(spec)` returns a score: tempo and meter; `sections` with labels, start beats and energy; `chords` with names; and one track per part, each `{ role, name, program, bank, notes: [{ key, beat, beats, vel }] }`. The player schedules those notes on the Web Audio clock through the SoundFont instruments. The view draws each track as its own piano in a grid, with notes falling onto the keys that play them.
 
-## 10. Workflow and checklist
+## 10. Genre recipes
+
+A genre is mostly a groove, a comping rhythm, a bass pattern and a band. Harmony and melody habits come second. Each recipe below is a full song in `src/features/composer/genre-songs-data.js`; the table gives the settings, and the notes explain the moves that make the genre recognisable.
+
+| Genre | Song | Key / mode | Tempo | Groove · comp · arp | Band (lead / counter / chords / bass) | Harmony |
+|---|---|---|---|---|---|---|
+| Bossa nova | Café at Closing Time | F major | 128 | bossa · bossa | flute / tenor sax / nylon guitar / acoustic bass, jazz kit | maj7 and m7 throughout; ii–V turnarounds; the borrowed iv7 in the chorus |
+| Reggae | Low Tide, High Noon | G major | 76 | reggae · skank | steel drums / harmonica / clean guitar / fingered bass | two chords per four bars; simple diatonic chorus; a dub bridge of drums and bass alone |
+| Funk | The Midnight Janitor | E dorian | 104 | funk · funk | synth brass / tenor sax / clav / slap bass | a one-chord vamp (i7–IV7, the dorian IV7); short stabs, legato 0.5 |
+| Synthwave | Neon Coastline, 1986 | A minor | 100 | synthwave · pulse · sixteenths | saw lead / synth brass / polysynth / synth bass, sweep pad, square arpeggio | i–VI–III–VII; key lift into a major-chord ending (a sunrise) |
+| Lo-fi hip hop | Homework at 2 A.M. | D major | 78 | boomBap · push | vibraphone / flute / e-piano / fingered bass, warm pad, room kit | maj7, m7, m9 and maj9: every chord a little blurry; swing 0.55 |
+| Tango | Two Rivals, One Floor | D harmonic minor | 116 | habanera · march | bandoneon / violin / piano / contrabass, no drums | i–iv–V7–i; a circle-of-fifths bridge (iv7–bVII7–IIImaj7–VImaj7–iiø–V7) |
+| Country | Mile Marker 500 | G major | 112 | train · offbeat · roll | fiddle / harmonica / steel guitar / acoustic bass, banjo rolls, brushes | three chords (I, IV, V); a semitone key change for the last chorus |
+| Celtic | The Selkie's Return | D mixolydian | 104, 3/4 | bodhran · waltz · updown | whistle / fiddle / nylon guitar / cello, harp, choir | I–bVII (mixolydian), the modal v in the bridge |
+| Chiptune | Pixel Knight vs. the Lava King | C minor | 152 | rock · eighths · chip | square / saw / (no chords) / synth bass, square arpeggio | the andalusian i–VII–VI–V; a Picardy major ending for "victory" |
+| Gospel | Sunday Kitchen Choir | Bb major | 84 | ballad + swing 0.67 · pulse | voice oohs / tenor sax / organ / fingered bass, choir pad | I–iii7–IV–iv; a long 8-chord chorus; the gospel key change |
+| Cinematic | The Lighthouse Keeper's Last Night | D minor | 88 | halftime · pulse · ostinato | horns / cello / strings / contrabass, choir, pizzicato ostinato, orchestral kit | i–VI–III–VII; Neapolitan bII–V storm bridge; Picardy dawn ending |
+| Blues | Pawnshop Watch Blues | E major | 92 | swing + swing 0.67 · offbeat | jazz guitar / harmonica / honky-tonk piano / walking bass, jazz kit | the twelve-bar I7–IV7–V7 form; b3 and b7 blue notes in the melody |
+
+Moves that carry each genre:
+
+- **Bossa nova**: syncopated guitar that anticipates the bar, soft rim clicks, extended chords, a melody that sits on chord extensions (9ths and 13ths) and lands softly. Never loud.
+- **Reggae**: the empty beat 1 (one drop); guitar chops on 2 and 4 only; bass carries the melody of the groove; the melody enters off the beat (`r:0.5` before the first note).
+- **Funk**: everything short and syncopated; one chord for a long time; the bass hits the one hard; sixteenth hats with ghost notes. The groove is the song.
+- **Synthwave**: four-on-the-floor, gated snare, pulsing eighth-note synth bass in octaves, sixteenth arpeggiator, minor key, big saw lead.
+- **Lo-fi hip hop**: swung, lazy drums; jazzy seventh and ninth chords on e-piano; soft dynamics; small melodies with space between them.
+- **Tango**: habanera rhythm in the bass; marcato quarter-note chords; harmonic minor with a strong V7; dotted, dramatic melody with sharp pickups (`5:0.75 4:0.25`).
+- **Country**: train beat on brushes; boom-chick bass (root and fifth); I–IV–V; fiddle lead, banjo rolls; a semitone key change at the end.
+- **Celtic**: 3/4 lilt; mixolydian (I–bVII); tin whistle and fiddle trading the tune; a drone-like pad; melodies that run in steps with quick turns.
+- **Chiptune**: square and saw waves only; chords played as very fast arpeggios; fast tempo; busy melody in steady eighths; dramatic minor-key progressions.
+- **Gospel**: swung 12/8 feel (ballad groove with swing 0.67); organ chords; call and response between lead and choir; the borrowed iv; a key change before the last chorus.
+- **Cinematic**: ostinato strings, horns on the melody, choir pad; slow harmonic rhythm that builds; Neapolitan and modal-mixture chords for drama; a major chord at the end for resolution.
+- **Blues**: the twelve-bar form, dominant sevenths on every chord, swung shuffle, walking bass, and blue notes (b3 and b7) bent into a major key.
+
+## 11. Telling a story with a song
+
+A song with a story has a reason for each section. Before writing notes, write one line per section, in the `scenes` field, and let each line decide the music:
+
+| Story beat | Musical answer |
+|---|---|
+| setting the scene | intro: the groove with no melody; a low energy that leaves room |
+| ordinary life | first verse: simple melody, few parts |
+| something stirs | pre-chorus: rising contour, a fill, the harmony ends on V |
+| the big moment | chorus: the hook, the highest register, every part playing |
+| complications | second verse: the same tune, one more part, a little louder (`REPEAT_LIFT`) |
+| the turn or crisis | bridge: new chords (bII, bVI, a new mode), drop the drums (`mute`), change the contour |
+| triumph | last chorus: key change (`lift`), countermelody, crash |
+| aftermath | outro: thin out; end on the tonic, or a major chord in a minor song (a Picardy third) for hope |
+
+Some examples from the song book:
+
+- In **The Lighthouse Keeper's Last Night**, the storm is a Neapolitan bII–V bridge. Dawn is the major I that ends a minor song.
+- In **Neon Coastline, 1986**, the getaway climaxes with a key lift, and the sunrise is the major chord that ends the outro.
+- In **Pixel Knight vs. the Lava King**, the bridge ("one heart left") drops to .45 energy, and "VICTORY" is C major at the end of a C-minor song.
+- In **Low Tide, High Noon**, the dub bridge removes the melody and chords as the tide goes out as far as it can.
+- In **Pawnshop Watch Blues**, the guitar solo is a composed section (`C`) with a dense, wavy melody that "talks".
+
+Write the story first, then pick the genre that fits the setting and the emotion that fits the feeling. The scenes appear on screen as the song plays, so the listener follows the story with the music.
+
+## 12. Workflow and checklist
 
 How to compose a song, in order:
 
@@ -396,7 +472,7 @@ Checklist before calling it done:
 - [ ] Something changes every 8 bars: a part enters or leaves, the harmony shifts, the drums fill.
 - [ ] The song ends on the tonic.
 
-## 11. Analysing songs you like
+## 13. Analysing songs you like
 
 Composers learn by playing songs they love and asking *why* each choice was made. That matters as much as *how*. To add a new emotion, groove or progression to these tables, analyse a reference track on six axes and translate each into spec fields:
 
@@ -413,9 +489,11 @@ Transcribe by hand into degree notation and progressions to learn the patterns, 
 
 The person who wrote the notes this guide grew from learned by making up music at the piano and transcribing it into a DAW. The equivalent here: write a spec, compose it, listen, and change one rule at a time. No trick produces a great song on the first try; the process is knowledge plus iteration.
 
-## 12. Reference tables
+## 14. Reference tables
 
 **General MIDI programs** (0-based) used most, by family: pianos 0–7 · chromatic percussion 8–15 (celesta 8, glockenspiel 9, music box 10, vibraphone 11, marimba 12) · organs 16–23 · guitars 24–31 (nylon 24, steel 25, clean 27, overdrive 29, distortion 30) · basses 32–39 · strings 40–47 (violin 40, viola 41, cello 42, contrabass 43, tremolo 44, pizzicato 45, harp 46, timpani 47) · ensembles 48–55 (strings 48, slow strings 49, choir 52) · brass 56–63 (trumpet 56, trombone 57, tuba 58, horns 60) · reeds 64–71 (sax 64–67, oboe 68, clarinet 71) · pipes 72–79 (piccolo 72, flute 73, pan flute 75, shakuhachi 77) · synth leads 80–87 · synth pads 88–95 (fantasia 88, warm 89, space voice 91) · effects, ethnic and percussive 96–127. The full list of what this library has is `src/audio/soundfont-catalog-data.js`.
+
+**Genre instruments** in this library: honky-tonk piano 3, clav 7, organ 16, accordion 21, harmonica 22, bandoneon 23, jazz guitar 26, slap bass 36, synth bass 38–39, voice oohs 53, synth brass 62, square 80, saw 81, polysynth 90, sweep pad 95, sitar 104, banjo 105, shamisen 106, koto 107, kalimba 108, bagpipe 109, fiddle 110, steel drums 114, taiko 116.
 
 **GM drum keys**: kick 36 · side stick 37 · snare 38 · clap 39 · closed hat 42 · pedal hat 44 · low tom 45 · open hat 46 · mid tom 47 · crash 49 · high tom 50 · ride 51 · tambourine 54.
 

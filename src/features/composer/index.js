@@ -8,6 +8,7 @@
 import { input } from '../../platform/input.js';
 import { compose } from './compose.js';
 import { SONGS } from './songs-data.js';
+import { GENRE_SONGS } from './genre-songs-data.js';
 import { EMOTIONS } from './composer-data.js';
 import { loadBand, playScore } from './song-player.js';
 import { prepareView, drawSong } from './song-view.js';
@@ -20,8 +21,9 @@ let starting = 0;           // id of the newest play request, so a slow load can
 
 // every choice in the menu: the written songs, then one song per feeling composed from its defaults alone
 const choices = [
-    ...SONGS.map(spec => ({ id: spec.id, label: spec.title, spec })),
-    ...Object.keys(EMOTIONS).map(e => ({ id: `feel:${e}`, label: `Feeling: ${e}`, spec: { id: e, title: `${e[0].toUpperCase()}${e.slice(1)}`, emotion: e } })),
+    ...GENRE_SONGS.map(spec => ({ id: spec.id, group: 'Genres', label: `${spec.genre}: ${spec.title}`, story: spec.story, spec })),
+    ...SONGS.map(spec => ({ id: spec.id, group: 'Written songs', label: spec.title, story: spec.story, spec })),
+    ...Object.keys(EMOTIONS).map(e => ({ id: `feel:${e}`, group: 'Compose from a feeling', label: `Feeling: ${e}`, spec: { id: e, title: `${e[0].toUpperCase()}${e.slice(1)}`, emotion: e } })),
 ];
 
 function specFor(what)
@@ -38,6 +40,8 @@ async function play(what, { activity, events })
     stop(activity);
     const spec = specFor(what);
     const score = compose(spec);
+    const chosen = choices.findIndex(c => c.spec === spec);
+    if (chosen >= 0) bar.select(chosen);
     bar.setPlaying(true);
     try
     {

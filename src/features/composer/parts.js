@@ -1,7 +1,7 @@
 // The accompaniment: chords, pad, arpeggio, countermelody, bass and drums, written from the chord timeline.
 import { chordPitchClasses, voiceChord, degreeToKey, keyToDegree } from '../../lib/music-theory.js';
 import { RANGES } from './composer-data.js';
-import { DRUM_KEYS, BASS, COMPING } from './patterns-data.js';
+import { DRUM_KEYS, BASS, COMPING, COMP_QUIET } from './patterns-data.js';
 import { STEP, mod, clamp, chordAt, velocity } from './meter.js';
 
 // pitch classes to voice: power chords are root and fifth; big chords drop the fifth to stay at four notes
@@ -16,7 +16,7 @@ export function writeChords(sec, track, memory)
 {
     const [lo, hi] = RANGES.chords;
     const stepsPerBar = sec.beatsPerBar * 4;
-    const style = sec.ending ? 'sustain' : sec.energy < 0.5 ? 'sustain' : sec.comp;
+    const style = sec.ending ? 'sustain' : sec.energy < 0.5 ? (COMP_QUIET[sec.comp] ?? sec.comp) : sec.comp;
     const hits = (COMPING[style] ?? COMPING.sustain).filter(([s])=> s < stepsPerBar);
     for (const span of sec.timeline)
     {
@@ -64,7 +64,7 @@ export function writeArp(sec, track, memory)
         {
             current = chord;
             const v = memory.arp = voiceChord(voicingClasses(chord, false), memory.arp, lo, hi - 12);
-            notes = [...v, v[0] + 12];
+            notes = [...v, ...v.map(k => k + 12)];
         }
         const key = notes[order[i % order.length] % notes.length];
         track.notes.push({ key, beat: t, beats: len * sec.legato, vel: velocity(sec, 'arp', sec.energy, t - sec.beat) });

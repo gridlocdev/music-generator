@@ -6,10 +6,13 @@
 // --melody also prints the lead line bar by bar, as note names, to read a melody without hearing it.
 import fs from 'node:fs';
 import { compose, describe } from '../src/features/composer/compose.js';
-import { SONGS } from '../src/features/composer/songs-data.js';
+import { SONGS as WRITTEN } from '../src/features/composer/songs-data.js';
+import { GENRE_SONGS } from '../src/features/composer/genre-songs-data.js';
 import { EMOTIONS } from '../src/features/composer/composer-data.js';
 import { writeMidi } from '../src/lib/midi-file.js';
 import { noteName } from '../src/lib/notes.js';
+
+const SONGS = [...GENRE_SONGS, ...WRITTEN];
 
 const args = process.argv.slice(2);
 const opt = (f)=> { const i = args.indexOf(f); return i >= 0 ? args[i + 1] : undefined; };

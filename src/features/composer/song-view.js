@@ -9,7 +9,7 @@ const HEADER = 22;              // panel title height
 const MAX_NOTE_BEATS = 32;      // longest note; notes that started this long ago are skipped
 const ASPECT = 1.5;             // preferred panel width / height
 const BG = rgb(0.1, 0.09, 0.15), LANE = rgb(0.06, 0.055, 0.09), GRID = rgb(1, 1, 1, 0.06);
-const WHITE_KEY = rgb(0.93, 0.92, 0.9), BLACK_KEY = rgb(0.12, 0.11, 0.16), TEXT = rgb(0.85, 0.83, 0.92), DIM = rgb(0.55, 0.52, 0.65);
+const WHITE_KEY = rgb(0.93, 0.92, 0.9), BLACK_KEY = rgb(0.12, 0.11, 0.16), TEXT = rgb(0.85, 0.83, 0.92), DIM = rgb(0.55, 0.52, 0.65), SCENE = rgb(1, 0.85, 0.6);
 
 let W = 0, H = 0;
 const rect = (x, y, w, h, c)=> drawRect(vec2(x + w / 2, H - y - h / 2), vec2(w, h), c);
@@ -47,7 +47,7 @@ export function drawSong(panels, score, beat, top)
     setCameraScale(1);
     setCameraPos(vec2(W / 2, H / 2));
 
-    const footer = 44;
+    const footer = 64;
     const area = { x: GAP, y: top + GAP, w: W - GAP * 2, h: H - top - footer - GAP * 2 };
     const n = panels.length;
     // pick the column count whose panels come closest to the preferred shape
@@ -135,7 +135,7 @@ function firstFrom(notes, beat)
 // sections along the bottom, shaded by energy, with the playhead, the current section and chord
 function drawTimeline(score, beat, y, h)
 {
-    const x = GAP, w = W - GAP * 2, barY = y + 26, barH = 10;
+    const x = GAP, w = W - GAP * 2, barY = y + 46, barH = 10;
     for (const s of score.sections)
     {
         const sx = x + s.beat / score.beats * w, sw = s.beats / score.beats * w;
@@ -148,5 +148,8 @@ function drawTimeline(score, beat, y, h)
     const chord = score.chords.findLast(c => c.beat <= beat);
     const bar = Math.max(1, Math.floor(beat / score.beatsPerBar) + 1);
     text(`${score.title}  ·  ${section.label}  ·  ${chord && beat >= 0 ? chord.name : ''}`, x, y + 4, 16, TEXT);
-    text(`${score.emotion} · ${score.key} ${score.mode} · ${score.tempo} bpm · bar ${bar}   (Esc stops)`, x + w, y + 4, 13, DIM, 'right');
+    text(`${score.genre ? `${score.genre} · ` : ''}${score.emotion} · ${score.key} ${score.mode} · ${score.tempo} bpm · bar ${bar}   (Esc stops)`, x + w, y + 4, 13, DIM, 'right');
+    // the story so far: this section's scene, or the song's premise when the section has none
+    const line = section.scene || score.story;
+    if (line) text(line, x, y + 25, 13, SCENE);
 }

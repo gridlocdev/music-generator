@@ -3,8 +3,11 @@ import assert from 'node:assert/strict';
 import { compose, parseMelody } from '../../src/features/composer/compose.js';
 import { EMOTIONS, FORMS, SECTIONS, RHYTHMS, CONTOURS, RANGES, MIX, ROLES } from '../../src/features/composer/composer-data.js';
 import { GROOVES, BASS, COMPING, ARPS, DRUM_KEYS } from '../../src/features/composer/patterns-data.js';
-import { SONGS } from '../../src/features/composer/songs-data.js';
-import { parseProgression, pitchClass, chordPitchClasses, MODES } from '../../src/lib/music-theory.js';
+import { SONGS as WRITTEN } from '../../src/features/composer/songs-data.js';
+import { GENRE_SONGS } from '../../src/features/composer/genre-songs-data.js';
+import { parseProgression, pitchClass, MODES } from '../../src/lib/music-theory.js';
+
+const SONGS = [...WRITTEN, ...GENRE_SONGS];
 
 test('every emotion names a known mode, key, groove, form and parts, and its progressions parse', ()=>
 {
@@ -127,4 +130,38 @@ test('handwritten melodies: degrees, accidentals, octaves, rests and lengths', (
                 const beats = (GROOVES[spec.groove ?? EMOTIONS[spec.emotion].groove]).beats;
                 assert.equal(parseMelody(sec.melody).beats % beats, 0, `${spec.id} ${type}`);
             }
+});
+
+test('every song has a unique id; genre songs have a genre, a story, and scenes that name real sections', ()=>
+{
+    assert.equal(new Set(SONGS.map(s => s.id)).size, SONGS.length);
+    for (const spec of GENRE_SONGS)
+    {
+        assert.ok(spec.genre && spec.story, spec.id);
+        const score = compose(spec);
+        const shown = new Set(score.sections.map(s => s.scene).filter(Boolean));
+        for (const [key, text] of Object.entries(spec.scenes ?? {})) assert.ok(shown.has(text), `${spec.id}: scene "${key}" matches no section`);
+    }
+});
+
+test('handwritten hooks put chord tones on strong beats', ()=>
+{
+    for (const spec of SONGS)
+    {
+        const score = compose(spec);
+        const lead = score.tracks.find(t => t.role === 'lead').notes;
+        for (const sec of score.sections)
+        {
+            if (typeof spec.sections?.[sec.type]?.melody !== 'string') continue;
+            let strong = 0, fit = 0;
+            for (const n of lead)
+            {
+                const inBar = (n.beat - sec.beat) % score.beatsPerBar;
+                if (n.beat < sec.beat || n.beat >= sec.beat + sec.beats || !(inBar === 0 || (score.beatsPerBar === 4 && inBar === 2))) continue;
+                strong++;
+                if (score.chords.findLast(c => c.beat <= n.beat).tones.includes(n.key % 12)) fit++;
+            }
+            assert.ok(fit / strong >= 0.85, `${spec.id} ${sec.label}: ${fit}/${strong} strong-beat notes are chord tones`);
+        }
+    }
 });
