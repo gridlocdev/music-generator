@@ -7,3 +7,6 @@ soundfonts/
 # Claude Code: worktrees for isolated sessions, and personal settings
 .claude/worktrees/
 .claude/settings.local.json
+
+# the A/B listening tool: old versions to compare against, and its renders
+.ab/

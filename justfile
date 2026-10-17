@@ -42,3 +42,8 @@ catalog dir="soundfonts/GeneralUser-GS":
 # e.g. just compose first-light --melody --midi first-light.mid   ·   just compose feel:tender
 compose *args:
     node tools/compose.mjs {{args}}
+
+# A/B listening: render each song with an older commit and with this checkout, side by side
+# e.g. just ab   ·   just ab a913205   (then open the URL it prints; port 8010 or the next free one)
+ab rev="main": _deps
+    node tools/ab-server.mjs {{rev}}
