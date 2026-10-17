@@ -59,6 +59,7 @@ export const GENRE_SONGS = [
     {
         id: 'midnight-janitor', title: 'The Midnight Janitor', genre: 'Funk',
         story: 'Forty floors of empty offices, one janitor, one mop, and a radio nobody told him to turn down.',
+        style: 'funky',                                   // ghost-note pocket, stabs; no jazz dims
         emotion: 'playful', key: 'E', mode: 'dorian', tempo: 104, groove: 'funk', comp: 'funk', legato: 0.5, swing: 0, dynamics: 0.75,
         band: { lead: 62, counter: 66, chords: 7, pad: null, arp: null, bass: 36, drums: 0 },
         form: ['intro', 'verse', 'pre', 'chorus', 'verse', 'pre', 'chorus', 'bridge', 'chorus', 'outro'],
@@ -90,6 +91,7 @@ export const GENRE_SONGS = [
     {
         id: 'neon-coastline', title: 'Neon Coastline, 1986', genre: 'Synthwave',
         story: 'A stolen convertible, the coast road at 3 a.m., and a cassette with exactly one good song on it.',
+        style: 'electronic',
         emotion: 'tense', key: 'A', mode: 'minor', tempo: 100, groove: 'synthwave', comp: 'pulse', arp: 'sixteenths', legato: 0.85, dynamics: 0.8,
         band: { lead: 81, counter: 62, arp: 80, chords: 90, pad: 95, bass: 38, drums: 24 },
         form: 'pop', lift: true,
@@ -120,6 +122,7 @@ export const GENRE_SONGS = [
     {
         id: 'homework-2am', title: 'Homework at 2 A.M.', genre: 'Lo-fi hip hop',
         story: 'A desk lamp, cold tea, a calculus problem that will not solve itself, and a cat with opinions about pencils.',
+        style: { ghosts: 0.4, syncopation: 0.3, dim7: 0 },  // lazy ghost snares; sevenths and ninths, not dims
         emotion: 'tender', key: 'D', mode: 'major', tempo: 78, groove: 'boomBap', comp: 'push', arp: 'broken', legato: 0.95, dynamics: 0.5,
         band: { lead: 11, counter: 73, arp: null, chords: 4, pad: 89, bass: 33, drums: 8 },
         form: 'ballad',
@@ -205,6 +208,7 @@ export const GENRE_SONGS = [
     {
         id: 'selkies-return', title: 'The Selkie’s Return', genre: 'Celtic',
         story: 'Seven years she kept house on the shore. Tonight she found her sealskin in the rafters, and the sea is calling her name.',
+        style: { dim7: 0 },                               // modal folk: no diminished chords
         emotion: 'nostalgic', key: 'D', mode: 'mixolydian', tempo: 104, groove: 'bodhran', comp: 'waltz', arp: 'updown', legato: 0.9,
         band: { lead: 78, counter: 110, arp: 46, chords: 24, pad: 52, bass: 42, drums: 0 },
         form: ['intro', 'verse', 'chorus', 'verse', 'chorus', 'bridge', 'chorus', 'outro'],
@@ -260,6 +264,7 @@ export const GENRE_SONGS = [
     {
         id: 'kitchen-choir', title: 'Sunday Kitchen Choir', genre: 'Gospel',
         story: 'Grandma starts humming over the pancakes. By the last chorus the whole family is singing, and nobody notices the smoke alarm.',
+        style: { dim7: 0.35, scoops: 0.4 },               // gospel's passing dims and slides
         emotion: 'joyful', key: 'Bb', mode: 'major', tempo: 84, groove: 'ballad', swing: 0.67, comp: 'pulse', arp: 'broken', legato: 0.95,
         band: { lead: 53, counter: 66, arp: 0, chords: 16, pad: 52, bass: 33, drums: 0 },
         form: 'ballad', lift: true,
@@ -315,6 +320,7 @@ export const GENRE_SONGS = [
     {
         id: 'pawnshop-blues', title: 'Pawnshop Watch Blues', genre: 'Blues',
         story: 'Rent is due Friday. The only thing worth selling is the gold watch his father wore to every gig.',
+        style: 'jazzy',
         emotion: 'melancholy', key: 'E', mode: 'major', tempo: 92, groove: 'swing', swing: 0.67, comp: 'offbeat', legato: 0.85, dynamics: 0.6,
         band: { lead: 26, counter: 22, chords: 3, pad: null, arp: null, bass: 32, drums: 32 },
         form: ['intro', 'A', 'A', 'C', 'A', 'outro'],
