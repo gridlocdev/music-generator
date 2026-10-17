@@ -80,3 +80,14 @@ export function envelopeLevel(env, peak, elapsed, minAttack = 0)
     const floor = peak * env.sustain;
     return floor + (peak - floor) * Math.exp(-decayT * ENV_TIME_CONSTANTS / Math.max(env.decay, 0.001));
 }
+
+/**
+ * A voice's level `elapsed` seconds after note-on, through its release once that has begun.
+ * release: { at, level, seconds } (at in seconds after note-on), or null. A release scheduled for later (notes are
+ * scheduled ahead) hasn't begun: until then the voice is still in its envelope.
+ */
+export function voiceLevel(env, peak, elapsed, release, minAttack = 0)
+{
+    if (!release || elapsed < release.at) return envelopeLevel(env, peak, elapsed, minAttack);
+    return release.level * Math.exp(-(elapsed - release.at) * ENV_TIME_CONSTANTS / release.seconds);
+}

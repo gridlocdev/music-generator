@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { voiceParams, timecentsToSeconds, centibelsToGain } from '../../src/lib/sf2-voice.js';
+import { voiceParams, timecentsToSeconds, centibelsToGain, voiceLevel } from '../../src/lib/sf2-voice.js';
 import { GEN } from '../../src/lib/sf2.js';
 
 const near = (a, b, eps = 1e-6)=> assert.ok(Math.abs(a - b) < eps, `${a} ≉ ${b}`);
@@ -64,4 +64,17 @@ test('softer notes are darker: the cutoff falls with velocity', ()=>
     assert.equal(hz(127), Infinity);
     assert.ok(hz(100) > hz(64) && hz(64) > hz(30));
     assert.ok(hz(64) > 4000 && hz(64) < 10000, String(hz(64)));
+});
+
+test('a voice’s level follows its envelope until its release begins, even when the release is scheduled ahead', ()=>
+{
+    const env = { delay: 0, attack: 0, hold: 0, decay: 0, sustain: 1, release: 0.03 };
+    const release = { at: 1, level: 0.5, seconds: 0.03 };
+    // before a release scheduled for 1 s, the voice is at its envelope's level, never above its peak
+    assert.equal(voiceLevel(env, 0.5, 0.8, release), 0.5);
+    assert.ok(voiceLevel(env, 0.5, 0.99, release) <= 0.5);
+    // after it begins, it decays from the level it started at
+    assert.equal(voiceLevel(env, 0.5, 1, release), 0.5);
+    assert.ok(voiceLevel(env, 0.5, 1.01, release) < 0.5 * 0.05);
+    assert.equal(voiceLevel(env, 0.5, 0.5, null), 0.5);
 });

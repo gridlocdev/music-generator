@@ -1,7 +1,7 @@
 // Plays SoundFont presets through Web Audio: loads and caches .sf2 files, then turns notes into voices
 // (sample → optional low-pass → volume envelope → optional pan → instrument output).
 import { parseSf2, regionsFor } from '../lib/sf2.js';
-import { voiceParams, envelopeLevel, ENV_TIME_CONSTANTS } from '../lib/sf2-voice.js';
+import { voiceParams, voiceLevel, ENV_TIME_CONSTANTS } from '../lib/sf2-voice.js';
 import { audioEngine } from '../platform/audio-engine.js';
 
 const MAX_VOICES = 96;          // oldest voices are cut beyond this, released or not
@@ -213,11 +213,10 @@ function startVoice(font, p, output, when = 0, vibrato = null, scoop = null)
     }
     let bent = 0;       // semitones glided away from the note's own key
 
-    // where the release started, so a later fast release can pick up from the level it had reached
+    // where the release starts, so a later fast release can pick up from the level the voice has reached by then;
+    // a release scheduled ahead hasn't begun yet, so stealing the voice before it picks up from the envelope
     let releasedAt = -1, releaseLevel = 0, releaseTime = 0;
-    const level = (now)=> releasedAt < 0
-        ? envelopeLevel(p.env, peak, now - t, MIN_ATTACK)
-        : releaseLevel * Math.exp(-(now - releasedAt) * ENV_TIME_CONSTANTS / releaseTime);
+    const level = (now)=> voiceLevel(p.env, peak, now - t, releasedAt < 0 ? null : { at: releasedAt - t, level: releaseLevel, seconds: releaseTime }, MIN_ATTACK);
 
     const voice = {
         output,
