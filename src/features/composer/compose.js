@@ -1,22 +1,38 @@
 // Song spec → multi-instrument score. Pure and deterministic: the same spec always gives the same notes.
-// Every choice is made by a rule from composer-data.js and patterns-data.js; where rules tie, a hash of the
-// song and position decides, so nothing is random. docs/COMPOSING.md describes the method and the spec format.
-import { pitchClass, degreeToKey, parseProgression, chordName, chordPitchClasses } from '../../lib/music-theory.js';
-import { EMOTIONS, FORMS, SECTIONS, REPEAT_LIFT, ARRANGEMENT, ROLES, ROLE_NAMES, MELODY_OCTAVE } from './composer-data.js';
-import { GROOVES, ARPS } from './patterns-data.js';
-import { chordTimeline, velocity, applySwing, clamp } from './meter.js';
-import { writeMelody, notatedMelody } from './melody.js';
+// Every choice is made by a rule from the *-data.js tables; where rules tie, a hash of the song and position decides,
+// so nothing is random. docs/COMPOSING.md describes the method and the spec format.
+//
+// The pipeline, top down:
+//   1. song plan (plan.js): form, keys, meters, energy curve, cadences, tempo map, loop; and the motif (melody.js)
+//   2. section plan (harmony.js): the chords at the section's harmonic rhythm, ended on its cadence, passing chords
+//   3. phrases: the melody from the motif, call and response, harmony voices, then the parts (parts.js)
+//   4. arrangement and rhythm passes (arrange.js, syncopation.js)
+// Detail and feel that a player adds (ghost notes, scoops, swing, ear candy) come later, in perform.js.
+import { degreeToKey, chordName, chordPitchClasses, pitchName } from '../../lib/music-theory.js';
+import { beatToSeconds } from '../../lib/tempo-map.js';
+import { ARRANGEMENT, ROLES, ROLE_NAMES, MELODY_OCTAVE } from './composer-data.js';
+import { velocity, mod } from './meter.js';
+import { planSong, energyShape } from './plan.js';
+import { sectionChords, callAndResponse, cadenceChord } from './harmony.js';
+import { writeMelody, notatedMelody, songMotif, varyMelody } from './melody.js';
 import { writeChords, writePad, writeArp, writeCounter, writeBass, writeDrums } from './parts.js';
+import { arrangeSection } from './arrange.js';
+import { syncopate } from './syncopation.js';
 
 export { parseMelody } from './melody.js';
 
 /**
- * @typedef {{ key: number, beat: number, beats: number, vel: number }} Note
+ * @typedef {{ key: number, beat: number, beats: number, vel: number, anticipates?: number }} Note
+ *   anticipates: the beat a note pulled a sixteenth early belongs on
  * @typedef {{ role: string, name: string, program: number, bank: number, notes: Note[] }} Track
+ * @typedef {{ type: string, label: string, beat: number, beats: number, energy: number, scene: string,
+ *   beatsPerBar: number, meter: string, tonic: number, mode: string, climax: boolean }} Section
  * @typedef {{ title: string, genre: string, story: string, emotion: string, key: string, mode: string, tempo: number, beatsPerBar: number,
- *   beats: number, seconds: number, tracks: Track[],
- *   sections: { type: string, label: string, beat: number, beats: number, energy: number, scene: string }[],
- *   chords: { beat: number, beats: number, name: string, tones: number[] }[] }} Score
+ *   beats: number, seconds: number, tracks: Track[], sections: Section[],
+ *   chords: { beat: number, beats: number, name: string, tones: number[] }[],
+ *   tempoMap: import('../../lib/tempo-map.js').TempoSegment[], loop: { from: number, to: number } | null,
+ *   flats: boolean, swing: number, swingSub: number, style: object, seed: string, motif: number[] }} Score
+ *   flats: the key is spelled with flats
  */
 
 /**
@@ -25,33 +41,9 @@ export { parseMelody } from './melody.js';
  */
 export function compose(spec)
 {
-    const emotion = spec.emotion ?? 'hopeful';
-    const feel = EMOTIONS[emotion];
-    if (!feel) throw new Error(`unknown emotion: ${emotion}`);
-    const mode = spec.mode ?? feel.mode;
-    const keyName = spec.key ?? feel.key;
-    const groove = GROOVES[spec.groove ?? feel.groove];
-    if (!groove) throw new Error(`unknown groove: ${spec.groove}`);
-    const grooveName = spec.groove ?? feel.groove;
-    const form = Array.isArray(spec.form) ? spec.form : FORMS[spec.form ?? feel.form];
-    if (!form) throw new Error(`unknown form: ${spec.form}`);
-    const band = { ...feel.band, ...spec.band };
-    if (band.drums !== null && grooveName === 'none') band.drums = null;
-
-    const song = {
-        tonic: pitchClass(keyName),
-        mode,
-        beatsPerBar: groove.beats,
-        tempo: spec.tempo ?? feel.tempo,
-        legato: spec.legato ?? feel.legato,
-        dynamics: spec.dynamics ?? feel.dynamics,
-        power: spec.power ?? feel.power ?? false,
-        comp: spec.comp ?? feel.comp,
-        arp: ARPS[spec.arp ?? feel.arp],
-        groove, grooveName,
-        seed: String(spec.seed ?? spec.title ?? spec.id ?? 'song'),
-        flats: /b/.test(keyName) || keyName === 'F' || (/minor|dorian|phrygian/i.test(mode) && ['D', 'G', 'C', 'F'].includes(keyName)),
-    };
+    const plan = planSong(spec);
+    const { song, band, feel } = plan;
+    const motif = songMotif(spec, plan);
 
     /** @type {Track[]} */
     const tracks = ROLES.filter(r => band[r] != null).map(role => ({
@@ -59,86 +51,77 @@ export function compose(spec)
     }));
     const track = Object.fromEntries(tracks.map(t => [t.role, t]));
 
-    const sections = [], chords = [];
-    const seen = {}, themes = {};
+    const sections = [], chords = [], themes = {};
     const memory = { chords: null, pad: null, arp: null, bass: 40, counter: null };
-    const lastChorus = form.lastIndexOf('chorus');
-    let beat = 0, transpose = 0;
 
-    form.forEach((type, index)=>
+    plan.sections.forEach((sec, index)=>
     {
-        const base = SECTIONS[type];
-        if (!base) throw new Error(`unknown section: ${type}`);
-        const over = spec.sections?.[type] ?? {};
-        const n = seen[type] = (seen[type] ?? -1) + 1;
-        if (spec.lift && index === lastChorus && n > 0) transpose += spec.lift === true ? 2 : spec.lift;
-
-        const bars = over.bars ?? base.bars;
-        const energy = clamp((over.energy ?? base.energy) + REPEAT_LIFT * n, 0, 1);
-        const nextType = form[index + 1];
-        const nextEnergy = nextType ? (spec.sections?.[nextType]?.energy ?? SECTIONS[nextType]?.energy ?? 0) : 0;
-        const tonic = song.tonic + transpose;
-        const progression = parseProgression(over.progression ?? feel.progressions[type] ?? feel.progressions.verse, tonic, mode);
-        const timeline = chordTimeline(progression, bars, song.beatsPerBar, beat);
-
-        const sec = {
-            ...song, type, n, bars, energy, tonic, beat, timeline, base,
-            fill: !!nextType && (nextEnergy > energy + 0.05 || !!base.build),
-            ending: !!base.ending && index === form.length - 1,
-        };
-        const name = label(type, n, form, spec.names);
-        const scene = spec.scenes?.[name.toLowerCase()] ?? spec.scenes?.[`${type} ${n + 1}`] ?? spec.scenes?.[type] ?? '';
-        sections.push({ type, label: name, beat, beats: bars * song.beatsPerBar, energy, scene });
+        const { type, over, base } = sec;
+        // a hand-written melody keeps its own ending: no cadence it doesn't fit
+        const written = typeof over.melody === 'string' ? notatedMelody(over.melody, sec.beats) : null;
+        if (written?.length && sec.endOn)
+        {
+            const last = written.at(-1);
+            if (!chordPitchClasses(cadenceChord(sec)).includes(mod(degreeToKey(sec.tonic, sec.mode, last.degree, MELODY_OCTAVE, last.accidental), 12))) sec.endOn = null;
+        }
+        const timeline = sec.timeline = sectionChords(sec);
+        sections.push({
+            type, label: sec.label, beat: sec.beat, beats: sec.beats, energy: sec.energy, scene: sec.scene,
+            beatsPerBar: sec.beatsPerBar, meter: sec.meter.name, tonic: mod(sec.tonic, 12), mode: sec.mode, climax: sec.climax,
+        });
         for (const c of timeline) chords.push({ beat: c.beat, beats: c.beats, name: chordName(c.chord, song.flats), tones: chordPitchClasses(c.chord) });
+        const marks = tracks.map(t => t.notes.length);
 
-        // melody: written once per section type (and variant), then replayed, so choruses are recognisable
+        // melody: written once per section type (and variant), then replayed; a composed one varies on repeats,
+        // a hand-written one is played as written every time
+        let lead = [];
         const melodyCfg = over.melody === false ? null : base.melody && { ...base.melody, contour: over.contour ?? feel.contour?.[type] ?? base.melody.contour, ...pick(over, ['register', 'density']) };
         if (track.lead && (melodyCfg || typeof over.melody === 'string'))
         {
-            const variant = type === 'chorus' || type === 'post' ? 0 : n;
+            const variant = ['chorus', 'post', 'drop'].includes(type) ? 0 : sec.n;
             const id = `${type}:${variant}`;
-            themes[id] ??= typeof over.melody === 'string'
-                ? notatedMelody(over.melody, bars * song.beatsPerBar)
-                : writeMelody(sec, melodyCfg, variant);
-            for (const m of themes[id])
-                track.lead.notes.push({
-                    key: degreeToKey(tonic, mode, m.degree, MELODY_OCTAVE, m.accidental),
-                    beat: beat + m.beat, beats: m.beats * (m.last ? 1 : song.legato),
-                    vel: velocity(song, 'lead', energy, m.beat),
-                });
+            themes[id] ??= written ?? writeMelody(sec, melodyCfg, variant, motif, timeline);
+            lead = (written ? themes[id] : varyMelody(themes[id], sec, timeline)).map(m => ({
+                key: degreeToKey(sec.tonic, sec.mode, m.degree, MELODY_OCTAVE, m.accidental),
+                beat: sec.beat + m.beat, beats: m.beats * (m.last ? 1 : song.legato),
+                vel: velocity(sec, 'lead', sec.energy, m.beat),
+            }));
         }
+        let answers = null;
+        if (lead.length && sec.answer && track.counter && !sec.mute.includes('counter'))
+            ({ lead, counter: answers } = callAndResponse(lead, sec, timeline));
+        track.lead?.notes.push(...lead);
 
-        const on = (role)=> track[role] && energy >= ARRANGEMENT[role] && over.mute?.includes(role) !== true;
-        if (on('counter') && !sec.ending) writeCounter(sec, track.counter, memory);
+        // which parts play: by fullness, unless muted; a solo is the melody alone (or the pad, with no melody);
+        // polyphony brings the countermelody in whatever the fullness
+        const on = (role)=> !!track[role] && !sec.mute.includes(role)
+            && (sec.texture === 'solo' ? role === 'pad' && !lead.length
+                : role === 'drums' ? sec.fullness >= ARRANGEMENT.drums || sec.ending
+                : sec.fullness >= ARRANGEMENT[role] || (role === 'counter' && sec.texture === 'polyphonic'));
+        if (answers) track.counter.notes.push(...answers);
+        else if (on('counter') && !sec.ending) writeCounter(sec, track.counter, memory, lead);
         if (on('arp') && !sec.ending) writeArp(sec, track.arp, memory);
         if (on('chords')) writeChords(sec, track.chords, memory);
-        if (track.pad && over.mute?.includes('pad') !== true) writePad(sec, track.pad, memory);
-        if (on('bass')) writeBass(sec, track.bass, memory, form[index + 1] ? null : tonic);
-        if (track.drums && (energy >= ARRANGEMENT.drums || sec.ending) && over.mute?.includes('drums') !== true) writeDrums(sec, track.drums);
-
-        beat += bars * song.beatsPerBar;
+        if (on('pad')) writePad(sec, track.pad, memory);
+        if (on('bass')) writeBass(sec, track.bass, memory, plan.sections[index + 1] ? null : sec.tonic);
+        if (on('drums')) writeDrums(sec, track.drums);
+        arrangeSection(sec, tracks, marks);
     });
 
-    const swing = spec.swing ?? feel.swing ?? groove.swing ?? 0;
-    if (swing) for (const t of tracks) for (const note of t.notes) applySwing(note, swing);
+    syncopate(tracks, plan.sections, song);
     for (const t of tracks) t.notes.sort((a, b)=> a.beat - b.beat || a.key - b.key);
 
     return {
-        title: spec.title ?? spec.id ?? 'Untitled', genre: spec.genre ?? '', story: spec.story ?? '', emotion, key: keyName, mode, tempo: song.tempo,
-        beatsPerBar: song.beatsPerBar, beats: beat, seconds: beat * 60 / song.tempo,
+        title: spec.title ?? spec.id ?? 'Untitled', genre: spec.genre ?? '', story: spec.story ?? '', emotion: plan.emotion,
+        key: plan.keyName, mode: song.mode, tempo: song.tempo,
+        beatsPerBar: plan.sections[0].beatsPerBar, beats: plan.beats, seconds: beatToSeconds(plan.tempoMap, plan.beats),
         tracks: tracks.filter(t => t.notes.length), sections, chords,
+        flats: song.flats, tempoMap: plan.tempoMap, loop: plan.loop, swing: song.swing, swingSub: song.swingSub, style: song.style, seed: song.seed,
+        motif: motif.notes.map(n => motif.start + n.step),
     };
 }
 
 const pick = (o, keys)=> Object.fromEntries(keys.filter(k => o[k] !== undefined).map(k => [k, o[k]]));
-
-// 'Verse 2'; a spec's names override the defaults, e.g. { A: 'Blues chorus' }
-function label(type, n, form, own = {})
-{
-    const names = { intro: 'Intro', verse: 'Verse', pre: 'Pre-chorus', chorus: 'Chorus', post: 'Post-chorus', bridge: 'Bridge', outro: 'Outro', ...own };
-    const count = form.filter(t => t === type).length;
-    return (names[type] ?? `Section ${type}`) + (count > 1 ? ` ${n + 1}` : '');
-}
 
 /**
  * The beat to jump to from `beat` when stepping through sections: +1 the next section's start, -1 this
@@ -152,16 +135,24 @@ export function sectionSeek(sections, beat, step, grace = 0)
     return beat - sections[i].beat > grace ? sections[i].beat : sections[Math.max(0, i - 1)].beat;
 }
 
-/** a short text summary of a score: sections, chords and each part's range and note count */
+/** a short text summary of a score: sections, chords, the energy curve and each part's range and note count */
 export function describe(score)
 {
-    const lines = [`${score.title} — ${score.genre ? `${score.genre}, ` : ''}${score.emotion}, ${score.key} ${score.mode}, ${score.tempo} bpm, ${score.beatsPerBar}/4, ${score.seconds.toFixed(0)} s`];
+    const meters = new Set(score.sections.map(s => s.meter));
+    const tempos = score.tempoMap.length > 1 ? `${score.tempo}–${Math.round(Math.max(...score.tempoMap.map(t => t.bpm)))} bpm` : `${score.tempo} bpm`;
+    const lines = [`${score.title} — ${score.genre ? `${score.genre}, ` : ''}${score.emotion}, ${score.key} ${score.mode}, ${tempos}, ${[...meters].join(' ')}, ${score.seconds.toFixed(0)} s${score.loop ? ', loops' : ''}`];
+    let bar = 1;
     for (const s of score.sections)
     {
         const names = score.chords.filter(c => c.beat >= s.beat && c.beat < s.beat + s.beats).map(c => c.name);
-        lines.push(`  ${s.label.padEnd(14)} bar ${String(s.beat / score.beatsPerBar + 1).padStart(3)}  energy ${s.energy.toFixed(2)}  ${names.join(' ')}`);
+        const meter = s.meter !== score.sections[0].meter ? ` ${s.meter}` : '';
+        const key = s.tonic !== score.sections[0].tonic || s.mode !== score.mode ? ` (${pitchName(s.tonic, score.flats)} ${s.mode})` : '';
+        lines.push(`  ${s.label.padEnd(14)} bar ${String(bar).padStart(3)}  ${'█'.repeat(Math.round(s.energy * 10)).padEnd(10, '·')} ${s.energy.toFixed(2)}${s.climax ? ' peak' : '     '}${meter}${key}  ${names.join(' ')}`);
         if (s.scene) lines.push(`  ${''.padEnd(14)} “${s.scene}”`);
+        bar += Math.round(s.beats / s.beatsPerBar);
     }
+    const shape = energyShape(score.sections);
+    lines.push(`  energy peaks ${Math.round(shape.peak * 100)}% of the way in, ${shape.dips} dip${shape.dips === 1 ? '' : 's'}${shape.dips ? '' : ' (no contrast: add a quieter section)'}`);
     if (score.story) lines.splice(1, 0, `  ${score.story}`);
     for (const t of score.tracks)
     {

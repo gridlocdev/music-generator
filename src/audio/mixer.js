@@ -2,9 +2,11 @@
 // so the parts sound like they're in one room. Everything sums on a mix bus with headroom, then goes through the
 // mastering chain in platform/audio-engine.js.
 //
-// strip: input → low cut → tone (low-pass, for sweeps) → fader → pan → mix bus
-//                                                                 ├→ reverb send → reverb → low cut → mix bus
-//                                                                 └→ delay send → delay ⟲ (darker each repeat) → mix bus
+// strip: input → layer → low cut → tone (low-pass, for sweeps) → fader → pan (auto-pan LFO) → mix bus
+//                                                                         ├→ reverb send → reverb → low cut → mix bus
+//                                                                         └→ delay send → delay ⟲ (darker each repeat) → mix bus
+// The layer gain is for adaptive music: a part fades in and out with gameplay intensity without touching its fader,
+// which ducking moves. The delay time wobbles slowly (a modulated delay), so the echoes shimmer a little.
 import { audioEngine } from '../platform/audio-engine.js';
 import { reverbImpulse } from '../lib/impulse.js';
 
@@ -12,7 +14,7 @@ export const dbToGain = (db)=> 10 ** (db / 20);
 
 const MIX_BUS_DB = -3;          // headroom before the master chain
 const REVERB = { seconds: 2.2, decay: 3, lowCut: 250 };            // lowCut keeps the low end out of the reverb
-const DELAY = { beats: 0.75, feedback: 0.35, tone: 3500 };         // a dotted eighth; tone darkens the repeats
+const DELAY = { beats: 0.75, feedback: 0.35, tone: 3500, wobble: { rate: 0.3, seconds: 0.003 } };   // a dotted eighth; tone darkens the repeats
 const OPEN_TONE = 20000;         // Hz; the tone filter's resting cutoff, until automation moves it
 
 let impulse = null;             // built once; every song's reverb shares it
@@ -27,8 +29,16 @@ export function createMixer({ tempo })
         impulse = new AudioBuffer({ length: channels[0].length, numberOfChannels: 2, sampleRate: ctx.sampleRate });
         channels.forEach((d, i)=> impulse.copyToChannel(d, i));
     }
-    const nodes = [];
+    const nodes = [], lfos = [];
     const node = (n)=> (nodes.push(n), n);
+    // a slow sine into a parameter, on top of its own value
+    const lfo = (param, rate, depth)=>
+    {
+        const osc = node(new OscillatorNode(ctx, { frequency: rate }));
+        osc.connect(node(new GainNode(ctx, { gain: depth }))).connect(param);
+        osc.start();
+        lfos.push(osc);
+    };
 
     const bus = node(new GainNode(ctx, { gain: dbToGain(MIX_BUS_DB) }));
     bus.connect(audioEngine.output);
@@ -43,25 +53,29 @@ export function createMixer({ tempo })
     const dark = node(new BiquadFilterNode(ctx, { type: 'lowpass', frequency: DELAY.tone }));
     delayIn.connect(delay).connect(dark).connect(node(new GainNode(ctx, { gain: DELAY.feedback }))).connect(delay);
     dark.connect(bus);
+    lfo(delay.delayTime, DELAY.wobble.rate, DELAY.wobble.seconds);
 
     return {
         /**
-         * @param {{ volumeDb?: number, pan?: number, lowCut?: number, reverb?: number, delay?: number }} strip
-         *   reverb and delay are send levels, 0..1
+         * @param {{ volumeDb?: number, pan?: number, lowCut?: number, reverb?: number, delay?: number,
+         *   autoPan?: { rate: number, depth: number } }} strip  reverb and delay are send levels, 0..1
          */
-        channel({ volumeDb = -6, pan = 0, lowCut = 20, reverb = 0, delay: delaySend = 0 } = {})
+        channel({ volumeDb = -6, pan = 0, lowCut = 20, reverb = 0, delay: delaySend = 0, autoPan = null } = {})
         {
             const input = node(new GainNode(ctx));
+            const layer = node(new GainNode(ctx));
             const tone = node(new BiquadFilterNode(ctx, { type: 'lowpass', frequency: OPEN_TONE, Q: 0 }));
             const level = dbToGain(volumeDb);
             const fader = node(new GainNode(ctx, { gain: level }));
             const panner = node(new StereoPannerNode(ctx, { pan }));
             const reverbSend = node(new GainNode(ctx, { gain: reverb }));
-            input.connect(node(new BiquadFilterNode(ctx, { type: 'highpass', frequency: lowCut })))
+            const delaySendGain = node(new GainNode(ctx, { gain: delaySend }));
+            input.connect(layer).connect(node(new BiquadFilterNode(ctx, { type: 'highpass', frequency: lowCut })))
                 .connect(tone).connect(fader).connect(panner).connect(bus);
             panner.connect(reverbSend).connect(reverbIn);
-            panner.connect(node(new GainNode(ctx, { gain: delaySend }))).connect(delayIn);
-            return { input, tone, fader, reverbSend, level };
+            panner.connect(delaySendGain).connect(delayIn);
+            if (autoPan) lfo(panner.pan, autoPan.rate, autoPan.depth);
+            return { input, layer, tone, fader, reverbSend, delaySend: delaySendGain, level };
         },
         // a quick fade so nothing clicks, then everything is disconnected, tails included
         dispose(fade = 0.08)
@@ -70,7 +84,7 @@ export function createMixer({ tempo })
             bus.gain.cancelScheduledValues(now);
             bus.gain.setValueAtTime(bus.gain.value, now);
             bus.gain.linearRampToValueAtTime(0, now + fade);
-            setTimeout(()=> { for (const n of nodes) n.disconnect(); }, fade * 1000 + 50);
+            setTimeout(()=> { for (const o of lfos) o.stop(); for (const n of nodes) n.disconnect(); }, fade * 1000 + 50);
         },
     };
 }

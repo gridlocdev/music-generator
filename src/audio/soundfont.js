@@ -67,6 +67,8 @@ export function findPreset(font, bank, program)
 /**
  * @typedef {{ rate: number, cents: number, delay: number, ramp: number }} Vibrato
  *   pitch wobble in cents at `rate` Hz, starting `delay` seconds into the note and reaching full depth `ramp` later
+ * @typedef {{ cents: number, seconds: number }} Scoop
+ *   start `cents` off pitch (−100: a semitone low) and slide onto it over `seconds`
  */
 
 /**
@@ -85,11 +87,11 @@ export function createInstrument(font, preset, destination = audioEngine.output)
     return {
         preset,
         // when: an AudioContext time to start at, for notes scheduled ahead (a song); omitted = now
-        /** @param {{ vibrato?: Vibrato }} [opts] */
+        /** @param {{ vibrato?: Vibrato, scoop?: Scoop }} [opts] */
         noteOn(key, velocity = 100, when = 0, opts = {})
         {
             this.noteOff(key, true, when);
-            const voices = regionsFor(preset, key, velocity).map(r => startVoice(font, voiceParams(r, key, velocity), output, when, opts.vibrato));
+            const voices = regionsFor(preset, key, velocity).map(r => startVoice(font, voiceParams(r, key, velocity), output, when, opts.vibrato, opts.scoop));
             // a new voice in an exclusive class chokes the others in it (open/closed hi-hat)
             for (const v of voices)
                 if (v.exclusiveClass)
@@ -118,6 +120,14 @@ export function createInstrument(font, preset, destination = audioEngine.output)
             held.set(toKey, voices);
             return true;
         },
+        /**
+         * A tape stop: every voice already sounding at `when` slows in pitch and speed to `rate` of itself over
+         * `seconds`, then stops. Notes that start later are untouched.
+         */
+        tapeStop(when, seconds, rate = 0.05)
+        {
+            for (const v of active) if (v.output === output && v.start < when && !v.stopping) v.slow(when, seconds, rate);
+        },
         /** this instrument's own gain node, e.g. to set a part's level in a mix */
         output,
         setSustain(on)
@@ -138,7 +148,7 @@ export function createInstrument(font, preset, destination = audioEngine.output)
     };
 }
 
-function startVoice(font, p, output, when = 0, vibrato = null)
+function startVoice(font, p, output, when = 0, vibrato = null, scoop = null)
 {
     const ctx = audioEngine.context;
     const t = Math.max(ctx.currentTime, when);
@@ -195,6 +205,12 @@ function startVoice(font, p, output, when = 0, vibrato = null)
         lfo.connect(depth).connect(source.detune);
         lfo.start(t);
     }
+    // the +1 trick and its big brother, the octave riser: start off pitch and slide onto it
+    if (scoop)
+    {
+        source.detune.setValueAtTime(scoop.cents, t);
+        source.detune.linearRampToValueAtTime(0, t + scoop.seconds);
+    }
     let bent = 0;       // semitones glided away from the note's own key
 
     // where the release started, so a later fast release can pick up from the level it had reached
@@ -205,6 +221,7 @@ function startVoice(font, p, output, when = 0, vibrato = null)
 
     const voice = {
         output,
+        start: t,
         exclusiveClass: p.exclusiveClass,
         // true once cut short; a voice in a normal release can still be cut short
         stopping: false,
@@ -235,6 +252,15 @@ function startVoice(font, p, output, when = 0, vibrato = null)
             source.detune.setValueAtTime(bent * 100, at);
             bent += semitones;
             source.detune.linearRampToValueAtTime(bent * 100, at + seconds);
+        },
+        // winds the playback rate down to `rate` of itself, like a tape slowing to a stop, then cuts the voice
+        slow(when, seconds, rate)
+        {
+            const at = Math.max(ctx.currentTime, when);
+            const r = source.playbackRate.value;
+            source.playbackRate.setValueAtTime(r, at);
+            source.playbackRate.exponentialRampToValueAtTime(r * rate, at + seconds);
+            voice.release(true, at + seconds);
         },
     };
     source.onended = ()=>

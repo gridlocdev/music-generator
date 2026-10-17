@@ -13,16 +13,18 @@ A keyboard that plays every instrument in the GeneralUser GS SoundFont library (
 | `src/lib/notes.js` | MIDI note names and black/white keys |
 | `src/lib/music-theory.js` | keys, modes, scale degrees, Roman-numeral chords, voice leading, a stable hash for tie-breaks |
 | `src/lib/impulse.js` | a seeded synthetic reverb impulse response |
-| `src/lib/midi-file.js` | writes a Standard MIDI File from a score (`just compose … --midi`) |
+| `src/lib/midi-file.js` | writes a Standard MIDI File from a score, with tempo and meter changes (`just compose … --midi`) |
+| `src/lib/tempo-map.js` | a song's tempo over time (steady or ramping segments) and conversion between beats and seconds |
+| `src/lib/motif.js` | a motif's developments: sequence, inversion, retrograde, augmentation, diminution, fragmentation |
 | `src/platform/audio-engine.js` | the AudioContext, master volume and mastering chain (air, glue compressor, limiter), resumed on the first gesture |
 | `src/platform/ticker.js` | a Worker-driven interval for audio scheduling, so a background tab doesn't starve a song |
 | `src/platform/midi.js` | Web MIDI input as note/cc messages |
 | `src/platform/input.js` | computer keys → semitone offsets, octave, instrument step, section step, sustain |
 | `src/audio/soundfont.js` | downloads and caches `.sf2` files; `createInstrument(font, preset, destination)` plays notes as Web Audio voices, with optional delayed vibrato and legato glides |
-| `src/audio/mixer.js` | a song's mixer: channel strips (fader, pan, low cut, tone filter) and shared reverb and tempo-synced delay buses |
+| `src/audio/mixer.js` | a song's mixer: channel strips (layer gain, fader, pan with optional auto-pan, low cut, tone filter) and shared reverb and tempo-synced, slowly modulated delay buses |
 | `src/audio/soundfont-catalog-data.js` | generated list of every preset and its file, so the menu doesn't need the file up front (`just catalog`) |
 | `src/features/keyboard/` | the playable piano: picker bar, on-screen keys, mouse/keys/MIDI input, its save slice; steps aside while an activity runs |
-| `src/features/composer/` | song spec → score (`compose.js`, `melody.js`, `parts.js`, `meter.js`), the knowledge tables (`composer-data.js`, `patterns-data.js`), written songs (`songs-data.js`, and one per genre with a story in `genre-songs-data.js`), the performance (`perform.js`: timing, phrasing, slides, vibrato), the mix plan (`mix-plan.js`: strips, sweeps, reverb moves, ducking), audio-clock playback (`song-player.js`), the falling-notes grid (`song-view.js`) and its control bar; a playing song is an activity |
+| `src/features/composer/` | song spec → score, top down: the song plan (`plan.js`: form, keys, meters, energy curve, cadences, tempo map, loop), chords per section (`harmony.js`: cadences, harmonic rhythm, passing dim7s, harmony voices, call and response), the motif and melody (`melody.js`), the parts in any meter (`parts.js`, `meter-patterns.js`, `meter.js`), arrangement and rhythm passes (`arrange.js`, `syncopation.js`), all driven by `compose.js`. The knowledge tables: `composer-data.js`, `patterns-data.js`, `song-craft-data.js` (styles, variation, curve, tempo, motifs), `performance-data.js`, `adaptive-data.js` (layers, stingers, ear candy). Written songs: `songs-data.js`, `genre-songs-data.js` (one per genre, with a story) and `game-songs-data.js` (loops, a meter-changing boss, a leitmotif in two moods). The performance (`perform.js`: ghost notes, scoops, slides, vibrato, swing, timing; `ear-candy.js`), the mix plan (`mix-plan.js`), stingers (`stingers.js`), audio-clock playback with loops, section queueing and intensity layers (`song-player.js`), the falling-notes grid (`song-view.js`) and its control bar; a playing song is an activity |
 | `tools/compose.mjs` | composes a song in Node: prints the plan and melody, writes a `.mid` (`just compose`) |
 
 The synth covers the parts of SF2 that matter for these files: key/velocity splits, preset+instrument generator merging, root key and tuning, loop modes, sample address offsets, static low-pass filter (lowered for soft notes, like SF2's default velocity modulator), pan, the DAHDSR volume envelope, and exclusive classes (drum kits). Modulators, LFOs, the modulation envelope, reverb and chorus sends are not implemented.

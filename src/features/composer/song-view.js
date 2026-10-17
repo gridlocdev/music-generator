@@ -3,6 +3,8 @@
 import { vec2, rgb, drawRect, drawText, mainCanvasSize, setCameraPos, setCameraScale } from '../../platform/engine.js';
 import { isBlackKey, noteName } from '../../lib/notes.js';
 import { ROLE_COLORS, VIEW_SECONDS } from './composer-data.js';
+import { barAt, barLines } from './meter.js';
+import { bpmAt } from '../../lib/tempo-map.js';
 
 const GAP = 10;                 // pixels between panels
 const HEADER = 22;              // panel title height
@@ -63,11 +65,11 @@ export function drawSong(panels, score, beat, top)
     const window = VIEW_SECONDS * score.tempo / 60;
 
     panels.forEach((p, i)=>
-        drawPanel(p, area.x + (i % cols) * (pw + GAP), area.y + Math.floor(i / cols) * (ph + GAP), pw, ph, beat, window, score.beatsPerBar));
+        drawPanel(p, area.x + (i % cols) * (pw + GAP), area.y + Math.floor(i / cols) * (ph + GAP), pw, ph, beat, window, barLines(score.sections, beat, beat + window)));
     drawTimeline(score, beat, H - FOOTER, FOOTER);
 }
 
-function drawPanel(p, x, y, w, h, beat, window, beatsPerBar)
+function drawPanel(p, x, y, w, h, beat, window, bars)
 {
     rect(x, y, w, h, BG);
     text(p.title, x + 8, y + 4, 14, TEXT);
@@ -89,8 +91,7 @@ function drawPanel(p, x, y, w, h, beat, window, beatsPerBar)
     }
 
     // bar lines scrolling down with the notes
-    for (let b = Math.ceil(beat / beatsPerBar) * beatsPerBar; b < beat + window; b += beatsPerBar)
-        rect(x, kbY - (b - beat) / window * laneH, w, 1, GRID);
+    for (const b of bars) rect(x, kbY - (b - beat) / window * laneH, w, 1, GRID);
 
     // falling notes; notes are sorted by start, so skip to the first that could still be visible
     const notes = p.track.notes;
@@ -154,9 +155,10 @@ function drawTimeline(score, beat, y, h)
 
     const section = score.sections.findLast(s => s.beat <= beat) ?? score.sections[0];
     const chord = score.chords.findLast(c => c.beat <= beat);
-    const bar = Math.max(1, Math.floor(beat / score.beatsPerBar) + 1);
+    const bar = barAt(score.sections, Math.max(0, beat)).bar + 1;
+    const bpm = Math.round(bpmAt(score.tempoMap, Math.max(0, beat)));
     text(`${score.title}  ·  ${section.label}  ·  ${chord && beat >= 0 ? chord.name : ''}`, x, y + 4, 16, TEXT);
-    text(`${score.genre ? `${score.genre} · ` : ''}${score.emotion} · ${score.key} ${score.mode} · ${score.tempo} bpm · bar ${bar}   (click or ←/→ to seek · Esc stops)`, x + w, y + 4, 13, DIM, 'right');
+    text(`${score.genre ? `${score.genre} · ` : ''}${score.emotion} · ${score.key} ${score.mode} · ${section.meter} · ${bpm} bpm · bar ${bar}${score.loop ? ' · loops' : ''}   (click or ←/→ to seek · Esc stops)`, x + w, y + 4, 13, DIM, 'right');
     // the story so far: this section's scene, or the song's premise when the section has none
     const line = section.scene || score.story;
     if (line) text(line, x, y + 25, 13, SCENE);

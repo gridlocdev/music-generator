@@ -20,6 +20,10 @@
   #top select:focus { outline: 2px solid #ffc766; outline-offset: 1px; }
   #status, #song-status { color: #ffc766; }
   #song-bar .label { color: #a9a3bd; }
+  #song-game { display: none; gap: 8px 12px; align-items: center; color: #a9a3bd; }
+  body.song #song-game { display: inline-flex; flex-wrap: wrap; }
+  #song-game select { min-width: 0; }
+  #song-intensity { accent-color: #ffc766; width: 120px; }
   #song-story { color: #a9a3bd; font-style: italic; font-size: 13px; flex-basis: 100%; }
   #song-story:empty { display: none; }
   body.song #help { display: none; }

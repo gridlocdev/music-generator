@@ -15,8 +15,27 @@ export const MODES = {
     mixolydian:    [0, 2, 4, 5, 7, 9, 10],
     harmonicMinor: [0, 2, 3, 5, 7, 8, 11],
 };
+MODES.ionian = MODES.major;
+MODES.aeolian = MODES.minor;
 
 const mod = (n, m)=> ((n % m) + m) % m;
+
+/** true for modes with a minor third: minor, dorian, phrygian, harmonic minor */
+export const isMinorMode = (mode)=> MODES[mode][2] === 3;
+
+/**
+ * Moves a key by scale steps, not semitones, so a harmony stays in the key: +2 is a third above, +5 a sixth,
+ * −2 a third below. A key outside the scale (a chromatic passing note) moves by a minor third instead.
+ */
+export function diatonicShift(key, steps, tonic, mode)
+{
+    const scale = MODES[mode];
+    const rel = key - tonic;
+    const deg = scale.indexOf(mod(rel, 12));
+    if (deg < 0) return key + (steps > 0 ? 3 : steps < 0 ? -3 : 0);
+    const d = deg + steps;
+    return tonic + (Math.floor(rel / 12) + Math.floor(d / 7)) * 12 + scale[mod(d, 7)];
+}
 
 /** 'C' → 0, 'F#' → 6, 'Bb' → 10 */
 export function pitchClass(name)
@@ -60,8 +79,9 @@ const CHORD = /^(b|#)?(VII|VI|V|IV|III|II|I|vii|vi|v|iv|iii|ii|i)(°|o|ø|\+)?(m
 
 /**
  * A Roman-numeral chord in a key. Case gives the quality (V major, v minor), then ° dim, ø half-dim, + aug,
- * and a suffix 7, maj7, 9, maj9, add9, 6, sus2, sus4. The numeral counts in the song's mode;
- * b/# shift the root (bVII in major is the borrowed flat seven).
+ * and a suffix 7, maj7, 9, maj9, add9, 6, sus2, sus4. A plain numeral counts in the song's mode (VII in minor is
+ * the flat seven); with b or # it counts from the major scale, as usual: bVII is a whole step below the tonic in
+ * any mode, bVI and bIII are borrowed from the parallel minor, bII is the Neapolitan.
  * @returns {{ symbol: string, root: number, tones: number[], degree: number }}
  *   root is a pitch class, tones are semitones above it (root first), degree is the numeral's step 1–7
  */
@@ -72,7 +92,7 @@ export function parseChord(symbol, tonic, mode)
     const [, acc, numeral, quality, ext] = m;
     const degree = NUMERALS.indexOf(numeral.toUpperCase()) + 1;
     const upper = numeral === numeral.toUpperCase();
-    const root = mod(tonic + MODES[mode][degree - 1] + (acc === 'b' ? -1 : acc === '#' ? 1 : 0), 12);
+    const root = mod(tonic + (acc ? MODES.major[degree - 1] + (acc === 'b' ? -1 : 1) : MODES[mode][degree - 1]), 12);
 
     let tones = quality === '°' || quality === 'o' ? [0, 3, 6]
         : quality === 'ø' ? [0, 3, 6, 10]

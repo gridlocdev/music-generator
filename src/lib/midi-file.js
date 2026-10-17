@@ -3,17 +3,21 @@ const PPQ = 480;                // ticks per beat
 
 /**
  * @param {{ tempo: number, beatsPerBar: number, title?: string,
+ *   tempos?: { beat: number, bpm: number }[], meters?: { beat: number, num: number, den: number }[],
  *   tracks: { name: string, channel: number, program: number, notes: { key: number, beat: number, beats: number, vel: number }[] }[] }} song
+ *   tempos and meters, when given, replace the single tempo and beatsPerBar with changes at those beats
  * @returns {Uint8Array}
  */
 export function writeMidi(song)
 {
+    const tempos = song.tempos ?? [{ beat: 0, bpm: song.tempo }];
+    const meters = song.meters ?? [{ beat: 0, num: song.beatsPerBar, den: 4 }];
     const conductor = [
-        meta(0, 0x03, text(song.title ?? '')),
-        meta(0, 0x51, [...u24(Math.round(60e6 / song.tempo))]),
-        meta(0, 0x58, [song.beatsPerBar, 2, 24, 8]),
-    ];
-    const chunks = [trackChunk(conductor.map(e => ({ tick: 0, bytes: e.bytes })))];
+        { tick: 0, order: 0, bytes: meta(0, 0x03, text(song.title ?? '')).bytes },
+        ...tempos.map(t => ({ tick: Math.round(t.beat * PPQ), order: 1, bytes: meta(0, 0x51, [...u24(Math.round(60e6 / t.bpm))]).bytes })),
+        ...meters.map(m => ({ tick: Math.round(m.beat * PPQ), order: 1, bytes: meta(0, 0x58, [m.num, Math.log2(m.den), 24, 8]).bytes })),
+    ].sort((a, b)=> a.tick - b.tick || a.order - b.order);
+    const chunks = [trackChunk(conductor)];
     for (const t of song.tracks)
     {
         const ch = t.channel & 15;

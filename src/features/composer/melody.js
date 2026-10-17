@@ -1,43 +1,161 @@
-// The lead line: motif, answer and cadence bars over 4-bar phrases, each pitch picked by scoring every
-// candidate degree against MELODY_RULES. Or a melody written by hand in degree notation.
+// The lead line. A song has one motif, 3–6 notes in a bar; each section develops it (repeated, sequenced, inverted,
+// played backwards, slowed, sped up, fragmented) in its motif bars, and answers it with answer, continuation and
+// cadence bars over 4-bar phrases. Every pitch is picked by scoring each candidate degree against MELODY_RULES.
+// Or a melody written by hand in degree notation.
 import { degreeToKey, keyToDegree, chordPitchClasses, hash } from '../../lib/music-theory.js';
-import { RANGES, MELODY_OCTAVE, RHYTHMS, CONTOURS, MELODY_HOME, MELODY_RULES, CADENCE_DEGREES } from './composer-data.js';
-import { chordAt, clamp, mod } from './meter.js';
+import { develop } from '../../lib/motif.js';
+import { RANGES, MELODY_OCTAVE, CONTOURS, MELODY_HOME, MELODY_RULES, CADENCE_DEGREES, CADENCES, PEAK_RULE } from './composer-data.js';
+import { MOTIF, LEITMOTIFS } from './song-craft-data.js';
+import { chordAt, clamp, mod, strongBeat } from './meter.js';
+import { rhythmsFor } from './meter-patterns.js';
 
 const noteCount = (cell)=> cell.filter(d => d > 0).length;
 
 /**
- * Writes a section's melody in scale degrees: motif bars, answer bars and cadence bars over 4-bar phrases,
- * each pitch chosen by scoring every degree in range against MELODY_RULES.
+ * @typedef {{ beats: number, start: number, notes: import('../../lib/motif.js').MotifNote[] }} SongMotif
+ *   start: the scale degree of its first note; notes' steps count from there
+ */
+
+/**
+ * The song's motif: the spec's (a LEITMOTIFS name or degree notation), else the first bar of its hand-written chorus
+ * (or of any hand-written section), else the best-scoring shape over a rhythm cell chosen for the chorus.
+ * @returns {SongMotif}
+ */
+export function songMotif(spec, plan)
+{
+    const sections = plan.sections;
+    const home = sections.find(s => s.type === 'chorus') ?? sections.find(s => s.base.melody) ?? sections[0];
+    const written = Object.entries(spec.sections ?? {}).filter(([, s])=> typeof s.melody === 'string');
+    const chorus = written.find(([t])=> t === 'chorus') ?? written[0];
+    if (spec.motif || chorus)
+    {
+        const text = spec.motif ? LEITMOTIFS[spec.motif] ?? spec.motif : chorus[1].melody;
+        const { notes, beats } = parseMelody(text);
+        const bar = spec.motif ? beats : sections.find(s => s.type === chorus[0])?.beatsPerBar ?? home.beatsPerBar;
+        const first = notes.filter(n => n.beat < bar - 1e-9).slice(0, MOTIF.notes[1]);
+        if (first.length >= 2)
+            return { beats: bar, start: first[0].degree, notes: first.map(n => ({ beat: n.beat, beats: Math.min(n.beats, bar - n.beat), step: n.degree - first[0].degree })) };
+    }
+    return inventMotif(home, plan.song.seed);
+}
+
+// every shape of the cell's note count, scored by MOTIF.cost; a hash picks among equals
+function inventMotif(sec, seed)
+{
+    const { cells } = rhythmsFor(sec.meter);
+    const [minN, maxN] = MOTIF.notes;
+    const want = clamp(Math.round((sec.base.melody?.density ?? 0.8) * sec.beatsPerBar), minN, maxN);
+    const cell = cells.filter(c => noteCount(c) >= minN && noteCount(c) <= maxN)
+        .map((c, i)=> ({ c, d: Math.abs(noteCount(c) - want), h: hash(seed, 'motif-cell', i) }))
+        .sort((a, b)=> a.d - b.d || a.h - b.h)[0]?.c ?? Array(sec.beatsPerBar).fill(1);
+    const count = noteCount(cell);
+    const start = MOTIF.starts[hash(seed, 'motif-start') % MOTIF.starts.length];
+    const C = MOTIF.cost;
+    let best = [0], bestCost = Infinity;
+    const shape = [0];
+    const score = ()=>
+    {
+        let c = 0, changes = 0, dir = 0;
+        for (let i = 1; i < shape.length; i++)
+        {
+            const s = shape[i] - shape[i - 1], size = Math.abs(s);
+            c += size === 0 ? C.repeat : size === 2 ? C.skip : size > 2 ? C.leap * (size - 2) : 0;
+            if (s && dir && Math.sign(s) !== dir) changes++;
+            if (s) dir = Math.sign(s);
+        }
+        const top = Math.max(...shape), span = top - Math.min(...shape);
+        if (span > MOTIF.range) c += C.range * (span - MOTIF.range);
+        c += changes === 0 ? C.flat : changes > 2 ? C.zigzag * (changes - 2) : 0;
+        if (shape.indexOf(top) === 0) c += C.peakFirst;
+        if (![1, 3, 5].includes(mod(start + shape.at(-1) - 1, 7) + 1)) c += C.unstable;
+        return c + (hash(seed, 'motif', shape.join()) % 1000) / 1000 * C.tieBreak;
+    };
+    const visit = ()=>
+    {
+        if (shape.length === count) { const c = score(); if (c < bestCost) { bestCost = c; best = [...shape]; } return; }
+        for (let s = -MOTIF.maxStep; s <= MOTIF.maxStep; s++) { shape.push(shape.at(-1) + s); visit(); shape.pop(); }
+    };
+    visit();
+    const notes = [];
+    let t = 0;
+    for (const d of cell)
+    {
+        if (d > 0) notes.push({ beat: t, beats: d, step: best[notes.length] });
+        t += Math.abs(d);
+    }
+    return { beats: sec.beatsPerBar, start, notes };
+}
+
+// The motif in a meter whose bar is a different length: the same steps in order, on the meter's rhythm cell with the
+// closest note count. A leitmotif keeps its shape across 4/4, 6/8 and 7/4.
+function fitMotif(motif, sec)
+{
+    if (Math.abs(motif.beats - sec.beatsPerBar) < 1e-9) return motif;
+    const cell = rhythmsFor(sec.meter).cells
+        .map((c, i)=> ({ c, d: Math.abs(noteCount(c) - motif.notes.length), h: hash(sec.seed, 'fit', i) }))
+        .sort((a, b)=> a.d - b.d || a.h - b.h)[0].c;
+    const notes = [];
+    let t = 0;
+    for (const d of cell)
+    {
+        if (d > 0) notes.push({ beat: t, beats: d, step: motif.notes[Math.min(notes.length, motif.notes.length - 1)].step });
+        t += Math.abs(d);
+    }
+    return { ...motif, beats: sec.beatsPerBar, notes };
+}
+
+/**
+ * Writes a section's melody in scale degrees: the motif, developed, in motif bars; answer, continuation and cadence
+ * bars around it over 4-bar phrases; each pitch chosen by scoring every degree in range against MELODY_RULES.
+ * @param {SongMotif} motif
  * @returns {{ beat: number, beats: number, degree: number, accidental: number, last?: boolean }[]}
  */
-export function writeMelody(sec, cfg, variant)
+export function writeMelody(sec, cfg, variant, motif, timeline)
 {
-    const { beatsPerBar: bpb, tonic, mode, seed, type, timeline } = sec;
-    const rhythms = RHYTHMS[bpb] ?? RHYTHMS[4];
+    const { beatsPerBar: bpb, tonic, mode, seed, type, meter } = sec;
+    const rhythms = rhythmsFor(meter);
     const want = cfg.density * bpb;
     const ranked = rhythms.cells
         .map((cell, i)=> ({ cell, d: Math.abs(noteCount(cell) - want), h: hash(seed, type, 'cell', i) }))
         .sort((a, b)=> a.d - b.d || a.h - b.h)
         .map(r => r.cell);
-    const motif = ranked[0];
-    const answer = ranked[1 + variant % 2] ?? ranked[1];
-    const continuation = ranked.find(c => noteCount(c) > noteCount(motif)) ?? ranked[2] ?? motif;
+    const answer = ranked[1 + variant % 2] ?? ranked[1] ?? ranked[0];
+    const continuation = ranked.find(c => noteCount(c) > noteCount(ranked[0])) ?? ranked[2] ?? ranked[0];
+    const fitted = fitMotif(motif, sec);
+    const develops = sec.over.develop ?? sec.base.develop ?? ['repeat', 'sequence'];
+    const finalCadence = sec.endOn ? CADENCES[sec.endOn].melody : null;
+    const lastPhrase = Math.floor((sec.bars - 1) / 4);
 
     // the rhythm, bar by bar
     const events = [];
-    const phrases = Math.max(1, Math.ceil(sec.bars / 4));
-    for (let bar = 0; bar < sec.bars; bar++)
+    const covered = new Set();
+    let statement = 0;
+    for (let bar = Math.floor((cfg.from ?? 0) * sec.bars); bar < sec.bars; bar++)
     {
+        if (covered.has(bar)) continue;
         const phrase = Math.floor(bar / 4), pos = bar % 4;
         const lastOfPhrase = pos === 3 || bar === sec.bars - 1;
-        const cadence = sec.ending && bar === sec.bars - 1 ? 'final' : cfg.cadences[phrase % cfg.cadences.length];
+        const cadence = sec.ending && bar === sec.bars - 1 ? 'final'
+            : phrase === lastPhrase && finalCadence ? finalCadence
+            : cfg.cadences[phrase % cfg.cadences.length];
         const role = lastOfPhrase ? 'cadence' : pos === 0 ? 'motif' : pos === 1 ? 'answer' : phrase % 2 ? 'continuation' : 'motif';
-        const cell = role === 'cadence' ? rhythms.cadence[cadence] : role === 'motif' ? motif : role === 'answer' ? answer : continuation;
-        let t = bar * bpb;
+        const t0 = bar * bpb;
+        if (role === 'motif')
+        {
+            let m = develop(fitted, develops[Math.min(statement, develops.length - 1)]);
+            const spans = Math.round(m.beats / bpb);
+            // a statement longer than a bar (augmented) needs the bars after it, short of the phrase's cadence
+            if (spans > 1 && (pos + spans - 1 >= 3 || bar + spans - 1 >= sec.bars - 1)) m = fitted;
+            for (let b = 1; b < Math.round(m.beats / bpb); b++) covered.add(bar + b);
+            m.notes.forEach((n, i)=> events.push({ beat: t0 + n.beat, beats: n.beats, phrase, role, step: n.step, first: i === 0 }));
+            statement++;
+            continue;
+        }
+        const cell = role === 'cadence' ? rhythms.cadence[cadence] ?? rhythms.cadence.full : role === 'answer' ? answer : continuation;
+        let t = t0;
         cell.forEach((d, i)=>
         {
-            if (d > 0) events.push({ beat: t, beats: d, bar, phrase, role, index: i, cadence: lastOfPhrase && i === cell.length - 1 ? cadence : null });
+            if (d > 0) events.push({ beat: t, beats: d, phrase, role, cadence: lastOfPhrase && i === cell.length - 1 ? cadence : null });
             t += Math.abs(d);
         });
     }
@@ -51,9 +169,8 @@ export function writeMelody(sec, cfg, variant)
     const R = MELODY_RULES;
 
     const out = [];
-    const motifShape = [];          // degrees of the first motif bar, to repeat its shape later
-    let motifStart = null;          // degree offset applied to the current motif repeat
-    let prev = null, prev2 = null;
+    let base = 0;                   // the degree the current motif statement is built on
+    let prev = null, prev2 = null, peak = -Infinity, peakTimes = 0;
     events.forEach((e, i)=>
     {
         const beatInPhrase = e.beat - e.phrase * 4 * bpb;
@@ -61,27 +178,25 @@ export function writeMelody(sec, cfg, variant)
         const lo = Math.floor(f), frac = f - lo;
         const contourTarget = home + contour[lo] + (contour[Math.min(lo + 1, contour.length - 1)] - contour[lo]) * frac;
 
-        const isMotifRepeat = e.role === 'motif' && (e.bar > 0) && motifShape.length > e.index;
-        const chord = chordAt(timeline, sec.beat + e.beat);
-        const pcs = chordPitchClasses(chord);
-        const inBar = e.beat - e.bar * bpb;
-        const strong = Math.abs(inBar - Math.round(inBar)) < 1e-9 && (bpb === 3 ? inBar === 0 : Math.round(inBar) % 2 === 0) || e.beats >= 2;
-
-        if (isMotifRepeat && e.index === 0)
+        const pcs = chordPitchClasses(chordAt(timeline, sec.beat + e.beat));
+        const isChordTone = (d)=> pcs.includes(mod(degreeToKey(tonic, mode, d, MELODY_OCTAVE), 12));
+        const strong = strongBeat(meter, mod(e.beat, bpb)) || e.beats >= 2;
+        if (e.role === 'motif' && e.first)
         {
-            // repeat the motif, shifted by the smallest step that lands its first note on a chord tone
-            motifStart = 0;
-            for (const s of [0, 1, -1, 2, -2, 3, -3])
-                if (pcs.includes(mod(degreeToKey(tonic, mode, motifShape[0] + s, MELODY_OCTAVE), 12))) { motifStart = s; break; }
+            // a statement starts on the motif's own degree in the octave nearest the contour, moved by the smallest
+            // step that puts its first note on a chord tone
+            const b = fitted.start + 7 * Math.round((contourTarget - fitted.start - e.step) / 7);
+            base = b;
+            for (const s of [0, 1, -1, 2, -2, 3, -3]) if (isChordTone(b + s + e.step)) { base = b + s; break; }
         }
-        const target = isMotifRepeat ? motifShape[e.index] + motifStart : contourTarget;
+        const motifNote = e.role === 'motif';
+        const target = motifNote ? base + e.step : contourTarget;
 
         let best = null, bestCost = Infinity;
         for (let d = lowDeg; d <= highDeg; d++)
         {
-            const key = degreeToKey(tonic, mode, d, MELODY_OCTAVE);
-            const chordTone = pcs.includes(mod(key, 12));
-            let c = R.contour * Math.abs(d - target);
+            const chordTone = isChordTone(d);
+            let c = (motifNote ? R.motif : R.contour) * Math.abs(d - target);
             if (strong && !chordTone) c += R.strongNonChord;
             if (!strong && !chordTone && prev !== null && Math.abs(d - prev) > 1) c += R.weakNonChordLeap;
             if (prev !== null)
@@ -96,14 +211,50 @@ export function writeMelody(sec, cfg, variant)
                 }
                 if (d === prev) c += prev === prev2 ? R.repeat : R.repeatOnce;
             }
+            if (d === peak && peakTimes >= PEAK_RULE.times) c += PEAK_RULE.cost;
             if (e.cadence && !CADENCE_DEGREES[e.cadence].includes(mod(d - 1, 7) + 1)) c += R.cadence;
             c += (hash(seed, type, variant, i, d) % 1000) / 1000 * R.tieBreak;
             if (c < bestCost) { best = d; bestCost = c; }
         }
-        if (e.bar === 0 && e.role === 'motif') motifShape[e.index] = best;
+        if (best > peak) { peak = best; peakTimes = 1; }
+        else if (best === peak) peakTimes++;
         out.push({ beat: e.beat, beats: e.beats, degree: best, accidental: 0, last: e.last || !!e.cadence });
         prev2 = prev; prev = best;
     });
+    return out;
+}
+
+/**
+ * A repeat of a section's melody, varied by how many times it has been heard (sec.vary, from VARIATION): the last
+ * phrase up an octave when that fits the lead's range, and the last note approached by step from a chord tone above
+ * (or below) instead of landing on it at once.
+ */
+export function varyMelody(theme, sec, timeline)
+{
+    const out = theme.map(m => ({ ...m }));
+    const { tonic, mode, beatsPerBar: bpb } = sec;
+    if (sec.vary.octave)
+    {
+        const from = Math.floor((sec.bars - 1) / 4) * 4 * bpb;
+        const part = out.filter(m => m.beat >= from);
+        const top = keyToDegree(tonic, mode, RANGES.lead[1], MELODY_OCTAVE);
+        if (part.length && Math.max(...part.map(m => m.degree)) + 7 <= top) for (const m of part) m.degree += 7;
+    }
+    const last = out.at(-1);
+    if (sec.vary.lastBar && last && last.beats >= 2 && !last.accidental)
+    {
+        const pcs = chordPitchClasses(chordAt(timeline, sec.beat + last.beat));
+        const fits = (d)=> pcs.includes(mod(degreeToKey(tonic, mode, d, MELODY_OCTAVE), 12));
+        const dir = fits(last.degree + 2) ? 1 : fits(last.degree - 2) ? -1 : 0;
+        if (dir)
+        {
+            const q = last.beats / 4;
+            out.splice(-1, 1,
+                { ...last, beats: q, degree: last.degree + 2 * dir, last: false },
+                { ...last, beat: last.beat + q, beats: q, degree: last.degree + dir, last: false },
+                { ...last, beat: last.beat + 2 * q, beats: last.beats - 2 * q });
+        }
+    }
     return out;
 }
 

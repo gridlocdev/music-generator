@@ -1,9 +1,40 @@
 // Drum grooves and the bass, comping and arpeggio patterns the composer plays chords with. Content only, imports nothing.
 // docs/COMPOSING.md, "Rhythm and grooves", explains them.
 
+// ---- Meters ----------------------------------------------------------------------------------------
+// A meter is beat groupings, not just a count: the groups drive the accents, the drum, bass and comping patterns
+// in meters a groove wasn't written for, and the melody's strong beats. Lengths are in beats (quarter notes),
+// so 6/8 is three beats in two groups of a dotted quarter. sig is the written time signature.
+//   roll  odd meters put a fill on the last beat of every roll-th bar, so the loop back to beat 1 sounds meant
+//   cut   7 as two bars of 4/4 with the last beat cut off: abrupt on purpose
+export const METERS = {
+    '4/4':    { sig: [4, 4], beats: 4, groups: [2, 2] },
+    '2/4':    { sig: [2, 4], beats: 2, groups: [2] },
+    '3/4':    { sig: [3, 4], beats: 3, groups: [3] },
+    '6/8':    { sig: [6, 8], beats: 3, groups: [1.5, 1.5] },
+    '12/8':   { sig: [12, 8], beats: 6, groups: [1.5, 1.5, 1.5, 1.5] },
+    '5/4':    { sig: [5, 4], beats: 5, groups: [3, 2], roll: 2 },
+    '7/4':    { sig: [7, 4], beats: 7, groups: [4, 3], roll: 2 },
+    '7/4b':   { sig: [7, 4], beats: 7, groups: [3, 4], roll: 2 },
+    '7/4c':   { sig: [7, 4], beats: 7, groups: [2, 3, 2], roll: 2 },
+    '7/4cut': { sig: [7, 4], beats: 7, groups: [2, 2, 2, 1], roll: 1, cut: true },
+    '7/8':    { sig: [7, 8], beats: 3.5, groups: [1, 1, 1.5], roll: 2 },
+};
+
+// one-group melody rhythms, in beats (negative = rest); a meter without its own RHYTHMS builds bar cells from these
+export const GROUP_CELLS = {
+    1:   [[1], [0.5, 0.5], [-0.5, 0.5]],
+    1.5: [[1.5], [1, 0.5], [0.5, 0.5, 0.5], [0.5, 1]],
+    2:   [[2], [1, 1], [1.5, 0.5], [0.5, 0.5, 1], [-1, 1]],
+    3:   [[3], [2, 1], [1, 1, 1], [1.5, 0.5, 1], [-1, 1, 1]],
+    4:   [[4], [2, 2], [3, 1], [1, 1, 2], [2, 1, 1], [1.5, 0.5, 2]],
+};
+
 // ---- Grooves (drums) -----------------------------------------------------------------------------
 // Steps are sixteenth notes. X accent, x normal, o ghost, . rest. Levels by energy: low < 0.55 ≤ mid < 0.8 ≤ high.
 // fill replaces the last bar before a section that is louder than the current one.
+// A groove is written in one meter (beats 4 → 4/4, 3 → 3/4). In any other meter its parts are built from the
+// meter's groups instead of being stretched; electronic grooves drop the snare there and keep kick and hats.
 export const DRUM_KEYS = {
     kick: 36, stick: 37, snare: 38, clap: 39, hat: 42, pedal: 44, open: 46, tomLow: 45, tomMid: 47, tomHi: 50,
     crash: 49, ride: 51, tamb: 54,
@@ -31,7 +62,7 @@ export const GROOVES = {
         fill: { kick: 'X.......X.......', snare: '....X...xxxx....', tomHi: '............xx..', tomLow: '..............XX' },
     },
     dance: {
-        beats: 4, kit: 26,
+        beats: 4, kit: 26, electronic: true,
         low:  { kick: 'X...X...X...X...' },
         mid:  { kick: 'X...X...X...X...', clap: '....X.......X...', open: '..x...x...x...x.' },
         high: { kick: 'X...X...X...X...', clap: '....X.......X...', open: '..X...X...X...X.', hat: 'xxoxxxoxxxoxxxox' },
@@ -116,7 +147,7 @@ export const GROOVES = {
         fill: { kick: 'X.......X.......', snare: 'oxoxXoxoxxxxXXXX' },
     },
     synthwave: {                        // four on the floor under a huge gated snare
-        beats: 4, kit: 24,
+        beats: 4, kit: 24, electronic: true,
         low:  { kick: 'X...X...X...X...', hat: '..x...x...x...x.' },
         mid:  { kick: 'X...X...X...X...', snare: '....X.......X...', hat: 'x.x.x.x.x.x.x.x.' },
         high: { kick: 'X...X...X...X...', snare: '....X.......X...', hat: 'xxxxxxxxxxxxxxxx', open: '..x...x...x...x.' },
@@ -156,8 +187,8 @@ export const BASS = {
     bodhran:  { low: [[0, 'R', 12]], high: [[0, 'R', 6], [6, '5', 4], [10, 'A', 2]] },
 };
 
-// chord hits: [step, length in steps], for one 4/4 bar (3/4 patterns are 12 steps).
-// Below 0.5 energy every comp style sustains the chord.
+// chord hits: [step, length in steps, velocity factor (default 1)], for one 4/4 bar (3/4 patterns are 12 steps).
+// Below 0.5 energy the busy styles sustain the chord (COMP_QUIET).
 export const COMPING = {
     sustain: [[0, 16]],
     push:    [[0, 6], [6, 2], [8, 6], [14, 2]],
@@ -171,7 +202,11 @@ export const COMPING = {
     bossa:   [[0, 2], [3, 2], [6, 3], [10, 2], [13, 3]],         // syncopated guitar, anticipating the bar
     funk:    [[0, 1], [3, 1], [6, 1], [7, 1], [10, 1], [12, 1], [14, 1]],   // sixteenth clav stabs
     habanera: [[0, 3], [3, 1], [4, 2], [6, 2], [8, 3], [11, 1], [12, 2], [14, 2]],
+    upbeats: [[2, 2], [6, 2], [10, 2], [14, 2]],                 // stabs on every offbeat eighth: drives forward
+    chop:    [[0, 1, 0.25], [2, 1], [4, 1, 0.25], [6, 1], [8, 1, 0.25], [10, 1], [12, 1, 0.25], [14, 1]],   // a ghost downstroke, then the offbeat
 };
+// comp styles that sit between the beats; in a meter without its own pattern they play every beat that isn't a group start
+export const OFFBEAT_COMPS = ['offbeat', 'skank', 'bubble', 'waltz', 'upbeats', 'chop'];
 
 // what each comp style plays below 0.5 energy; styles not listed keep their rhythm, because the rhythm is the genre
 export const COMP_QUIET = { push: 'sustain', pulse: 'sustain', eighths: 'sustain', march: 'sustain', funk: 'skank' };
@@ -186,4 +221,6 @@ export const ARPS = {
     sixteenths: { order: [0, 1, 2, 3, 4, 3, 2, 1], step: 1 },     // synth arpeggiator
     roll:     { order: [0, 2, 4, 0, 2, 4, 0, 3], step: 2 },       // banjo forward roll
     chip:     { order: [0, 2, 4, 2], step: 1 },                   // 8-bit "chord" faked by a fast arpeggio
+    threes:   { order: [0, 1, 2], step: 2 },                      // polymeter: a 3-note cycle over eighths lines up with 4/4 every 3 bars
+    triplets: { order: [0, 1, 2, 3, 2, 1], step: 4 / 3 },         // polyrhythm: triplet eighths, three against two
 };

@@ -1,14 +1,16 @@
-// The composer's knowledge as tables: emotions, song forms, section roles, grooves and part patterns.
-// Content only, imports nothing. docs/COMPOSING.md explains every table and why its values are what they are.
+// The composer's knowledge as tables: emotions, song forms, section roles, cadences, the arrangement and the melody's
+// rules. Content only, imports nothing. Grooves and part patterns are in patterns-data.js, how a song develops in
+// song-craft-data.js, its performance and mix in performance-data.js, game music in adaptive-data.js.
+// docs/COMPOSING.md explains every table and why its values are what they are.
 
 // ---- Emotion → musical parameters ------------------------------------------------------------
 // valence (sad ↔ happy) mostly sets mode and harmony; arousal (calm ↔ excited) sets tempo, density,
 // loudness, register and articulation. Band values are General MIDI program numbers (0-based);
-// drums is a kit program on bank 128, null for no drums.
+// drums is a kit program on bank 128, null for no drums. style names the STYLES preset for the detail passes.
 export const EMOTIONS = {
     joyful: {
         valence: 0.9, arousal: 0.8, mode: 'major', key: 'D', tempo: 126, groove: 'pop', form: 'pop',
-        legato: 0.8, dynamics: 0.75, comp: 'push', arp: 'up',
+        style: 'plain', legato: 0.8, dynamics: 0.75, comp: 'push', arp: 'up',
         progressions: {
             intro: 'I IV I V', verse: 'vi IV I V', pre: 'ii IV V:2', chorus: 'I V vi IV',
             post: 'I IV I V', bridge: 'IV V iii vi', outro: 'IV V I:2',
@@ -18,7 +20,7 @@ export const EMOTIONS = {
     },
     hopeful: {
         valence: 0.7, arousal: 0.55, mode: 'major', key: 'G', tempo: 100, groove: 'pop', form: 'pop',
-        legato: 0.9, dynamics: 0.65, comp: 'push', arp: 'updown',
+        style: 'plain', legato: 0.9, dynamics: 0.65, comp: 'push', arp: 'updown',
         progressions: {
             intro: 'Isus4 I Isus4 I', verse: 'I V vi IV', pre: 'IV V iii vi', chorus: 'IV I V vi',
             post: 'IV I', bridge: 'vi V IV V', outro: 'IV I:3',
@@ -28,7 +30,7 @@ export const EMOTIONS = {
     },
     tender: {
         valence: 0.6, arousal: 0.2, mode: 'major', key: 'F', tempo: 76, groove: 'waltz', form: 'ballad',
-        legato: 1, dynamics: 0.4, comp: 'waltz', arp: 'broken',
+        style: 'gentle', legato: 1, dynamics: 0.4, comp: 'waltz', arp: 'broken',
         progressions: {
             intro: 'Imaj7 IVmaj7', verse: 'Imaj7 vi7 ii7 V7', pre: 'IVmaj7 iii7 vi7 V', chorus: 'IVmaj7 V iii7 vi7 ii7 V7 Imaj7 Imaj7',
             post: 'IVmaj7 Imaj7', bridge: 'vi7 iii7 IVmaj7 V', outro: 'IVmaj7 Imaj7:2',
@@ -38,7 +40,7 @@ export const EMOTIONS = {
     },
     nostalgic: {
         valence: 0.4, arousal: 0.4, mode: 'major', key: 'Eb', tempo: 86, groove: 'ballad', form: 'pop',
-        legato: 0.95, dynamics: 0.55, comp: 'sustain', arp: 'broken',
+        style: 'gentle', legato: 0.95, dynamics: 0.55, comp: 'sustain', arp: 'broken',
         progressions: {
             intro: 'I iii IV iv', verse: 'I iii IV iv', pre: 'vi V IV V', chorus: 'I V vi iii IV I IV V',
             post: 'IV iv I', bridge: 'bVI bVII I I', outro: 'IV iv I:2',
@@ -48,7 +50,7 @@ export const EMOTIONS = {
     },
     melancholy: {
         valence: 0.15, arousal: 0.3, mode: 'minor', key: 'A', tempo: 72, groove: 'ballad', form: 'pop',
-        legato: 1, dynamics: 0.45, comp: 'sustain', arp: 'updown',
+        style: 'cinematic', legato: 1, dynamics: 0.45, comp: 'sustain', arp: 'updown',
         progressions: {
             intro: 'i VI', verse: 'i VI III VII', pre: 'iv VI VII VII', chorus: 'VI VII i i VI VII III V',
             post: 'VI VII i', bridge: 'iv i VI V', outro: 'iv V i:2',
@@ -58,7 +60,7 @@ export const EMOTIONS = {
     },
     mysterious: {
         valence: 0.4, arousal: 0.35, mode: 'dorian', key: 'D', tempo: 88, groove: 'halftime', form: 'pop',
-        legato: 0.9, dynamics: 0.5, comp: 'sustain', arp: 'alberti',
+        style: 'cinematic', legato: 0.9, dynamics: 0.5, comp: 'sustain', arp: 'alberti',
         progressions: {
             intro: 'isus2 IV', verse: 'i IV i IV', pre: 'III IV v v', chorus: 'i III IV i',
             post: 'IV i', bridge: 'v VII i i', outro: 'IV i:3',
@@ -68,7 +70,7 @@ export const EMOTIONS = {
     },
     tense: {
         valence: 0.15, arousal: 0.85, mode: 'harmonicMinor', key: 'C', tempo: 132, groove: 'halftime', form: 'pop',
-        legato: 0.7, dynamics: 0.75, comp: 'pulse', arp: 'ostinato',
+        style: 'cinematic', legato: 0.7, dynamics: 0.75, comp: 'pulse', arp: 'ostinato',
         progressions: {
             intro: 'i i', verse: 'i i iv i', pre: 'VI VI V V', chorus: 'i VI iv V',
             post: 'i V', bridge: 'bII bII V V', outro: 'iv V i:2',
@@ -78,7 +80,7 @@ export const EMOTIONS = {
     },
     heroic: {
         valence: 0.75, arousal: 0.85, mode: 'major', key: 'Bb', tempo: 116, groove: 'march', form: 'pop',
-        legato: 0.85, dynamics: 0.8, comp: 'march', arp: 'up',
+        style: 'cinematic', legato: 0.85, dynamics: 0.8, comp: 'march', arp: 'up',
         progressions: {
             intro: 'I bVII IV I', verse: 'I bVII IV I', pre: 'vi IV V V', chorus: 'I V vi IV I bVII IV V',
             post: 'I bVII', bridge: 'vi iii IV V', outro: 'bVI bVII I:2',
@@ -88,7 +90,7 @@ export const EMOTIONS = {
     },
     serene: {
         valence: 0.65, arousal: 0.1, mode: 'lydian', key: 'E', tempo: 66, groove: 'none', form: 'AABA',
-        legato: 1, dynamics: 0.35, comp: 'sustain', arp: 'updown',
+        style: 'gentle', legato: 1, dynamics: 0.35, comp: 'sustain', arp: 'updown',
         progressions: {
             intro: 'Imaj7 II', A: 'Imaj7 II Imaj7 II', B: 'vi7 II Imaj7 V', verse: 'Imaj7 II Imaj7 II',
             chorus: 'vi7 II Imaj7 Imaj7', bridge: 'iii vi II II', outro: 'II Imaj7:3',
@@ -98,7 +100,7 @@ export const EMOTIONS = {
     },
     angry: {
         valence: 0.1, arousal: 0.95, mode: 'minor', key: 'E', tempo: 144, groove: 'rock', form: 'pop',
-        legato: 0.75, dynamics: 0.9, comp: 'eighths', arp: 'ostinato', power: true,
+        style: 'plain', legato: 0.75, dynamics: 0.9, comp: 'eighths', arp: 'ostinato', power: true,
         progressions: {
             intro: 'i i VI VII', verse: 'i i VI VII', pre: 'iv iv V V', chorus: 'i VI III VII',
             post: 'i VII', bridge: 'iv iv VI V', outro: 'VI VII i:2',
@@ -108,7 +110,7 @@ export const EMOTIONS = {
     },
     playful: {
         valence: 0.85, arousal: 0.65, mode: 'major', key: 'C', tempo: 112, groove: 'bounce', form: 'ABAC',
-        legato: 0.55, dynamics: 0.6, comp: 'offbeat', arp: 'alberti', swing: 0.6,
+        style: 'jazzy', legato: 0.55, dynamics: 0.6, comp: 'offbeat', arp: 'alberti', swing: 0.6,
         progressions: {
             intro: 'I vi ii V7', A: 'I vi ii V7', B: 'IV V7 iii vi ii7 V7 I I', C: 'III7 vi II7 V7',
             verse: 'I vi ii V7', chorus: 'IV V7 iii vi ii7 V7 I I', bridge: 'III7 vi II7 V7', outro: 'ii7 V7 I:2',
@@ -130,27 +132,68 @@ export const FORMS = {
     ABAC:    ['intro', 'A', 'B', 'A', 'C', 'outro'],
     ABCDE:   ['A', 'B', 'C', 'D', 'E'],
     BABA:    ['chorus', 'verse', 'chorus', 'verse', 'chorus', 'outro'],
+    verseChorus: ['intro', 'verse', 'pre', 'chorus', 'verse', 'pre', 'chorus', 'bridge', 'chorus', 'chorus', 'outro'],
+    edm:     ['intro', 'build', 'drop', 'breakdown', 'build', 'drop', 'outro'],
+    blues:   ['intro', 'blues', 'blues', 'blues', 'outro'],
 };
 
 // ---- Section roles -----------------------------------------------------------------------------
-// energy 0..1 drives the arrangement (ARRANGEMENT) and loudness. melody: null = instrumental.
+// Each section has a job, and these are its parameters; the passes that write the song read them.
+// energy 0..1 drives loudness, the drum level, comping and (unless fullness is given) which parts play (ARRANGEMENT).
+// melody: null = instrumental.
 //   register  scale degrees above the emotion's home pitch; choruses sit higher than verses
 //   density   melody notes per beat
 //   contour   default shape (CONTOURS); the emotion can override per section
-//   cadences  how each 4-bar phrase ends: 'half' (on 2/5, asks a question) or 'full' (on 1, answers it)
+//   cadences  how each 4-bar phrase ends: 'half' (on 2/5, asks a question) or 'full' (on 1, answers it);
+//             the last phrase follows endOn instead, when the section has one
+//   from      the fraction of the section that passes before the melody enters: an intro's late fragment of the hook
+// develop        how the song's motif is transformed in the section's motif bars (lib/motif.js): first statement, later ones
+// endOn          the cadence the chords end on (CADENCES): dominant (a question), tonic (a full stop), plagal, deceptive
+// harmonicRhythm chords change this many times as fast as written: 2 is urgent, 0.5 spacious. Default progressions only.
+// fullness       0..1, in place of energy, for which parts play: a breakdown feels big but has few parts
+// mute           parts left out by default
+// breath         the last `beats` before the next section keep only the `keep` parts: space that makes the next one hit
+// answer         the counter answers the lead in call and response (CALL_BARS each), and the lead rests while it does
+// feel           the drums: 'half' (snare on 3), 'double' (snare every beat, sixteenth hats), 'roll' (a snare build)
+// entries, exits parts come in one at a time across the section (an intro), or leave in reverse order (an outro)
+// meter          a meter of its own (METERS); progressionFrom: the emotion's progression to borrow when it has none for this type
+// build, contrast, ending: read by the mix (sweeps, reverb) and the arrangement
 export const SECTIONS = {
-    intro:  { bars: 4, energy: 0.3,  melody: null },
-    verse:  { bars: 8, energy: 0.5,  melody: { register: 0, density: 0.9,  contour: 'wave',   cadences: ['half', 'full'] } },
-    pre:    { bars: 4, energy: 0.65, melody: { register: 2, density: 1.25, contour: 'rise',   cadences: ['half'] }, build: true },
-    chorus: { bars: 8, energy: 0.9,  melody: { register: 3, density: 0.8,  contour: 'arch',   cadences: ['half', 'full'] } },
-    post:   { bars: 4, energy: 0.7,  melody: { register: 4, density: 1.5,  contour: 'fall',   cadences: ['full'] } },
-    bridge: { bars: 8, energy: 0.7,  melody: { register: 1, density: 0.7,  contour: 'valley', cadences: ['half', 'half'] }, contrast: true },
-    outro:  { bars: 4, energy: 0.3,  melody: null, ending: true },
-    A:      { bars: 8, energy: 0.6,  melody: { register: 1, density: 0.9,  contour: 'arch',   cadences: ['half', 'full'] } },
-    B:      { bars: 8, energy: 0.75, melody: { register: 2, density: 0.75, contour: 'valley', cadences: ['half', 'half'] }, contrast: true },
-    C:      { bars: 8, energy: 0.8,  melody: { register: 3, density: 1,    contour: 'rise',   cadences: ['half', 'full'] } },
-    D:      { bars: 8, energy: 0.7,  melody: { register: 1, density: 1.1,  contour: 'wave',   cadences: ['half', 'full'] }, contrast: true },
-    E:      { bars: 8, energy: 0.9,  melody: { register: 4, density: 0.8,  contour: 'arch',   cadences: ['half', 'full'] } },
+    intro:  { name: 'Intro', bars: 4, energy: 0.3, harmonicRhythm: 0.5, entries: true,
+              melody: { register: 0, density: 0.6, contour: 'arch', cadences: ['half'], from: 0.5 }, develop: ['fragment'] },
+    verse:  { name: 'Verse', bars: 8, energy: 0.5,
+              melody: { register: 0, density: 0.9, contour: 'wave', cadences: ['half', 'full'] }, develop: ['repeat', 'sequence'] },
+    pre:    { name: 'Pre-chorus', bars: 4, energy: 0.65, build: true, endOn: 'dominant', harmonicRhythm: 2, breath: { beats: 2, keep: ['lead', 'drums'] },
+              melody: { register: 2, density: 1.25, contour: 'rise', cadences: ['half'] }, develop: ['diminish', 'sequence'] },
+    chorus: { name: 'Chorus', bars: 8, energy: 0.9, endOn: 'tonic',
+              melody: { register: 3, density: 0.8, contour: 'arch', cadences: ['half', 'full'] }, develop: ['repeat', 'sequence'] },
+    post:   { name: 'Post-chorus', bars: 4, energy: 0.7,
+              melody: { register: 4, density: 1.5, contour: 'fall', cadences: ['full'] }, develop: ['fragment'] },
+    bridge: { name: 'Bridge', bars: 8, energy: 0.7, contrast: true, endOn: 'dominant', answer: true,
+              melody: { register: 1, density: 0.7, contour: 'valley', cadences: ['half', 'half'] }, develop: ['invert', 'augment'] },
+    outro:  { name: 'Outro', bars: 4, energy: 0.3, melody: null, ending: true, endOn: 'tonic', exits: true },
+    A:      { bars: 8, energy: 0.6, endOn: 'tonic',
+              melody: { register: 1, density: 0.9, contour: 'arch', cadences: ['half', 'full'] }, develop: ['repeat', 'sequence'] },
+    B:      { bars: 8, energy: 0.75, contrast: true, endOn: 'dominant',
+              melody: { register: 2, density: 0.75, contour: 'valley', cadences: ['half', 'half'] }, develop: ['invert', 'sequence'] },
+    C:      { bars: 8, energy: 0.8,
+              melody: { register: 3, density: 1, contour: 'rise', cadences: ['half', 'full'] }, develop: ['sequence', 'diminish'] },
+    D:      { bars: 8, energy: 0.7, contrast: true,
+              melody: { register: 1, density: 1.1, contour: 'wave', cadences: ['half', 'full'] }, develop: ['retrograde', 'invert'] },
+    E:      { bars: 8, energy: 0.9, endOn: 'tonic',
+              melody: { register: 4, density: 0.8, contour: 'arch', cadences: ['half', 'full'] }, develop: ['repeat', 'sequence'] },
+    // electronic: the build tightens a snare roll and drops out for two beats, then everything lands on the drop's beat 1
+    build:  { name: 'Build', bars: 8, energy: 0.6, melody: null, build: true, endOn: 'dominant', harmonicRhythm: 2, feel: 'roll',
+              breath: { beats: 2, keep: [] }, progressionFrom: 'pre' },
+    drop:   { name: 'Drop', bars: 16, energy: 0.95, endOn: 'tonic', progressionFrom: 'chorus',
+              melody: { register: 2, density: 0.9, contour: 'arch', cadences: ['half', 'full'] }, develop: ['repeat', 'sequence'] },
+    breakdown: { name: 'Breakdown', bars: 8, energy: 0.4, fullness: 0.2, mute: ['drums', 'bass'], harmonicRhythm: 0.5, contrast: true,
+              progressionFrom: 'bridge', melody: { register: 1, density: 0.5, contour: 'valley', cadences: ['half'] }, develop: ['augment'] },
+    // a 12-bar blues chorus: the I–IV–V cycle, three 4-bar lines; the last bar turns around to V
+    blues:  { name: 'Blues chorus', bars: 12, energy: 0.6, progression: 'I7 IV7 I7 I7 IV7 IV7 I7 I7 V7 IV7 I7 V7',
+              melody: { register: 1, density: 0.8, contour: 'wave', cadences: ['half', 'half', 'half'] }, develop: ['repeat', 'sequence'] },
+    // one bar of 2/4 that delays what comes next: a phrase length broken on purpose
+    link:   { name: 'Link', bars: 1, energy: 0.6, meter: '2/4', melody: null, endOn: 'dominant', progressionFrom: 'pre' },
 };
 
 // Each repeat of a section gets a little more energy, so verse 2 is fuller than verse 1.
@@ -162,6 +205,9 @@ export const ARRANGEMENT = { pad: 0, chords: 0.25, bass: 0.35, drums: 0.4, arp: 
 // track order top-left → bottom-right on screen, and in exported files
 export const ROLES = ['lead', 'counter', 'arp', 'chords', 'pad', 'bass', 'drums'];
 export const ROLE_NAMES = { lead: 'Melody', counter: 'Countermelody', arp: 'Arpeggio', chords: 'Chords', pad: 'Pad', bass: 'Bass', drums: 'Drums' };
+
+// the order parts come in across an intro (and leave across an outro, in reverse), so each one is heard arriving
+export const ENTRY_ORDER = ['pad', 'chords', 'arp', 'bass', 'drums', 'counter'];
 
 // MIDI key ranges each part writes in
 export const RANGES = {
@@ -179,9 +225,10 @@ export const DYNAMICS = {
 
 // ---- Melody -------------------------------------------------------------------------------------
 // Rhythm cells, one bar each, in beats. Negative = rest. Chosen by how close their note count is to
-// the section's density, so the same density always picks the same cells.
+// the section's density, so the same density always picks the same cells. Keyed by meter; any other meter
+// builds its cells from GROUP_CELLS, one per beat group.
 export const RHYTHMS = {
-    4: {
+    '4/4': {
         cells: [
             [4], [2, 2], [3, 1], [-1, 1, 2], [2, 1, 1], [1, 1, 2], [1.5, 0.5, 2], [1, 1, 1, 1],
             [-0.5, 0.5, 1, 2], [1, 0.5, 0.5, 2], [0.5, 0.5, 1, 1, 1], [1.5, 0.5, 1, 1],
@@ -190,12 +237,20 @@ export const RHYTHMS = {
         ],
         cadence: { half: [2, 2], full: [4], final: [4] },
     },
-    3: {
+    '3/4': {
         cells: [
             [3], [2, 1], [1, 2], [-1, 1, 1], [1, 1, 1], [1.5, 0.5, 1], [0.5, 0.5, 1, 1], [1, 0.5, 0.5, 1],
             [0.5, 0.5, 0.5, 0.5, 1],
         ],
         cadence: { half: [2, 1], full: [3], final: [3] },
+    },
+    // two lilting groups of three eighths: long-short, and the long note on each group's start
+    '6/8': {
+        cells: [
+            [3], [1.5, 1.5], [1, 0.5, 1.5], [1.5, 1, 0.5], [1, 0.5, 1, 0.5], [0.5, 0.5, 0.5, 1.5],
+            [-0.5, 0.5, 0.5, 1.5], [1, 0.5, 0.5, 0.5, 0.5], [0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
+        ],
+        cadence: { half: [1.5, 1.5], full: [3], final: [3] },
     },
 };
 
@@ -214,7 +269,8 @@ export const MELODY_HOME = 3;
 // Costs for choosing each melody note. Every candidate degree in range is scored and the cheapest wins;
 // a hash of the position only breaks exact ties, so the result is fixed for a given song.
 export const MELODY_RULES = {
-    contour: 1,             // per degree away from the contour (or the motif) target
+    contour: 1,             // per degree away from the contour target
+    motif: 2,               // per degree away from the motif's shape, in a motif bar
     strongNonChord: 5,      // a non-chord tone on a strong beat
     weakNonChordLeap: 3,    // a non-chord tone on a weak beat that isn't reached by step (not a passing/neighbour tone)
     leap: 1.2,              // per degree of a leap beyond a third
@@ -225,53 +281,21 @@ export const MELODY_RULES = {
     cadence: 12,            // a phrase ending away from its cadence degrees
     tieBreak: 0.01,         // scale of the hashed tie-break
 };
-export const CADENCE_DEGREES = { half: [2, 5], full: [1], final: [1] };
+export const CADENCE_DEGREES = { half: [2, 5], full: [1], final: [1], deceptive: [1, 3] };
+// a melody leaping to the section's highest note again costs this, after it has been there twice: the peak is special
+export const PEAK_RULE = { times: 2, cost: 4 };
 
-// ---- Performance ---------------------------------------------------------------------------------
-// What perform() adds to the written notes when a song plays. The score itself stays on the grid.
-export const EXPRESSION = {
-    // timing drift in milliseconds either way, per part; kick and bass stay tight to hold the groove
-    jitterMs: { lead: 12, counter: 10, arp: 5, chords: 8, pad: 15, bass: 0, drums: 0 },
-    // each 4-bar phrase of these parts swells by `swell` velocity from start to end, and its last note tapers by `taper`
-    phrase: { roles: ['lead', 'counter'], bars: 4, swell: 10, taper: 12 },
-    // legato slides on instruments that bend (fretless and synth bass, bowed strings, trombone, synth leads),
-    // into a note that follows the last one closely, by a step or small leap, off the downbeat; `chance` of those
-    glide: {
-        roles: ['lead', 'counter', 'bass'],
-        programs: [35, 38, 39, 40, 41, 42, 57, 80, 81, 82, 83, 84, 85, 86, 87],
-        maxInterval: 5, maxGapBeats: 0.25, minBeats: 0.5, chance: 0.35, seconds: 0.08,
-    },
-    // late-arriving vibrato on held notes, for voices that sing: bowed strings, voices, brass, reeds, pipes, synth leads
-    vibrato: {
-        roles: ['lead', 'counter'],
-        programs: [40, 41, 42, 43, 52, 53, 54, 56, 57, 58, 59, 60, 64, 65, 66, 67, 68, 69, 72, 73, 74, 75, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 110],
-        minSeconds: 0.6, rate: 5.5, rateSpread: 0.4, cents: 15, delay: 0.25, ramp: 0.35,
-    },
+// ---- Harmony at the scale of a section --------------------------------------------------------------
+// The cadences a section's chords can end on. The last symbol is the last bar's chord; any before it take the second
+// half of the bar before, unless the chord there already leads in. bright: modes with a major third, dark: minor.
+export const CADENCES = {
+    dominant:  { bright: ['V'], dark: ['V'], melody: 'half' },                     // a question mark
+    tonic:     { bright: ['V', 'I'], dark: ['V', 'i'], melody: 'full' },           // a full stop: authentic
+    plagal:    { bright: ['IV', 'I'], dark: ['iv', 'i'], melody: 'full' },         // a soft "amen"
+    deceptive: { bright: ['V', 'vi'], dark: ['V', 'VI'], melody: 'deceptive' },    // resolution expected, a minor chord instead
 };
-
-// ---- Mix -------------------------------------------------------------------------------------------
-// Each part's channel strip. volumeDb is the fader; pan −1..1; lowCut a high-pass in Hz, on everything but the kit
-// and bass, to keep mud out of the low end; reverb and delay are send levels into the shared buses.
-// Lead, bass and drums sit in the centre; the rest spread to the sides. Drums and bass stay dry, pads get the most reverb.
-export const MIX = {
-    lead:    { volumeDb: -2,  pan: 0,     lowCut: 150, reverb: 0.25, delay: 0.16 },
-    counter: { volumeDb: -5,  pan: 0.4,   lowCut: 120, reverb: 0.3,  delay: 0.06 },
-    arp:     { volumeDb: -8,  pan: -0.45, lowCut: 150, reverb: 0.3,  delay: 0.1 },
-    chords:  { volumeDb: -6,  pan: -0.3,  lowCut: 120, reverb: 0.2,  delay: 0 },
-    pad:     { volumeDb: -9,  pan: 0.3,   lowCut: 100, reverb: 0.55, delay: 0 },
-    bass:    { volumeDb: -2,  pan: 0,     lowCut: 20,  reverb: 0,    delay: 0 },
-    drums:   { volumeDb: -3,  pan: 0,     lowCut: 20,  reverb: 0.08, delay: 0 },
-};
-// On every kick, these parts dip by db for `seconds`: the clean, pumping low end of a sidechain, without one.
-export const DUCK = { keys: [35, 36], seconds: 0.1, attack: 0.01, db: { bass: 4, pad: 3 } };
-// How the mix moves through a song.
-//   sweep: the tone filter on these parts closes at the start of a build (a pre-chorus) and opens across it;
-//          a section rising into a chorus by `rise` energy or more sweeps over its last `bars` bars instead
-//   reverb: every send is scaled up in outros, contrasting sections (bridges) and quiet sections
-export const MOVEMENT = {
-    sweep: { roles: ['pad', 'arp', 'chords'], closed: 700, open: 20000, rise: 0.2, bars: 2 },
-    reverb: { ending: 1.6, contrast: 1.25, quiet: 1.3, quietBelow: 0.4 },
-};
+// degrees of chords that already lead into a cadence's last chord, so nothing needs inserting before it
+export const LEADS_IN = { tonic: [4, 5, 7], plagal: [4], deceptive: [5], dominant: [] };
 
 // ---- On screen ------------------------------------------------------------------------------------
 // one colour per part (rgb 0..1), and how many seconds of notes are visible above each keyboard

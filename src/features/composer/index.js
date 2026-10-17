@@ -4,13 +4,17 @@
 // Also scriptable, for embedding or for an AI to drive from the console:
 //   composer.play({ title: 'Test', emotion: 'tender', key: 'A' })   // any spec; see docs/COMPOSING.md
 //   composer.play('first-light')   composer.stop()   composer.compose(spec) → score
+// and, while a song plays, as game music: composer.intensity(0..1)   composer.sting('pickup')
+//   composer.queue('Chorus', 'phrase')   // carry on from a section at the next bar, phrase or section
 // and from the URL: index.html#song=first-light, #feel=heroic, or #spec=<URI-encoded JSON spec> (plays on first click).
 import { input } from '../../platform/input.js';
 import { mousePosScreen, mouseWasPressed } from '../../platform/engine.js';
 import { compose, sectionSeek } from './compose.js';
 import { SONGS } from './songs-data.js';
 import { GENRE_SONGS } from './genre-songs-data.js';
+import { GAME_SONGS } from './game-songs-data.js';
 import { EMOTIONS } from './composer-data.js';
+import { STINGERS } from './adaptive-data.js';
 import { loadBand, playScore } from './song-player.js';
 import { prepareView, drawSong, timelineBeatAt } from './song-view.js';
 import { createSongBar } from './song-bar.js';
@@ -40,6 +44,7 @@ function seekInput(score, handle)
 
 // every choice in the menu: the written songs, then one song per feeling composed from its defaults alone
 const choices = [
+    ...GAME_SONGS.map(spec => ({ id: spec.id, group: 'Game music', label: `${spec.genre}: ${spec.title}`, story: spec.story, spec })),
     ...GENRE_SONGS.map(spec => ({ id: spec.id, group: 'Genres', label: `${spec.genre}: ${spec.title}`, story: spec.story, spec })),
     ...SONGS.map(spec => ({ id: spec.id, group: 'Written songs', label: spec.title, story: spec.story, spec })),
     ...Object.keys(EMOTIONS).map(e => ({ id: `feel:${e}`, group: 'Compose from a feeling', label: `Feeling: ${e}`, spec: { id: e, title: `${e[0].toUpperCase()}${e.slice(1)}`, emotion: e } })),
@@ -111,7 +116,17 @@ export default {
         if (typeof pending === 'string') selected = Math.max(0, choices.findIndex(c => c.id === pending || c.id === `feel:${pending}`));
 
         bar = createSongBar({
-            choices, selected,
+            choices, selected, stingers: Object.keys(STINGERS),
+            onIntensity(x) { playing?.handle.setIntensity(x >= 1 ? null : x); },
+            onSting(kind) { playing?.handle.sting(kind); },
+            onNext()
+            {
+                if (!playing) return;
+                const { score, handle } = playing;
+                const i = score.sections.findLastIndex(s => s.beat <= handle.beat);
+                const to = score.sections[i + 1] ? i + 1 : score.sections.findIndex(s => s.beat === score.loop?.from);
+                if (to >= 0) handle.queue(to, 'phrase');
+            },
             onSelect(i) { settings.choice = choices[i].id; ctx.state.write(); },
             onPlay(i) { pending = null; play(choices[i].spec, ctx); },
             onStop() { starting++; stop(ctx.activity); bar.setStatus(''); bar.setPlaying(false); },
@@ -130,6 +145,9 @@ export default {
             compose: (what)=> compose(specFor(what)),
             play: (what)=> play(what, ctx),
             stop: ()=> stop(ctx.activity),
+            intensity: (x)=> playing?.handle.setIntensity(x),
+            sting: (kind)=> playing?.handle.sting(kind),
+            queue: (section, at)=> playing?.handle.queue(section, at) ?? false,
             songs: choices.map(c => c.id),
         };
     },

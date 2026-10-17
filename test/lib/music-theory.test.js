@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import * as MT from '../../src/lib/music-theory.js';
 import {
     pitchClass, degreeToKey, keyToDegree, parseChord, chordPitchClasses, chordName, parseProgression, voiceChord, hash, MODES,
 } from '../../src/lib/music-theory.js';
@@ -60,4 +61,27 @@ test('hash is stable', ()=>
 {
     assert.equal(hash('a', 1), hash('a', 1));
     assert.notEqual(hash('a', 1), hash('a', 2));
+});
+
+test('a flat or sharp numeral counts from the major scale, in any mode', ()=>
+{
+    assert.equal(parseChord('bVII', 0, 'mixolydian').root, 10);
+    assert.equal(parseChord('VII', 0, 'mixolydian').root, 10);
+    assert.equal(parseChord('bVI', 0, 'minor').root, 8);
+    assert.equal(parseChord('bII', 4, 'harmonicMinor').root, 5);
+    assert.equal(parseChord('#iv°', 0, 'major').root, 6);
+});
+
+test('diatonic shifts stay in the key: thirds and sixths above and below, past the octave', ()=>
+{
+    const { diatonicShift } = MT;
+    assert.equal(diatonicShift(64, 2, 0, 'major'), 67);         // E → G, a minor third in C major
+    assert.equal(diatonicShift(60, 2, 0, 'major'), 64);         // C → E, a major third
+    assert.equal(diatonicShift(60, 5, 0, 'major'), 69);         // C → A, a sixth
+    assert.equal(diatonicShift(60, -2, 0, 'major'), 57);        // C → A below
+    assert.equal(diatonicShift(71, 2, 0, 'major'), 74);         // B → D, across the octave
+    assert.equal(diatonicShift(69, 2, 9, 'minor'), 72);         // A minor: A → C
+    assert.equal(diatonicShift(61, 2, 0, 'major'), 64);         // C#, not in the scale: a minor third
+    assert.equal(MT.isMinorMode('dorian'), true);
+    assert.equal(MT.isMinorMode('lydian'), false);
 });

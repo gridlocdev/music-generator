@@ -1,8 +1,11 @@
-// The accompaniment: chords, pad, arpeggio, countermelody, bass and drums, written from the chord timeline.
+// The accompaniment: chords, pad, arpeggio, countermelody, bass and drums, written from the chord timeline in the
+// section's meter (meter-patterns.js builds what a groove wasn't written for).
 import { chordPitchClasses, voiceChord, degreeToKey, keyToDegree } from '../../lib/music-theory.js';
 import { RANGES } from './composer-data.js';
-import { DRUM_KEYS, BASS, COMPING, COMP_QUIET } from './patterns-data.js';
+import { DRUM_KEYS, COMP_QUIET } from './patterns-data.js';
 import { STEP, mod, clamp, chordAt, velocity } from './meter.js';
+import { compBar, bassBar, drumBar, withFeel, withRoll } from './meter-patterns.js';
+import { harmonyVoice } from './harmony.js';
 
 // pitch classes to voice: power chords are root and fifth; big chords drop the fifth to stay at four notes
 function voicingClasses(chord, power)
@@ -17,7 +20,9 @@ export function writeChords(sec, track, memory)
     const [lo, hi] = RANGES.chords;
     const stepsPerBar = sec.beatsPerBar * 4;
     const style = sec.ending ? 'sustain' : sec.energy < 0.5 ? (COMP_QUIET[sec.comp] ?? sec.comp) : sec.comp;
-    const hits = (COMPING[style] ?? COMPING.sustain).filter(([s])=> s < stepsPerBar);
+    const hits = compBar(style, sec.meter, sec.groove);
+    // stabs: the style's longest chord, down to a thirty-second note
+    const stab = style !== 'sustain' && sec.style.stab > 0 ? sec.style.stab : Infinity;
     for (const span of sec.timeline)
     {
         let v = voiceChord(voicingClasses(span.chord, sec.power), memory.chords, lo, hi);
@@ -28,12 +33,13 @@ export function writeChords(sec, track, memory)
         {
             const barStart = sec.beat + bar * sec.beatsPerBar;
             if (barStart >= end) break;
-            for (const [step, len] of hits)
+            for (const [step, len, weight = 1] of hits)
             {
                 const t = barStart + step * STEP;
                 if (t < span.beat - 1e-9 || t >= end - 1e-9) continue;
-                const beats = Math.min(len * STEP, end - t, (stepsPerBar - step) * STEP) * (style === 'sustain' ? 1 : sec.legato);
-                for (const key of v) track.notes.push({ key, beat: t, beats, vel: velocity(sec, 'chords', sec.energy, t - sec.beat) });
+                const beats = Math.min(len * STEP * (style === 'sustain' ? 1 : sec.legato), end - t, (stepsPerBar - step) * STEP, stab);
+                const vel = clamp(Math.round(velocity(sec, 'chords', sec.energy, t - sec.beat) * weight), 1, 127);
+                for (const key of v) track.notes.push({ key, beat: t, beats, vel });
             }
         }
     }
@@ -55,6 +61,8 @@ export function writeArp(sec, track, memory)
     const { order, step } = sec.arp;
     const len = step * STEP;
     const total = sec.bars * sec.beatsPerBar;
+    // a rotated copy of the pattern on repeats, for variety, when the style syncopates
+    const rotate = sec.style.syncopation >= 0.3 ? sec.n % 3 : 0;
     let current = null, notes = [];
     for (let i = 0; i * len < total - 1e-9; i++)
     {
@@ -66,14 +74,22 @@ export function writeArp(sec, track, memory)
             const v = memory.arp = voiceChord(voicingClasses(chord, false), memory.arp, lo, hi - 12);
             notes = [...v, ...v.map(k => k + 12)];
         }
-        const key = notes[order[i % order.length] % notes.length];
+        const key = notes[order[(i + rotate) % order.length] % notes.length];
         track.notes.push({ key, beat: t, beats: len * sec.legato, vel: velocity(sec, 'arp', sec.energy, t - sec.beat) });
     }
 }
 
-// guide tones: the third (or seventh) of each chord, held, moving as little as possible
-export function writeCounter(sec, track, memory)
+// The countermelody, by sec.counter: 'guide' tones (the third or seventh of each chord, held while the melody moves:
+// oblique motion), a 'harmony' voice in thirds under the lead, or a 'contrary' line against it (harmony.js).
+export function writeCounter(sec, track, memory, lead)
 {
+    if ((sec.counter === 'harmony' || sec.counter === 'contrary') && lead.length)
+    {
+        const notes = harmonyVoice(lead, sec, sec.timeline, sec.counter);
+        track.notes.push(...notes);
+        memory.counter = notes.at(-1).key;
+        return;
+    }
     const [lo, hi] = RANGES.counter;
     for (const span of sec.timeline)
     {
@@ -101,9 +117,7 @@ export function writeCounter(sec, track, memory)
 export function writeBass(sec, track, memory, finalRoot)
 {
     const [lo, hi] = RANGES.bass;
-    const steps = sec.beatsPerBar * 4;
-    const patterns = BASS[sec.grooveName] ?? BASS.pop;
-    const pattern = (sec.energy < 0.6 ? patterns.low : patterns.high).filter(([s])=> s < steps);
+    const pattern = bassBar(sec.grooveName, sec.groove, sec.meter, sec.energy >= 0.6);
     const place = (pc, near)=>
     {
         let best = lo, bestCost = Infinity;
@@ -157,10 +171,12 @@ function inScaleStep(sec, key, dir)
 const HIT = { X: 1, x: 0.8, o: 0.45 };
 const RINGS = new Set(['crash', 'open', 'ride']);
 
+// A bar's pattern is the groove's level (or its fill before a bigger section), a plain accented one for the first bars
+// after a change of meter, then the section's feel; an odd meter rolls into its bar line every few bars.
 export function writeDrums(sec, track)
 {
-    const g = sec.groove;
-    const steps = sec.beatsPerBar * 4;
+    const g = sec.groove, meter = sec.meter;
+    const steps = Math.round(sec.beatsPerBar * 4);
     const level = sec.energy < 0.55 ? 'low' : sec.energy < 0.8 ? 'mid' : 'high';
     const vel = (t, f)=> clamp(Math.round(velocity(sec, 'drums', sec.energy, t - sec.beat) * f), 1, 127);
     for (let bar = 0; bar < sec.bars; bar++)
@@ -171,7 +187,10 @@ export function writeDrums(sec, track)
             for (const v of ['kick', 'crash']) track.notes.push({ key: DRUM_KEYS[v], beat: barStart, beats: sec.beatsPerBar, vel: vel(barStart, 1) });
             break;
         }
-        const pattern = sec.fill && bar === sec.bars - 1 ? g.fill : g[level];
+        const fill = sec.fill && bar === sec.bars - 1;
+        let pattern = drumBar(g, meter, fill ? 'fill' : bar < sec.simpleBars ? 'simple' : level);
+        if (sec.feel && (!fill || sec.feel === 'roll')) pattern = withFeel(pattern, sec.feel, meter, bar, sec.bars);
+        if (pattern && meter.roll && !fill && bar >= sec.simpleBars && (bar + 1) % meter.roll === 0) pattern = withRoll(pattern, meter);
         if (!pattern) continue;
         if (bar === 0 && sec.energy >= 0.6) track.notes.push({ key: DRUM_KEYS.crash, beat: barStart, beats: 2, vel: vel(barStart, 1) });
         for (const [voice, hits] of Object.entries(pattern))
@@ -180,7 +199,7 @@ export function writeDrums(sec, track)
                 const f = HIT[hits[s]];
                 if (!f) continue;
                 const t = barStart + s * STEP;
-                track.notes.push({ key: DRUM_KEYS[voice], beat: t, beats: RINGS.has(voice) ? 1 : 0.5, vel: vel(t, f) });
+                track.notes.push({ key: DRUM_KEYS[voice], beat: t, beats: Math.min(RINGS.has(voice) ? 1 : 0.5, sec.beat + sec.beats - t), vel: vel(t, f) });
             }
     }
 }
