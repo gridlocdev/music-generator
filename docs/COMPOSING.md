@@ -541,6 +541,10 @@ Game music plays for a long time and has to follow the game. A song can be built
 
 In the game: play a song from **Game music**, then use the **Intensity** slider, **♪ Sting** and **Next section** (which waits for the next phrase). From code: `composer.intensity(0.3)`, `composer.sting('pickup')`, `composer.queue('Phase two 1', 'bar')`.
 
+From another feature, through events, with the song in the background and no grid on screen: `music:play { song }`, `music:intensity x`, `music:sting kind`, `music:queue { section, at }` and `music:stop`. The composer answers with `music:status { text }` while loading and `music:started { title, sections, parts }`. The **adaptive music test level** (`src/features/adventure/`) is a worked example. Its zones blend the intensity as you walk, coins, guards, a hidden alcove and the exit fire stingers, and its arena queues The Warden's second phase at the next bar.
+
+**Hearing a change.** `just ab [commit]` renders every song with that commit and with the working tree, offline, and plays them side by side, with peak and loudness for each and a blind mode. Tune the tables by ear, one at a time.
+
 ## 12. The song spec: writing a song
 
 A song is a plain object. Only `title` (or `id`) and `emotion` are needed; every other field overrides the emotion's default.

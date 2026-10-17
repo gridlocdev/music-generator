@@ -24,4 +24,10 @@ export const input = {
     // ← / → step through a song's sections
     sectionStep() { return +keyWasPressed('ArrowRight') - +keyWasPressed('ArrowLeft'); },
     cancel() { return keyWasPressed('Escape'); },
+    // arrow keys (or WASD) as a direction, for walking around a scene; the piano steps aside while one runs
+    move()
+    {
+        const held = (...codes)=> codes.some(keyIsDown);
+        return { x: +held('ArrowRight', 'KeyD') - +held('ArrowLeft', 'KeyA'), y: +held('ArrowUp', 'KeyW') - +held('ArrowDown', 'KeyS') };
+    },
 };

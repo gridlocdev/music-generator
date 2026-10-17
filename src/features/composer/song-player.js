@@ -1,4 +1,4 @@
-// Plays a composed score through the SoundFont synth: loads each part's instrument, gives each part a channel
+// Plays a composed score through the SoundFont synth (band-loader.js loads the instruments): gives each part a channel
 // strip in a mixer, then schedules the performed notes (perform.js) and the mix's automation (mix-plan.js)
 // a little ahead on the audio clock, through the song's tempo map, so timing doesn't depend on the frame rate.
 //
@@ -9,8 +9,7 @@
 // any boundary, because nothing is pre-rendered.
 import { audioEngine } from '../../platform/audio-engine.js';
 import { startTicker } from '../../platform/ticker.js';
-import { SOUNDFONTS } from '../../audio/soundfont-catalog-data.js';
-import { loadSoundFont, findPreset, createInstrument } from '../../audio/soundfont.js';
+import { createInstrument } from '../../audio/soundfont.js';
 import { createMixer, dbToGain } from '../../audio/mixer.js';
 import { beatToSeconds, secondsToBeat, bpmAt } from '../../lib/tempo-map.js';
 import { EXPRESSION, DUCK, MIX, AUTO_PAN } from './performance-data.js';
@@ -26,39 +25,6 @@ const TICK_MS = 25;             // how often more notes are scheduled
 const LEAD_IN = 0.25;           // seconds between pressing play and the first beat
 const SWITCH_LEAD = 0.5;        // seconds before a loop or jump that the next segment takes over, for its early notes
 const PICKUP_BEATS = 1;         // how far before its grid a performed note can sound (anticipation, drift)
-
-const presets = SOUNDFONTS.flatMap(font => font.presets.map(p => ({ ...p, url: font.url })));
-
-/** the catalog entry for a part: its exact bank/program, or the same program on any bank, or the first preset */
-export function presetFor(bank, program)
-{
-    return presets.find(p => p.bank === bank && p.program === program)
-        ?? presets.find(p => (p.bank >= 127) === (bank >= 127) && p.program === program)
-        ?? presets.find(p => (p.bank >= 127) === (bank >= 127))
-        ?? presets[0];
-}
-
-/**
- * Downloads every .sf2 file the score's parts need. Resolves to one { font, preset, entry } per track.
- * @param {import('./compose.js').Score} score
- * @param {(text: string)=> void} onStatus
- */
-export async function loadBand(score, onStatus)
-{
-    const entries = score.tracks.map(t => presetFor(t.bank, t.program));
-    const urls = [...new Set(entries.map(e => e.url))];
-    const progress = new Map(urls.map(u => [u, 0]));
-    const report = ()=> onStatus(`Loading ${urls.length} SoundFont file${urls.length > 1 ? 's' : ''}… ${Math.floor([...progress.values()].reduce((a, b)=> a + b, 0) / urls.length * 100)}%`);
-    report();
-    const fonts = new Map(await Promise.all(urls.map(async u => /** @type {[string, any]} */ ([u, await loadSoundFont(u, (loaded, total)=> { progress.set(u, loaded / total); report(); })]))));
-    return entries.map(entry =>
-    {
-        const font = fonts.get(entry.url);
-        const preset = findPreset(font, entry.bank, entry.program);
-        if (!preset) throw new Error(`no preset ${entry.bank}:${entry.program} in ${entry.url}`);
-        return { font, preset, entry };
-    });
-}
 
 /**
  * Starts playing. Returns a handle: the current position in beats, seek(beat), queue(section, at), setIntensity(x),

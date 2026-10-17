@@ -18,7 +18,7 @@ export function startEngine({ init, update, updatePost, render = ()=>{}, renderP
 // re-export what the rest of the game uses, so only this file knows the engine.
 // `export ... from` keeps live bindings, so values the engine reassigns (mousePos, mainCanvasSize) stay current.
 export {
-    vec2, rgb, drawRect, drawText, keyIsDown, keyWasPressed,
+    vec2, rgb, drawRect, drawCircle, drawText, keyIsDown, keyWasPressed, timeDelta,
     mousePos, mousePosScreen, mouseIsDown, mouseWasPressed, mouseWasReleased, mainCanvasSize,
     setCameraPos, setCameraScale,
 } from 'littlejsengine';

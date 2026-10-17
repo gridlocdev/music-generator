@@ -6,6 +6,9 @@
 //   composer.play('first-light')   composer.stop()   composer.compose(spec) → score
 // and, while a song plays, as game music: composer.intensity(0..1)   composer.sting('pickup')
 //   composer.queue('Chorus', 'phrase')   // carry on from a section at the next bar, phrase or section
+// Other features drive it through events, playing a song as background music with no grid on screen:
+//   music:play { song }   music:stop   music:intensity x   music:sting kind   music:queue { section, at }
+// and hear back music:status { text } while it loads, and music:started { title, sections, parts } when it plays.
 // and from the URL: index.html#song=first-light, #feel=heroic, or #spec=<URI-encoded JSON spec> (plays on first click).
 import { input } from '../../platform/input.js';
 import { mousePosScreen, mouseWasPressed } from '../../platform/engine.js';
@@ -14,14 +17,16 @@ import { SONGS } from './songs-data.js';
 import { GENRE_SONGS } from './genre-songs-data.js';
 import { GAME_SONGS } from './game-songs-data.js';
 import { EMOTIONS } from './composer-data.js';
-import { STINGERS } from './adaptive-data.js';
-import { loadBand, playScore } from './song-player.js';
+import { STINGERS, LAYERS } from './adaptive-data.js';
+import { loadBand } from './band-loader.js';
+import { playScore } from './song-player.js';
 import { prepareView, drawSong, timelineBeatAt } from './song-view.js';
 import { createSongBar } from './song-bar.js';
 
 let settings;               // this feature's save slice
 let bar;
 let playing = null;         // { score, handle, panels } while a song plays
+let background = null;      // { score, handle } while a song plays as another feature's background music
 let starting = 0;           // id of the newest play request, so a slow load can't start a song that was replaced
 
 const SEEK_GRACE_SECONDS = 2;   // ← within this long of a section's start goes to the one before
@@ -62,6 +67,7 @@ async function play(what, { activity, events })
 {
     const id = ++starting;
     stop(activity);
+    stopBackground();
     const spec = specFor(what);
     const score = compose(spec);
     const chosen = choices.findIndex(c => c.spec === spec);
@@ -95,6 +101,39 @@ function stop(activity)
     if (activity.current?.name === 'song') activity.end();
 }
 
+// a song with no grid and no activity of its own: the music under another feature's scene
+async function playBackground(what, events)
+{
+    const id = ++starting;
+    stopBackground();
+    const score = compose(specFor(what));
+    try
+    {
+        const band = await loadBand(score, text => { if (id === starting) events.emit('music:status', { text }); });
+        if (id !== starting) return;
+        background = { score, handle: playScore(score, band) };
+        events.emit('music:status', { text: '' });
+        events.emit('music:started', {
+            title: score.title, sections: score.sections.map(s => s.label),
+            // each part and the intensity it comes in at, so a scene can show what's playing
+            parts: score.tracks.map(t => ({ name: t.name, from: LAYERS[t.role] ?? 0 })),
+        });
+    }
+    catch (e)
+    {
+        if (id === starting) events.emit('music:status', { text: `Couldn't play: ${e.message}` });
+    }
+}
+
+function stopBackground()
+{
+    background?.handle.stop();
+    background = null;
+}
+
+// whichever song is playing: the one on screen, or the background one
+const music = ()=> playing?.handle ?? background?.handle;
+
 // #song=id, #feel=emotion or #spec=<json>, if the page was opened with one
 function fromHash()
 {
@@ -109,6 +148,13 @@ export default {
     id: 'composer',
     build(ctx)
     {
+        const { events } = ctx;
+        events.on('music:play', ({ song })=> playBackground(song, events));
+        events.on('music:stop', ()=> { starting++; stopBackground(); });
+        events.on('music:intensity', (x)=> music()?.setIntensity(x));
+        events.on('music:sting', (kind)=> music()?.sting(kind));
+        events.on('music:queue', ({ section, at })=> music()?.queue(section, at));
+
         settings = ctx.state.slice('composer', { choice: choices[0].id });
         let selected = Math.max(0, choices.findIndex(c => c.id === settings.choice));
         let pending = null;
@@ -145,9 +191,9 @@ export default {
             compose: (what)=> compose(specFor(what)),
             play: (what)=> play(what, ctx),
             stop: ()=> stop(ctx.activity),
-            intensity: (x)=> playing?.handle.setIntensity(x),
-            sting: (kind)=> playing?.handle.sting(kind),
-            queue: (section, at)=> playing?.handle.queue(section, at) ?? false,
+            intensity: (x)=> music()?.setIntensity(x),
+            sting: (kind)=> music()?.sting(kind),
+            queue: (section, at)=> music()?.queue(section, at) ?? false,
             songs: choices.map(c => c.id),
         };
     },
