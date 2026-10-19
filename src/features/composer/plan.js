@@ -5,6 +5,7 @@ import { pitchClass, MODES } from '../../lib/music-theory.js';
 import { EMOTIONS, FORMS, SECTIONS, REPEAT_LIFT } from './composer-data.js';
 import { GROOVES, ARPS, COMPING } from './patterns-data.js';
 import { STYLES, VARIATION, CURVE, TEMPO, METER_CHANGE } from './song-craft-data.js';
+import { GENRES } from './genre-data.js';
 import { clamp } from './meter.js';
 import { meterOf, nativeMeter } from './meter-patterns.js';
 
@@ -16,30 +17,33 @@ export function planSong(spec)
     const emotion = spec.emotion ?? 'hopeful';
     const feel = EMOTIONS[emotion];
     if (!feel) throw new Error(`unknown emotion: ${emotion}`);
-    const mode = spec.mode ?? feel.mode;
+    // the spec's own choice, else its genre's, else its emotion's
+    const genre = genreProfile(spec.genre);
+    const choose = (field)=> spec[field] ?? genre[field] ?? feel[field];
+    const mode = choose('mode');
     if (!MODES[mode]) throw new Error(`unknown mode: ${mode}`);
     const keyName = spec.key ?? feel.key;
-    const grooveName = spec.groove ?? feel.groove;
+    const grooveName = choose('groove');
     const groove = GROOVES[grooveName];
     if (!groove) throw new Error(`unknown groove: ${grooveName}`);
-    const arp = ARPS[spec.arp ?? feel.arp];
+    const arp = ARPS[choose('arp')];
     if (!arp) throw new Error(`unknown arpeggio: ${spec.arp}`);
-    let form = Array.isArray(spec.form) ? spec.form : FORMS[spec.form ?? feel.form];
+    let form = Array.isArray(spec.form) ? spec.form : FORMS[choose('form')];
     if (!form) throw new Error(`unknown form: ${spec.form}`);
     // a game loop: the intro plays once, the rest repeats, and there's no outro
     const loop = !!spec.loop;
     if (loop) { form = [...form]; while (form.length > 1 && SECTIONS[form.at(-1)]?.ending) form.pop(); }
-    const style = styleOf(spec.style, feel.style);
+    const style = styleOf(spec.style ?? genre.style, feel.style);
     const band = { ...feel.band, ...spec.band };
     if (band.drums !== null && grooveName === 'none') band.drums = null;
 
     const song = {
         tonic: pitchClass(keyName), mode, tempo: spec.tempo ?? feel.tempo,
-        legato: spec.legato ?? feel.legato,
+        legato: choose('legato'),
         dynamics: spec.dynamics ?? feel.dynamics,
-        power: spec.power ?? feel.power ?? false,
-        arp, groove, grooveName, style,
-        swing: spec.swing ?? feel.swing ?? groove.swing ?? style.swing ?? 0,
+        power: choose('power') ?? false,
+        arp, groove, grooveName, style, genre,
+        swing: choose('swing') ?? groove.swing ?? style.swing ?? 0,
         swingSub: spec.swingSub ?? 0.5,
         seed: String(spec.seed ?? spec.title ?? spec.id ?? 'song'),
         flats: /b/.test(keyName) || keyName === 'F' || (/minor|dorian|phrygian|aeolian|locrian/i.test(mode) && ['D', 'G', 'C', 'F'].includes(keyName)),
@@ -60,13 +64,14 @@ export function planSong(spec)
         const meter = meterOf(over.meter ?? base.meter ?? songMeter);
         const bars = over.bars ?? base.bars;
         const from = base.progressionFrom;
-        const progression = over.progression ?? feel.progressions[type] ?? base.progression
-            ?? spec.sections?.[from]?.progression ?? feel.progressions[from] ?? feel.progressions.verse;
+        const progressions = genre.progressions ?? feel.progressions;
+        const progression = over.progression ?? progressions[type] ?? base.progression
+            ?? spec.sections?.[from]?.progression ?? progressions[from] ?? progressions.verse;
         const s = {
             ...song, type, n, index, base, over, bars, beat, meter, beatsPerBar: meter.beats, beats: bars * meter.beats,
             energy: clamp((over.energy ?? base.energy) + REPEAT_LIFT * n, 0, 1),
             tonic: song.tonic + transpose + (over.transpose ?? 0), mode: over.mode ?? mode, lifted, progression,
-            comp: over.comp ?? spec.comp ?? feel.comp,
+            comp: over.comp ?? choose('comp'),
         };
         if (!COMPING[s.comp]) throw new Error(`unknown comp: ${s.comp}`);
         beat += s.beats;
@@ -111,6 +116,9 @@ export function planSong(spec)
         tempoMap: tempoMap(spec, song.tempo, sections, beat), beats: beat,
     };
 }
+
+/** a genre's profile (genre-data.js) from its name, case and spacing aside: 'Bossa nova' is bossa-nova; else an empty one */
+export const genreProfile = (name)=> GENRES[String(name ?? '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-')] ?? {};
 
 function styleOf(given, fallback)
 {

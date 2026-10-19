@@ -2,8 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as MT from '../../src/lib/music-theory.js';
 import {
-    pitchClass, degreeToKey, keyToDegree, parseChord, chordPitchClasses, chordName, parseProgression, voiceChord, hash, MODES,
-    alterToChord, unalter, bassOf,
+    pitchClass, degreeToKey, keyToDegree, parseChord, chordPitchClasses, chordName, parseProgression, hash, MODES,
+    alterToChord, unalter, bassOf, extendChord,
 } from '../../src/lib/music-theory.js';
 
 test('pitch classes', ()=> assert.deepEqual(['C', 'F#', 'Bb', 'B', 'Cb'].map(pitchClass), [0, 6, 10, 11, 11]));
@@ -90,16 +90,6 @@ test('progressions with lengths', ()=>
     assert.throws(()=> parseProgression('I:0', 0, 'major'));
 });
 
-test('voice leading moves little and stays in range', ()=>
-{
-    const c = voiceChord([0, 4, 7], null, 52, 74);
-    const f = voiceChord([5, 9, 0], c, 52, 74);
-    for (const k of [...c, ...f]) assert.ok(k >= 52 && k <= 74);
-    const moved = f.reduce((sum, k)=> sum + Math.min(...c.map(p => Math.abs(p - k))), 0);
-    assert.ok(moved <= 4, `moved ${moved} semitones`);
-    assert.deepEqual(voiceChord([0, 4, 7], null, 52, 74), c, 'same input, same voicing');
-});
-
 test('hash is stable', ()=>
 {
     assert.equal(hash('a', 1), hash('a', 1));
@@ -127,4 +117,14 @@ test('diatonic shifts stay in the key: thirds and sixths above and below, past t
     assert.equal(diatonicShift(61, 2, 0, 'major'), 64);         // C#, not in the scale: a minor third
     assert.equal(MT.isMinorMode('dorian'), true);
     assert.equal(MT.isMinorMode('lydian'), false);
+});
+
+test('triads played as a genre plays them: the key\'s sevenths, ninths, dominants, add9', ()=>
+{
+    const ext = (sym, how, tonic = 0, mode = 'major')=> chordName(extendChord(parseChord(sym, tonic, mode), how, tonic, mode));
+    assert.deepEqual(['I', 'ii', 'iii', 'IV', 'V', 'vi', 'vii°', 'II'].map(s => ext(s, 'sevenths')), ['Cmaj7', 'Dm7', 'Em7', 'Fmaj7', 'G7', 'Am7', 'Bm7b5', 'D7']);
+    assert.deepEqual(['I', 'iii', 'V'].map(s => ext(s, 'ninths')), ['Cmaj9', 'Em7', 'G9']);     // no b9 on iii
+    assert.deepEqual(['I', 'IV', 'ii'].map(s => ext(s, 'dominant')), ['C7', 'F7', 'Dm7']);
+    assert.equal(ext('vii°', 'sevenths', 9, 'harmonicMinor'), 'G#dim7');
+    assert.deepEqual(['V7', 'Isus4', 'I'].map(s => ext(s, s === 'I' ? 'add9' : 'sevenths')), ['G7', 'Csus4', 'Cadd9']);
 });

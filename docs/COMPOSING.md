@@ -584,7 +584,7 @@ A song is a plain object. Only `title` (or `id`) and `emotion` are needed; every
     power: false,                   // power chords
     form: 'ABCABC',                 // a key of FORMS, or a list: ['intro', 'verse', 'chorus', …]
     names: { A: 'Blues chorus' },   // optional: what to call a section type on screen
-    genre: 'Bossa nova',            // optional: shown with the title
+    genre: 'Bossa nova',            // optional: shown with the title, and its profile (GENRES) when it has one
     story: 'Rain on the awning…',   // optional: the song's premise, shown in the menu and on screen
     scenes: {                       // optional: one line per section, shown while it plays
         intro: '8:52 p.m.',         // keyed by label ('verse 2', 'blues chorus 1'), type and occurrence ('A 2'), or type
@@ -663,6 +663,26 @@ Moves that carry each genre:
 - **Gospel**: swung 12/8 feel (ballad groove with swing 0.67); organ chords; call and response between lead and choir; the borrowed iv; a key change before the last chorus.
 - **Cinematic**: ostinato strings, horns on the melody, choir pad; slow harmonic rhythm that builds; Neapolitan and modal-mixture chords for drama; a major chord at the end for resolution.
 - **Blues**: the twelve-bar form, dominant sevenths on every chord, swung shuffle, walking bass, and blue notes (b3 and b7) bent into a major key.
+
+### Genre profiles
+
+The recipes above are songs: the genre lives in what was written for them. A **profile** (`GENRES` in `genre-data.js`) is the genre as rules, so a spec that names only `genre: 'Blues'` and an emotion comes out as a blues: twelve-bar form, dominant sevenths, a shuffle, and composed melodies that repeat their first line over IV and flatten their thirds. The spec's `genre` picks the profile (case and spacing aside: `'Bossa nova'` is `bossa-nova`); a genre without one only labels the song. Anything the spec sets itself wins over the profile, and the profile wins over the emotion.
+
+| Field | Does | Used by |
+|---|---|---|
+| `mode`, `groove`, `comp`, `arp`, `style`, `swing`, `legato`, `form`, `power` | defaults in place of the emotion's | every profile |
+| `progressions` | per section type, in place of the emotion's whole set; a profile that sets its mode brings them, so the chords are written for that mode | blues, funk, celtic, tango, synthwave |
+| `extend` | plain triads played as `sevenths` (the key's own: Cmaj7, Dm7, G7, Bm7b5), `ninths` (no b9 on iii), `dominant` (every major chord a dominant 7th) or `add9`; written chords stay as written | jazz, bossa, lo-fi, gospel: ninths · blues, funk: dominant · synthwave, EDM: add9 |
+| `voicing` | the chord part: `shell` (3rd and 7th, the root left to the bass), `drop2` (the second voice from the top an octave down, where the range allows) | jazz, bossa: shell · gospel, cinematic: drop2 |
+| `cadences` | the cadence chords, over `CADENCES`: V7–I7 in the blues, V7–Imaj7 in jazz, the minor plagal iv–I "amen" in gospel, bVII–I in rock; a modal mode's own cadence still wins | blues, jazz, bossa, gospel, country, rock, tango |
+| `avoid` | scale steps the melody leaves out except in passing (`MELODY_RULES.avoid`), by brightness: `{ bright: [4, 7], dark: [2, 6] }` is pentatonic | country, rock, reggae, funk: pentatonic · celtic: the gapped hexatonic · blues: no major 7th |
+| `blue` | steps the melody may flatten (`MELODY_RULES.blue`), outside cadences; a step the chord already flattens (the b7 of I7) is just a chord tone | blues: 3 and 7 |
+| `phrases` | which 4-bar phrases of a composed section repeat an earlier one: `'aab'` repeats line one over IV, then answers it. A repeated note the old chord altered takes the new chord's accidental, so the G# of E7 becomes the G of A7: the blue third, for free | blues |
+| `rules` | `MELODY_RULES` weights of its own: jazz and bossa charge less for a non-chord tone on the beat, since a 9th there is colour | blues, jazz, bossa |
+
+A profile changes every song in its genre, hand-written hooks excepted. The genre songs above keep their own grooves, progressions and hooks, and gain the profile's harmony and melody: the funk song's triads become dominant sevenths, the gospel organ opens into drop-2 ninths, the bossa guitar plays shells.
+
+To add a genre, start from the recipe: its groove and comping become defaults, and the harmony column says which of `extend`, `cadences` and `voicing` it needs. Then listen to `{ genre, emotion }` with nothing else, and pin in the profile whatever came out wrong.
 
 ## 14. Telling a story with a song
 

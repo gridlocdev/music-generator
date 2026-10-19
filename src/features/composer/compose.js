@@ -14,12 +14,14 @@ import { ARRANGEMENT, ROLES, ROLE_NAMES, MELODY_OCTAVE } from './composer-data.j
 import { velocity, mod } from './meter.js';
 import { planSong, energyShape } from './plan.js';
 import { sectionChords, callAndResponse, cadenceChord } from './harmony.js';
-import { writeMelody, notatedMelody, songMotif, varyMelody } from './melody.js';
+import { writeMelody, songMotif } from './melody.js';
+import { varyMelody, repeatPhrases } from './melody-repeats.js';
+import { notatedMelody } from './notation.js';
 import { writeChords, writePad, writeArp, writeCounter, writeBass, writeDrums } from './parts.js';
 import { arrangeSection } from './arrange.js';
 import { syncopate } from './syncopation.js';
 
-export { parseMelody } from './melody.js';
+export { parseMelody } from './notation.js';
 
 /**
  * @typedef {{ key: number, beat: number, beats: number, vel: number, anticipates?: number }} Note
@@ -80,7 +82,7 @@ export function compose(spec)
         {
             const variant = ['chorus', 'post', 'drop'].includes(type) ? 0 : sec.n;
             const id = `${type}:${variant}`;
-            themes[id] ??= written ?? writeMelody(sec, melodyCfg, variant, motif, timeline);
+            themes[id] ??= written ?? repeatPhrases(writeMelody(sec, melodyCfg, variant, motif, timeline), sec, timeline);
             lead = (written ? themes[id] : varyMelody(themes[id], sec, timeline)).map(m => ({
                 key: degreeToKey(sec.tonic, sec.mode, m.degree, MELODY_OCTAVE, m.accidental),
                 beat: sec.beat + m.beat, beats: m.beats * (m.last ? 1 : song.legato),

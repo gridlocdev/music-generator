@@ -1,17 +1,20 @@
 // The accompaniment: chords, pad, arpeggio, countermelody, bass and drums, written from the chord timeline in the
 // section's meter (meter-patterns.js builds what a groove wasn't written for).
-import { chordPitchClasses, voiceChord, degreeToKey, keyToDegree, bassOf } from '../../lib/music-theory.js';
+import { chordPitchClasses, degreeToKey, keyToDegree, bassOf } from '../../lib/music-theory.js';
+import { voiceChord, shellClasses, dropTwo } from '../../lib/voicing.js';
 import { RANGES } from './composer-data.js';
 import { DRUM_KEYS, COMP_QUIET } from './patterns-data.js';
 import { STEP, mod, clamp, chordAt, velocity } from './meter.js';
 import { compBar, bassBar, drumBar, withFeel, withRoll } from './meter-patterns.js';
 import { harmonyVoice } from './harmony.js';
 
-// pitch classes to voice: power chords are root and fifth; big chords drop the fifth to stay at four notes
-function voicingClasses(chord, power)
+// pitch classes to voice: power chords are root and fifth; a shell is the 3rd and 7th; big chords drop the fifth to
+// stay at four notes
+function voicingClasses(chord, power, voicing)
 {
     const pcs = chordPitchClasses(chord);
     if (power) return [pcs[0], mod(chord.root + 7, 12)];
+    if (voicing === 'shell') return shellClasses(chord);
     return pcs.length > 4 ? pcs.filter((_, i)=> i !== 2) : pcs;
 }
 
@@ -25,9 +28,11 @@ export function writeChords(sec, track, memory)
     const stab = style !== 'sustain' && sec.style.stab > 0 ? sec.style.stab : Infinity;
     for (const span of sec.timeline)
     {
-        let v = voiceChord(voicingClasses(span.chord, sec.power), memory.chords, lo, hi);
+        let v = voiceChord(voicingClasses(span.chord, sec.power, sec.genre.voicing), memory.chords, lo, hi);
         if (sec.power) v = [...v, v[0] + 12];
         memory.chords = v;
+        // drop 2 opens the close voicing up, where the range has room; the next chord leads on from the close one
+        if (sec.genre.voicing === 'drop2' && !sec.power) v = dropTwo(v, lo);
         const end = span.beat + span.beats;
         for (let bar = Math.floor((span.beat - sec.beat) / sec.beatsPerBar); bar < sec.bars; bar++)
         {

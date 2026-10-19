@@ -279,7 +279,9 @@ export const MELODY_RULES = {
     repeatOnce: 0.8,        // the same pitch twice in a row (fine, but movement is better)
     repeat: 2.5,            // the same pitch a third time in a row
     cadence: 12,            // a phrase ending away from its cadence degrees
-    parallel: 5,          // a fifth or octave above the chord's root, then the same over the next root
+    parallel: 3,            // a fifth or octave above the chord's root, then the same over the next root
+    avoid: 2.5,             // a step the genre's scale leaves out (GENRES avoid), fine only in passing
+    blue: 0.6,              // a blue note (GENRES blue): a flattened 3rd or 7th, the genre's own colour
     tieBreak: 0.01,         // scale of the hashed tie-break
 };
 export const CADENCE_DEGREES = { half: [2, 5], full: [1], final: [1], deceptive: [1, 3] };

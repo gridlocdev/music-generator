@@ -1,9 +1,11 @@
 // The lead line. A song has one motif, 3–6 notes in a bar; each section develops it (repeated, sequenced, inverted,
 // played backwards, slowed, sped up, fragmented) in its motif bars, and answers it with answer, continuation and
 // cadence bars over 4-bar phrases. Every pitch is picked by scoring each candidate degree against MELODY_RULES, and
-// takes the chord's accidental where the chord alters its step. Or a melody written by hand in degree notation.
-import { degreeToKey, keyToDegree, chordPitchClasses, alterToChord, bassOf, hash } from '../../lib/music-theory.js';
+// takes the chord's accidental where the chord alters its step. The genre leaves out its scale's gaps, flattens its blue
+// notes (genre-data.js). Repeats are melody-repeats.js; a melody written by hand is read by notation.js.
+import { degreeToKey, keyToDegree, chordPitchClasses, alterToChord, bassOf, inScale, isMinorMode, hash } from '../../lib/music-theory.js';
 import { develop } from '../../lib/motif.js';
+import { parseMelody } from './notation.js';
 import { RANGES, MELODY_OCTAVE, CONTOURS, MELODY_HOME, MELODY_RULES, CADENCE_DEGREES, CADENCES, PEAK_RULE } from './composer-data.js';
 import { MOTIF, LEITMOTIFS } from './song-craft-data.js';
 import { chordAt, clamp, mod, strongBeat } from './meter.js';
@@ -11,8 +13,8 @@ import { rhythmsFor } from './meter-patterns.js';
 
 const noteCount = (cell)=> cell.filter(d => d > 0).length;
 
-// a degree's key under a chord: the scale note, or the chord's version of it (G# under E major in A minor)
-function keyUnder(sec, chord, d)
+/** a degree's key under a chord: the scale note, or the chord's version of it (G# under E major in A minor) */
+export function keyUnder(sec, chord, d)
 {
     return alterToChord(degreeToKey(sec.tonic, sec.mode, d, MELODY_OCTAVE), chord, sec.tonic, sec.mode);
 }
@@ -173,7 +175,22 @@ export function writeMelody(sec, cfg, variant, motif, timeline)
     const highDeg = keyToDegree(tonic, mode, highKey, MELODY_OCTAVE) - 1;
     const contour = CONTOURS[cfg.contour] ?? CONTOURS.arch;
     const home = MELODY_HOME + cfg.register;
-    const R = MELODY_RULES;
+    const R = { ...MELODY_RULES, ...sec.genre.rules };
+    const avoid = (isMinorMode(mode) ? sec.genre.avoid?.dark : sec.genre.avoid?.bright) ?? [];
+    const blue = sec.genre.blue ?? [];
+    const stepOf = (d)=> mod(d - 1, 7) + 1;
+    // each degree as the chord has it, and flattened when it's a blue note the scale doesn't already flatten
+    const candidates = (chord, cadence)=>
+    {
+        const out = [];
+        for (let d = lowDeg; d <= highDeg; d++)
+        {
+            const key = keyUnder(sec, chord, d), plain = degreeToKey(tonic, mode, d, MELODY_OCTAVE);
+            out.push({ d, key });
+            if (!cadence && blue.includes(stepOf(d)) && key === plain && !inScale(tonic, mode, plain - 1)) out.push({ d, key: plain - 1, blue: true });
+        }
+        return out;
+    };
 
     const out = [];
     let base = 0;                   // the degree the current motif statement is built on
@@ -200,11 +217,13 @@ export function writeMelody(sec, cfg, variant, motif, timeline)
         const motifNote = e.role === 'motif';
         const target = motifNote ? base + e.step : contourTarget;
 
-        let best = null, bestCost = Infinity;
-        for (let d = lowDeg; d <= highDeg; d++)
+        let best = null, bestKey = null, bestCost = Infinity;
+        for (const { d, key: k, blue: flat } of candidates(chord, e.cadence))
         {
-            const chordTone = isChordTone(d);
+            const chordTone = pcs.includes(mod(k, 12));
             let c = (motifNote ? R.motif : R.contour) * Math.abs(d - target);
+            if (flat) c += R.blue;
+            if (avoid.includes(stepOf(d)) && !flat) c += R.avoid;
             if (strong && !chordTone) c += R.strongNonChord;
             if (!strong && !chordTone && prev !== null && Math.abs(d - prev) > 1) c += R.weakNonChordLeap;
             if (prev !== null)
@@ -222,91 +241,19 @@ export function writeMelody(sec, cfg, variant, motif, timeline)
             // a fifth or octave above the bass again, over a new bass note, moves in parallel
             if (prevKey !== null && bassOf(chord) !== prevBass)
             {
-                const k = keyUnder(sec, chord, d), now = mod(k - bassOf(chord), 12);
+                const now = mod(k - bassOf(chord), 12);
                 if (k !== prevKey && (now === 0 || now === 7) && now === mod(prevKey - prevBass, 12)) c += R.parallel;
             }
             if (d === peak && peakTimes >= PEAK_RULE.times) c += PEAK_RULE.cost;
-            if (e.cadence && !CADENCE_DEGREES[e.cadence].includes(mod(d - 1, 7) + 1)) c += R.cadence;
-            c += (hash(seed, type, variant, i, d) % 1000) / 1000 * R.tieBreak;
-            if (c < bestCost) { best = d; bestCost = c; }
+            if (e.cadence && !CADENCE_DEGREES[e.cadence].includes(stepOf(d))) c += R.cadence;
+            c += (hash(seed, type, variant, i, d, flat ? 'blue' : '') % 1000) / 1000 * R.tieBreak;
+            if (c < bestCost) { best = d; bestKey = k; bestCost = c; }
         }
         if (best > peak) { peak = best; peakTimes = 1; }
         else if (best === peak) peakTimes++;
-        const key = keyUnder(sec, chord, best);
+        const key = bestKey;
         out.push({ beat: e.beat, beats: e.beats, degree: best, accidental: key - degreeToKey(tonic, mode, best, MELODY_OCTAVE), last: e.last || !!e.cadence });
         prev2 = prev; prev = best; prevKey = key; prevBass = bassOf(chord);
     });
-    return out;
-}
-
-/**
- * A repeat of a section's melody, varied by how many times it has been heard (sec.vary, from VARIATION): the last
- * phrase up an octave when that fits the lead's range, and the last note approached by step from a chord tone above
- * (or below) instead of landing on it at once.
- */
-export function varyMelody(theme, sec, timeline)
-{
-    const out = theme.map(m => ({ ...m }));
-    const { tonic, mode, beatsPerBar: bpb } = sec;
-    if (sec.vary.octave)
-    {
-        const from = Math.floor((sec.bars - 1) / 4) * 4 * bpb;
-        const part = out.filter(m => m.beat >= from);
-        const top = keyToDegree(tonic, mode, RANGES.lead[1], MELODY_OCTAVE);
-        if (part.length && Math.max(...part.map(m => m.degree)) + 7 <= top) for (const m of part) m.degree += 7;
-    }
-    const last = out.at(-1);
-    if (sec.vary.lastBar && last && last.beats >= 2)
-    {
-        const chord = chordAt(timeline, sec.beat + last.beat);
-        const pcs = chordPitchClasses(chord);
-        const accidental = (d)=> keyUnder(sec, chord, d) - degreeToKey(tonic, mode, d, MELODY_OCTAVE);
-        const fits = (d)=> pcs.includes(mod(keyUnder(sec, chord, d), 12));
-        const dir = fits(last.degree + 2) ? 1 : fits(last.degree - 2) ? -1 : 0;
-        if (dir)
-        {
-            const q = last.beats / 4;
-            out.splice(-1, 1,
-                { ...last, beats: q, degree: last.degree + 2 * dir, accidental: accidental(last.degree + 2 * dir), last: false },
-                { ...last, beat: last.beat + q, beats: q, degree: last.degree + dir, accidental: accidental(last.degree + dir), last: false },
-                { ...last, beat: last.beat + 2 * q, beats: last.beats - 2 * q });
-        }
-    }
-    return out;
-}
-
-/**
- * A melody written out by hand: space-separated tokens `degree[:beats]`. Degrees are scale steps (1 = tonic,
- * 8 = tonic an octave up), with b/# for accidentals and ' or , for an octave up/down; `r` is a rest.
- * Default length 1 beat; '|' is ignored. The line repeats to fill the section.
- */
-export function parseMelody(text)
-{
-    const out = [];
-    let t = 0;
-    for (const token of text.split(/\s+/).filter(x => x && x !== '|'))
-    {
-        const m = /^(?:(r)|(b|#)?(-?\d+)('*|,*))(?::([\d.]+))?$/.exec(token);
-        if (!m) throw new Error(`bad melody token: ${token}`);
-        const beats = m[5] ? Number(m[5]) : 1;
-        if (!(beats > 0)) throw new Error(`bad melody length: ${token}`);
-        if (!m[1])
-        {
-            const octaves = m[4].startsWith("'") ? m[4].length : -m[4].length;
-            out.push({ beat: t, beats, degree: Number(m[3]) + 7 * octaves, accidental: m[2] === 'b' ? -1 : m[2] === '#' ? 1 : 0 });
-        }
-        t += beats;
-    }
-    return { notes: out, beats: t };
-}
-
-export function notatedMelody(text, total)
-{
-    const { notes, beats } = parseMelody(text);
-    /** @type {{ beat: number, beats: number, degree: number, accidental: number, last?: boolean }[]} */
-    const out = [];
-    for (let start = 0; start < total && beats > 0; start += beats)
-        for (const n of notes) if (start + n.beat < total) out.push({ ...n, beat: start + n.beat, beats: Math.min(n.beats, total - start - n.beat) });
-    if (out.length) out.at(-1).last = true;
     return out;
 }

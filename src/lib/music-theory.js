@@ -1,4 +1,4 @@
-// Keys, modes, scale degrees, Roman-numeral chords and voice leading, as MIDI numbers. Pure.
+// Keys, modes, scale degrees and Roman-numeral chords, as MIDI numbers. Pure. Voicings are in voicing.js.
 // The rules behind these choices are in docs/COMPOSING.md.
 
 const PITCH_CLASSES = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
@@ -213,52 +213,28 @@ export function parseProgression(text, tonic, mode)
 }
 
 /**
- * Voices a chord inside [low, high]: one key per pitch class, chosen to move least from the previous voicing
- * (or, with none, to sit near the middle of the range) and to stay compact. Deterministic.
- * @param {number[]} pcs  pitch classes to voice
- * @param {number[] | null} prev  previous voicing, low to high
- * @returns {number[]} keys, low to high
+ * A plain triad played the way a genre plays it; chords already written with a 7th, 6th, sus or added note stay.
+ *   sevenths  the 7th the key gives it: Cmaj7, Dm7, G7, Bm7b5 in C; a major chord whose major 7th is outside the key
+ *             (V, a secondary dominant, bVII in minor) takes the minor 7th, a diminished one a diminished 7th
+ *   ninths    sevenths plus the 9th, when the key has it (no b9 on iii)
+ *   dominant  every major chord a dominant 7th, every minor one m7: the blues and funk
+ *   add9      major and minor triads with an added 9th, when the key has it: pop shimmer
+ * @param {ReturnType<typeof parseChord>} chord
+ * @param {'sevenths' | 'ninths' | 'dominant' | 'add9' | null} how
  */
-export function voiceChord(pcs, prev, low, high)
+export function extendChord(chord, how, tonic, mode)
 {
-    const options = pcs.map(pc =>
-    {
-        const keys = [];
-        for (let k = low + mod(pc - low, 12); k <= high; k += 12) keys.push(k);
-        return keys;
-    });
-    if (options.some(o => !o.length)) throw new Error(`range ${low}–${high} can't hold the chord`);
-
-    let best = null, bestCost = Infinity;
-    const pick = (i, chosen)=>
-    {
-        if (i === options.length)
-        {
-            const v = [...chosen].sort((a, b)=> a - b);
-            const c = voicingCost(v, prev, low, high);
-            if (c < bestCost || (c === bestCost && v.join() < best.join())) { best = v; bestCost = c; }
-            return;
-        }
-        for (const k of options[i]) { chosen.push(k); pick(i + 1, chosen); chosen.pop(); }
-    };
-    pick(0, []);
-    return /** @type {number[]} */ (best);
-}
-
-function voicingCost(v, prev, low, high)
-{
-    const span = v.at(-1) - v[0];
-    let cost = Math.max(0, span - 12) * 2;          // keep it within an octave or so
-    for (let i = 1; i < v.length; i++) if (v[i] - v[i - 1] < 2) cost += 3;   // seconds in a close voicing are muddy
-    if (!prev?.length)
-    {
-        const mean = v.reduce((a, b)=> a + b, 0) / v.length;
-        return cost + Math.abs(mean - (low + high) / 2);
-    }
-    // each voice moves to the nearest note of the new chord
-    for (const k of v) cost += Math.min(...prev.map(p => Math.abs(p - k)));
-    for (const p of prev) cost += Math.min(...v.map(k => Math.abs(p - k))) * 0.5;
-    return cost;
+    const t = chord.tones;
+    if (!how || t.length !== 3 || t[1] !== 3 && t[1] !== 4) return chord;
+    const fits = (n)=> inScale(tonic, mode, chord.root + n);
+    const ninth = fits(2) ? [14] : [];
+    if (how === 'add9') return t[2] === 7 ? { ...chord, tones: [...t, ...ninth] } : chord;
+    let seventh;
+    if (how === 'dominant') seventh = t[2] === 7 ? 10 : null;
+    else if (t[2] === 6) seventh = fits(10) ? 10 : 9;
+    else if (t[2] === 7) seventh = t[1] === 3 ? 10 : fits(11) ? 11 : 10;
+    if (seventh == null) return chord;
+    return { ...chord, tones: [...t, seventh, ...(how === 'ninths' && seventh !== 9 ? ninth : [])] };
 }
 
 /** a stable 32-bit hash of any strings/numbers (FNV-1a), for choices that must be the same every time */

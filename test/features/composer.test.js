@@ -316,6 +316,47 @@ test('slash chords and pedals: the bass plays the written bass note; an inversio
     assert.ok(bassUnder('I IV vi V', { pedal: 5 }).flat().every(pc => pc === 7));
 });
 
+test('a genre alone sets the groove, comping, mode, form and progressions; the spec still wins', ()=>
+{
+    const s = compose({ title: 'Just blues', genre: 'Blues', emotion: 'melancholy', key: 'E' });
+    assert.equal(s.mode, 'major');
+    assert.deepEqual(s.sections.map(x => x.type), ['intro', 'blues', 'blues', 'blues', 'outro']);
+    const chorus = s.chords.filter(c => c.beat >= s.sections[1].beat && c.beat < s.sections[1].beat + s.sections[1].beats).map(c => c.name);
+    assert.deepEqual(chorus, ['E7', 'A7', 'E7', 'E7', 'A7', 'A7', 'E7', 'E7', 'B7', 'A7', 'E7', 'B7']);
+    assert.equal(compose({ title: 'Own mode', genre: 'Blues', emotion: 'melancholy', mode: 'minor' }).mode, 'minor');
+    assert.equal(compose({ title: 'No such genre', genre: 'Polka', emotion: 'joyful' }).mode, 'major');
+});
+
+test('genres extend triads and voice them their way: jazz shells without the root, rock power chords', ()=>
+{
+    const chordsOf = (genre)=> compose({ title: 'Voicing', genre, emotion: 'joyful', key: 'C', form: ['verse'], sections: { verse: { progression: 'I vi ii V', endOn: null } } });
+    const jazz = chordsOf('Jazz');
+    assert.deepEqual(jazz.chords.map(c => c.name).slice(0, 4), ['Cmaj9', 'Am9', 'Dm9', 'G9']);
+    const first = jazz.tracks.find(t => t.role === 'chords').notes.filter(n => n.beat < 4).map(n => n.key % 12);
+    assert.ok(first.length && !first.includes(0), `no root C in the shell: ${first}`);
+    assert.deepEqual(chordsOf('Rock').chords.map(c => c.name).slice(0, 4), ['C', 'Am', 'Dm', 'G'], 'power chords stay triads');
+});
+
+test('blues lines: the second 4 bars repeat the first over IV, the chord\'s 7th turning the 3rd blue', ()=>
+{
+    const s = compose({ title: 'Twelve bars', genre: 'Blues', emotion: 'melancholy', key: 'E', form: ['blues'], sections: { blues: { melody: undefined } } });
+    const lead = s.tracks.find(t => t.role === 'lead').notes;
+    const line = (n)=> lead.filter(x => x.beat >= n * 16 && x.beat < n * 16 + 16).map(x => [x.beat - n * 16, x.key]);
+    const [a1, a2] = [line(0), line(1)];
+    assert.ok(a1.length > 3);
+    assert.deepEqual(a2.map(([t])=> t), a1.map(([t])=> t), 'same rhythm');
+    a2.forEach(([, k], i)=> assert.ok(k === a1[i][1] || (a1[i][1] % 12 === 8 && k % 12 === 7), `same tune, G# to G over A7: ${a1[i][1]} → ${k}`));
+});
+
+test('a pentatonic genre keeps its melody off the scale\'s gaps', ()=>
+{
+    const spec = { title: 'Gaps', emotion: 'hopeful', key: 'C', mode: 'major', form: ['verse', 'chorus'],
+        sections: { verse: { progression: 'I vi IV V' }, chorus: { progression: 'I IV vi V' } } };
+    const gaps = (s)=> s.tracks.find(t => t.role === 'lead').notes.filter(n => [5, 11].includes(n.key % 12)).length;
+    const plain = compose(spec), country = compose({ ...spec, genre: 'Country' });
+    assert.ok(gaps(country) * 3 < gaps(plain), `country ${gaps(country)} vs plain ${gaps(plain)} F or B`);
+});
+
 test('call and response: in the bridge the lead and the countermelody take turns and never overlap', ()=>
 {
     const s = compose({ title: 'Answer', emotion: 'joyful', style: { syncopation: 0 } });

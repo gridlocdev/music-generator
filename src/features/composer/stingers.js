@@ -2,7 +2,7 @@
 // music under them. Pure; song-player.js plays them on the next beat.
 import { degreeToKey } from '../../lib/music-theory.js';
 import { STINGERS } from './adaptive-data.js';
-import { parseMelody } from './melody.js';
+import { parseMelody } from './notation.js';
 
 /**
  * @param {string} kind  a STINGERS key
