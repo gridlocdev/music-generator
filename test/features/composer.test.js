@@ -238,6 +238,20 @@ test('sections end on their cadence: pre-chorus on V, chorus and outro on I, a c
     assert.equal(rootOf(s, lastChord(s, s.sections[i + 1])), s.sections[i].tonic);
 });
 
+test('modal cadences use the mode\'s own chords: bVII–I in mixolydian, bII–i in phrygian, no borrowed leading tone', ()=>
+{
+    // every section ends away from the tonic, so each cadence has to be written in
+    const ends = (mode, i = mode === 'phrygian' ? 'i VI' : 'I vi')=>
+    {
+        const s = compose({ title: 'Modal', emotion: 'heroic', mode, form: ['verse', 'pre', 'chorus', 'outro'],
+            sections: { verse: { progression: i }, pre: { progression: i }, chorus: { progression: i }, outro: { progression: i } } });
+        return s.sections.map(sec => s.chords.filter(c => c.beat < sec.beat + sec.beats).slice(-2).map(c => c.name).join(' '));
+    };
+    assert.deepEqual(ends('mixolydian').slice(1), ['Bb Ab', 'Ab Bb', 'Ab Bb']);     // Bb mixolydian: pre on bVII, chorus bVII–I
+    assert.deepEqual(ends('phrygian').slice(1, 3), ['Bbm Abm', 'B Bbm']);           // Bb phrygian: pre on bvii, chorus bII–i
+    assert.deepEqual(ends('major').slice(1), ['Bb F', 'F Bb', 'F Bb']);            // major keeps V–I
+});
+
 test('harmonic rhythm: a pre-chorus changes chords twice as fast as written; an intro half as fast', ()=>
 {
     const count = (spec, type)=> { const s = compose(spec); const sec = s.sections.find(x => x.type === type); return s.chords.filter(c => c.beat >= sec.beat && c.beat < sec.beat + sec.beats).length; };
@@ -272,6 +286,17 @@ test('the climax gets a harmony voice: one note under each lead note, in the key
         assert.ok(h.key < lead[i].key && h.beat === lead[i].beat);
         assert.ok(MODES.major.includes((h.key - peak.tonic + 120) % 12), `in key: ${h.key}`);
     });
+});
+
+test('a composed melody takes the chord\'s accidental: G# under E major in A minor, never G', ()=>
+{
+    const s = compose({ title: 'Raised', emotion: 'melancholy',
+        sections: { verse: { progression: 'i iv V V' }, chorus: { progression: 'VI iv V i' } } });
+    const lead = s.tracks.find(t => t.role === 'lead').notes;
+    const overV = lead.filter(n => s.chords.findLast(c => c.beat <= n.beat + 1e-9).name === 'E');
+    assert.ok(overV.length > 4);
+    assert.ok(overV.every(n => n.key % 12 !== 7), 'no G natural over E major');
+    assert.ok(overV.some(n => n.key % 12 === 8), 'the raised seventh is used');
 });
 
 test('call and response: in the bridge the lead and the countermelody take turns and never overlap', ()=>

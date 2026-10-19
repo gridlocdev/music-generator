@@ -42,7 +42,7 @@ export function planSong(spec)
         swing: spec.swing ?? feel.swing ?? groove.swing ?? style.swing ?? 0,
         swingSub: spec.swingSub ?? 0.5,
         seed: String(spec.seed ?? spec.title ?? spec.id ?? 'song'),
-        flats: /b/.test(keyName) || keyName === 'F' || (/minor|dorian|phrygian|aeolian/i.test(mode) && ['D', 'G', 'C', 'F'].includes(keyName)),
+        flats: /b/.test(keyName) || keyName === 'F' || (/minor|dorian|phrygian|aeolian|locrian/i.test(mode) && ['D', 'G', 'C', 'F'].includes(keyName)),
     };
 
     const songMeter = spec.meter ?? nativeMeter(groove);

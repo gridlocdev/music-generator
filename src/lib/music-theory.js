@@ -13,14 +13,16 @@ export const MODES = {
     phrygian:      [0, 1, 3, 5, 7, 8, 10],
     lydian:        [0, 2, 4, 6, 7, 9, 11],
     mixolydian:    [0, 2, 4, 5, 7, 9, 10],
+    locrian:       [0, 1, 3, 5, 6, 8, 10],
     harmonicMinor: [0, 2, 3, 5, 7, 8, 11],
+    melodicMinor:  [0, 2, 3, 5, 7, 9, 11],
 };
 MODES.ionian = MODES.major;
 MODES.aeolian = MODES.minor;
 
 const mod = (n, m)=> ((n % m) + m) % m;
 
-/** true for modes with a minor third: minor, dorian, phrygian, harmonic minor */
+/** true for modes with a minor third: minor, dorian, phrygian, locrian, harmonic and melodic minor */
 export const isMinorMode = (mode)=> MODES[mode][2] === 3;
 
 /**
@@ -75,24 +77,35 @@ export function keyToDegree(tonic, mode, key, octave = 4)
 export const inScale = (tonic, mode, key)=> MODES[mode].includes(mod(key - tonic, 12));
 
 const NUMERALS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
-const CHORD = /^(b|#)?(VII|VI|V|IV|III|II|I|vii|vi|v|iv|iii|ii|i)(°|o|ø|\+)?(maj7|maj9|add9|sus2|sus4|7|9|6)?$/;
+const CHORD = /^(b|#)?(VII|VI|V|IV|III|II|I|vii|vi|v|iv|iii|ii|i)(°|o|ø|\+)?(maj7|maj9|add9|7sus4|9sus4|sus2|sus4|7|9|6)?$/;
 
 /**
  * A Roman-numeral chord in a key. Case gives the quality (V major, v minor), then ° dim, ø half-dim, + aug,
- * and a suffix 7, maj7, 9, maj9, add9, 6, sus2, sus4. A plain numeral counts in the song's mode (VII in minor is
- * the flat seven); with b or # it counts from the major scale, as usual: bVII is a whole step below the tonic in
- * any mode, bVI and bIII are borrowed from the parallel minor, bII is the Neapolitan.
- * @returns {{ symbol: string, root: number, tones: number[], degree: number }}
- *   root is a pitch class, tones are semitones above it (root first), degree is the numeral's step 1–7
+ * and a suffix 7, maj7, 9, maj9, add9, 6, sus2, sus4, 7sus4, 9sus4. A plain numeral counts in the song's mode (VII
+ * in minor is the flat seven), except a diminished vii, which is built on the leading tone in every mode; with b or #
+ * it counts from the major scale, as usual: bVII is a whole step below the tonic in any mode, bVI and bIII are
+ * borrowed from the parallel minor, bII is the Neapolitan. `X/Y` is chord X in the major key of chord Y's root, the
+ * secondary dominants and leading-tone chords: V7/vi, vii°7/V.
+ * @returns {{ symbol: string, root: number, tones: number[], degree: number, step: number }}
+ *   root is a pitch class, tones are semitones above it (root first), degree is the numeral's step 1–7 (0 for X/Y),
+ *   step is the scale step the root stands on (the G of G# in A minor), 0 when unknown
  */
 export function parseChord(symbol, tonic, mode)
 {
+    const slash = symbol.indexOf('/');
+    if (slash >= 0)
+    {
+        const target = parseChord(symbol.slice(slash + 1), tonic, mode);
+        const inner = parseChord(symbol.slice(0, slash), target.root, 'major');
+        return { ...inner, symbol, degree: 0, step: target.step && mod(target.step + inner.step - 2, 7) + 1 };
+    }
     const m = CHORD.exec(symbol);
     if (!m) throw new Error(`not a chord: ${symbol}`);
     const [, acc, numeral, quality, ext] = m;
     const degree = NUMERALS.indexOf(numeral.toUpperCase()) + 1;
     const upper = numeral === numeral.toUpperCase();
-    const root = mod(tonic + (acc ? MODES.major[degree - 1] + (acc === 'b' ? -1 : 1) : MODES[mode][degree - 1]), 12);
+    const leadingTone = !acc && degree === 7 && (quality === '°' || quality === 'o' || quality === 'ø');
+    const root = mod(tonic + (acc ? MODES.major[degree - 1] + (acc === 'b' ? -1 : 1) : leadingTone ? 11 : MODES[mode][degree - 1]), 12);
 
     let tones = quality === '°' || quality === 'o' ? [0, 3, 6]
         : quality === 'ø' ? [0, 3, 6, 10]
@@ -107,11 +120,50 @@ export function parseChord(symbol, tonic, mode)
     else if (ext === '6') tones = [...tones, 9];
     else if (ext === 'sus2') tones = [0, 2, ...tones.slice(2)];
     else if (ext === 'sus4') tones = [0, 5, ...tones.slice(2)];
-    return { symbol, root, tones: [...new Set(tones)], degree };
+    else if (ext === '7sus4') tones = [0, 5, ...tones.slice(2), 10];
+    else if (ext === '9sus4') tones = [0, 5, ...tones.slice(2), 10, 14];
+    return { symbol, root, tones: [...new Set(tones)], degree, step: degree };
 }
 
 /** the chord's pitch classes */
 export const chordPitchClasses = (chord)=> chord.tones.map(t => mod(chord.root + t, 12));
+
+/**
+ * The scale steps above its root a chord tone stands on: 3 and 4 semitones are a third, 6 a diminished fifth, 9 a
+ * diminished seventh in a diminished chord and a sixth otherwise, 14 a ninth.
+ */
+export function toneStep(t, tones)
+{
+    if (t === 9) return tones.includes(6) && !tones.includes(7) ? 6 : 5;
+    return [0, 1, 1, 2, 2, 3, 4, 4, 4, 5, 6, 6][t % 12];
+}
+
+/**
+ * A scale key moved onto the chord's own version of its step, so a line follows a chord from outside the mode:
+ * G to G# under E major in A minor, A to Ab under the borrowed iv in C, B to Bb under bVII. A step the chord doesn't
+ * use keeps its scale note (G stays G under Fm in C: a ninth, not a clash). Chord tones and chromatic keys stay.
+ * @param {ReturnType<typeof parseChord>} chord
+ */
+export function alterToChord(key, chord, tonic, mode)
+{
+    if (!chord.step || !inScale(tonic, mode, key)) return key;
+    const pc = mod(key, 12);
+    if (chordPitchClasses(chord).includes(pc)) return key;
+    for (const t of chord.tones)
+    {
+        const natural = mod(tonic + MODES[mode][mod(chord.step - 1 + toneStep(t, chord.tones), 7)], 12);
+        if (natural === pc) return key + mod(chord.root + t - pc + 6, 12) - 6;
+    }
+    return key;
+}
+
+/** the scale key a chord's altered tone stands for, undoing alterToChord: G for G# under E major in A minor */
+export function unalter(key, chord, tonic, mode)
+{
+    if (inScale(tonic, mode, key)) return key;
+    for (const d of [-1, 1, -2, 2]) if (alterToChord(key + d, chord, tonic, mode) === key) return key + d;
+    return key;
+}
 
 /** a chord's name in letters, e.g. 'Am7' for vi7 in C */
 export function chordName(chord, flats = false)
@@ -122,8 +174,9 @@ export function chordName(chord, flats = false)
     const sus = !t.has(3) && !t.has(4) ? (t.has(5) ? 'sus4' : t.has(2) ? 'sus2' : '5') : '';
     if (t.has(3) && t.has(6)) return name + (t.has(10) ? 'm7b5' : t.has(9) ? 'dim7' : 'dim');
     if (t.has(4) && t.has(8)) return name + 'aug';
-    const seventh = t.has(11) ? 'maj7' : t.has(10) ? '7' : t.has(9) ? '6' : '';
-    const add = chord.tones.includes(14) ? (seventh ? '' : 'add9') : '';
+    const ninth = chord.tones.includes(14);
+    const seventh = t.has(11) ? (ninth ? 'maj9' : 'maj7') : t.has(10) ? (ninth ? '9' : '7') : t.has(9) ? '6' : '';
+    const add = ninth && !seventh ? 'add9' : '';
     return name + third + seventh + sus + add;
 }
 

@@ -279,6 +279,7 @@ export const MELODY_RULES = {
     repeatOnce: 0.8,        // the same pitch twice in a row (fine, but movement is better)
     repeat: 2.5,            // the same pitch a third time in a row
     cadence: 12,            // a phrase ending away from its cadence degrees
+    parallel: 5,          // a fifth or octave above the chord's root, then the same over the next root
     tieBreak: 0.01,         // scale of the hashed tie-break
 };
 export const CADENCE_DEGREES = { half: [2, 5], full: [1], final: [1], deceptive: [1, 3] };
@@ -288,11 +289,17 @@ export const PEAK_RULE = { times: 2, cost: 4 };
 // ---- Harmony at the scale of a section --------------------------------------------------------------
 // The cadences a section's chords can end on. The last symbol is the last bar's chord; any before it take the second
 // half of the bar before, unless the chord there already leads in. bright: modes with a major third, dark: minor.
+// modal: a mode whose own chords make the cadence, instead of a major V with a leading tone the mode doesn't have.
+// Plain numerals count in the mode: VII is bVII in mixolydian and dorian, II is bII in phrygian, #IV's II in lydian.
 export const CADENCES = {
-    dominant:  { bright: ['V'], dark: ['V'], melody: 'half' },                     // a question mark
-    tonic:     { bright: ['V', 'I'], dark: ['V', 'i'], melody: 'full' },           // a full stop: authentic
-    plagal:    { bright: ['IV', 'I'], dark: ['iv', 'i'], melody: 'full' },         // a soft "amen"
-    deceptive: { bright: ['V', 'vi'], dark: ['V', 'VI'], melody: 'deceptive' },    // resolution expected, a minor chord instead
+    dominant:  { bright: ['V'], dark: ['V'], melody: 'half',                       // a question mark
+        modal: { mixolydian: ['VII'], dorian: ['v'], phrygian: ['vii'], lydian: ['II'] } },
+    tonic:     { bright: ['V', 'I'], dark: ['V', 'i'], melody: 'full',             // a full stop: authentic
+        modal: { mixolydian: ['VII', 'I'], dorian: ['VII', 'i'], phrygian: ['II', 'i'] } },
+    plagal:    { bright: ['IV', 'I'], dark: ['iv', 'i'], melody: 'full',           // a soft "amen"
+        modal: { dorian: ['IV', 'i'], lydian: ['II', 'I'] } },
+    deceptive: { bright: ['V', 'vi'], dark: ['V', 'VI'], melody: 'deceptive',      // resolution expected, a minor chord instead
+        modal: { mixolydian: ['VII', 'vi'], dorian: ['VII', 'III'], phrygian: ['II', 'VI'] } },
 };
 // degrees of chords that already lead into a cadence's last chord, so nothing needs inserting before it
 export const LEADS_IN = { tonic: [4, 5, 7], plagal: [4], deceptive: [5], dominant: [] };

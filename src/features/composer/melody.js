@@ -1,8 +1,8 @@
 // The lead line. A song has one motif, 3–6 notes in a bar; each section develops it (repeated, sequenced, inverted,
 // played backwards, slowed, sped up, fragmented) in its motif bars, and answers it with answer, continuation and
-// cadence bars over 4-bar phrases. Every pitch is picked by scoring each candidate degree against MELODY_RULES.
-// Or a melody written by hand in degree notation.
-import { degreeToKey, keyToDegree, chordPitchClasses, hash } from '../../lib/music-theory.js';
+// cadence bars over 4-bar phrases. Every pitch is picked by scoring each candidate degree against MELODY_RULES, and
+// takes the chord's accidental where the chord alters its step. Or a melody written by hand in degree notation.
+import { degreeToKey, keyToDegree, chordPitchClasses, alterToChord, hash } from '../../lib/music-theory.js';
 import { develop } from '../../lib/motif.js';
 import { RANGES, MELODY_OCTAVE, CONTOURS, MELODY_HOME, MELODY_RULES, CADENCE_DEGREES, CADENCES, PEAK_RULE } from './composer-data.js';
 import { MOTIF, LEITMOTIFS } from './song-craft-data.js';
@@ -10,6 +10,12 @@ import { chordAt, clamp, mod, strongBeat } from './meter.js';
 import { rhythmsFor } from './meter-patterns.js';
 
 const noteCount = (cell)=> cell.filter(d => d > 0).length;
+
+// a degree's key under a chord: the scale note, or the chord's version of it (G# under E major in A minor)
+function keyUnder(sec, chord, d)
+{
+    return alterToChord(degreeToKey(sec.tonic, sec.mode, d, MELODY_OCTAVE), chord, sec.tonic, sec.mode);
+}
 
 /**
  * @typedef {{ beats: number, start: number, notes: import('../../lib/motif.js').MotifNote[] }} SongMotif
@@ -106,7 +112,8 @@ function fitMotif(motif, sec)
 
 /**
  * Writes a section's melody in scale degrees: the motif, developed, in motif bars; answer, continuation and cadence
- * bars around it over 4-bar phrases; each pitch chosen by scoring every degree in range against MELODY_RULES.
+ * bars around it over 4-bar phrases; each pitch chosen by scoring every degree in range against MELODY_RULES, with
+ * the accidental that fits the chord under it.
  * @param {SongMotif} motif
  * @returns {{ beat: number, beats: number, degree: number, accidental: number, last?: boolean }[]}
  */
@@ -170,7 +177,7 @@ export function writeMelody(sec, cfg, variant, motif, timeline)
 
     const out = [];
     let base = 0;                   // the degree the current motif statement is built on
-    let prev = null, prev2 = null, peak = -Infinity, peakTimes = 0;
+    let prev = null, prev2 = null, peak = -Infinity, peakTimes = 0, prevKey = null, prevRoot = null;
     events.forEach((e, i)=>
     {
         const beatInPhrase = e.beat - e.phrase * 4 * bpb;
@@ -178,8 +185,9 @@ export function writeMelody(sec, cfg, variant, motif, timeline)
         const lo = Math.floor(f), frac = f - lo;
         const contourTarget = home + contour[lo] + (contour[Math.min(lo + 1, contour.length - 1)] - contour[lo]) * frac;
 
-        const pcs = chordPitchClasses(chordAt(timeline, sec.beat + e.beat));
-        const isChordTone = (d)=> pcs.includes(mod(degreeToKey(tonic, mode, d, MELODY_OCTAVE), 12));
+        const chord = chordAt(timeline, sec.beat + e.beat);
+        const pcs = chordPitchClasses(chord);
+        const isChordTone = (d)=> pcs.includes(mod(keyUnder(sec, chord, d), 12));
         const strong = strongBeat(meter, mod(e.beat, bpb)) || e.beats >= 2;
         if (e.role === 'motif' && e.first)
         {
@@ -211,6 +219,12 @@ export function writeMelody(sec, cfg, variant, motif, timeline)
                 }
                 if (d === prev) c += prev === prev2 ? R.repeat : R.repeatOnce;
             }
+            // the bass plays the chord's root: a fifth or octave above it again, on a new root, moves in parallel
+            if (prevKey !== null && chord.root !== prevRoot)
+            {
+                const k = keyUnder(sec, chord, d), now = mod(k - chord.root, 12);
+                if (k !== prevKey && (now === 0 || now === 7) && now === mod(prevKey - prevRoot, 12)) c += R.parallel;
+            }
             if (d === peak && peakTimes >= PEAK_RULE.times) c += PEAK_RULE.cost;
             if (e.cadence && !CADENCE_DEGREES[e.cadence].includes(mod(d - 1, 7) + 1)) c += R.cadence;
             c += (hash(seed, type, variant, i, d) % 1000) / 1000 * R.tieBreak;
@@ -218,8 +232,9 @@ export function writeMelody(sec, cfg, variant, motif, timeline)
         }
         if (best > peak) { peak = best; peakTimes = 1; }
         else if (best === peak) peakTimes++;
-        out.push({ beat: e.beat, beats: e.beats, degree: best, accidental: 0, last: e.last || !!e.cadence });
-        prev2 = prev; prev = best;
+        const key = keyUnder(sec, chord, best);
+        out.push({ beat: e.beat, beats: e.beats, degree: best, accidental: key - degreeToKey(tonic, mode, best, MELODY_OCTAVE), last: e.last || !!e.cadence });
+        prev2 = prev; prev = best; prevKey = key; prevRoot = chord.root;
     });
     return out;
 }
@@ -241,17 +256,19 @@ export function varyMelody(theme, sec, timeline)
         if (part.length && Math.max(...part.map(m => m.degree)) + 7 <= top) for (const m of part) m.degree += 7;
     }
     const last = out.at(-1);
-    if (sec.vary.lastBar && last && last.beats >= 2 && !last.accidental)
+    if (sec.vary.lastBar && last && last.beats >= 2)
     {
-        const pcs = chordPitchClasses(chordAt(timeline, sec.beat + last.beat));
-        const fits = (d)=> pcs.includes(mod(degreeToKey(tonic, mode, d, MELODY_OCTAVE), 12));
+        const chord = chordAt(timeline, sec.beat + last.beat);
+        const pcs = chordPitchClasses(chord);
+        const accidental = (d)=> keyUnder(sec, chord, d) - degreeToKey(tonic, mode, d, MELODY_OCTAVE);
+        const fits = (d)=> pcs.includes(mod(keyUnder(sec, chord, d), 12));
         const dir = fits(last.degree + 2) ? 1 : fits(last.degree - 2) ? -1 : 0;
         if (dir)
         {
             const q = last.beats / 4;
             out.splice(-1, 1,
-                { ...last, beats: q, degree: last.degree + 2 * dir, last: false },
-                { ...last, beat: last.beat + q, beats: q, degree: last.degree + dir, last: false },
+                { ...last, beats: q, degree: last.degree + 2 * dir, accidental: accidental(last.degree + 2 * dir), last: false },
+                { ...last, beat: last.beat + q, beats: q, degree: last.degree + dir, accidental: accidental(last.degree + dir), last: false },
                 { ...last, beat: last.beat + 2 * q, beats: last.beats - 2 * q });
         }
     }

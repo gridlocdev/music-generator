@@ -1,7 +1,7 @@
 // Harmony across a section and between voices: the progression at the section's harmonic rhythm, ended on its
 // cadence; passing diminished sevenths before chord changes; harmony voices derived from the melody; and call and
 // response, where the countermelody answers the lead. Pure.
-import { parseProgression, parseChord, chordPitchClasses, diatonicShift, isMinorMode, keyToDegree, hash } from '../../lib/music-theory.js';
+import { parseProgression, parseChord, chordPitchClasses, diatonicShift, isMinorMode, keyToDegree, alterToChord, unalter, toneStep, hash } from '../../lib/music-theory.js';
 import { CADENCES, LEADS_IN, RANGES } from './composer-data.js';
 import { CALL_BARS } from './song-craft-data.js';
 import { chordTimeline, chordAt, mod, strongBeat, velocity } from './meter.js';
@@ -30,22 +30,23 @@ function overlay(timeline, from, to, chord)
     return out.sort((x, y)=> x.beat - y.beat);
 }
 
-/** the chord a section's cadence ends on */
-export function cadenceChord(sec)
+// a cadence's chord symbols in the section's mode
+function cadenceSymbols(sec)
 {
     const c = CADENCES[sec.endOn];
     if (!c) throw new Error(`unknown cadence: ${sec.endOn}`);
-    return parseChord((isMinorMode(sec.mode) ? c.dark : c.bright).at(-1), sec.tonic, sec.mode);
+    return c.modal?.[sec.mode] ?? (isMinorMode(sec.mode) ? c.dark : c.bright);
 }
+
+/** the chord a section's cadence ends on */
+export const cadenceChord = (sec)=> parseChord(cadenceSymbols(sec).at(-1), sec.tonic, sec.mode);
 
 // The last bar becomes the cadence's chord, unless the progression already ends on it (Imaj7 counts as I, and a
 // major I in a minor song, the Picardy third, as i). The chord leading in takes the bar before's second half,
 // unless what's there already leads in.
 function withCadence(timeline, sec)
 {
-    const c = CADENCES[sec.endOn];
-    if (!c) throw new Error(`unknown cadence: ${sec.endOn}`);
-    const chords = (isMinorMode(sec.mode) ? c.dark : c.bright).map(sym => parseChord(sym, sec.tonic, sec.mode));
+    const chords = cadenceSymbols(sec).map(sym => parseChord(sym, sec.tonic, sec.mode));
     const final = chords.at(-1);
     if (timeline.at(-1).chord.root === final.root) return timeline;
     const end = sec.beat + sec.beats, lastBar = end - sec.beatsPerBar;
@@ -75,7 +76,8 @@ function withPassingChords(timeline, sec)
 
 /**
  * Of the three diminished sevenths, the one with the most notes a semitone below the target chord's notes. It's named
- * from the target's leading tone when it holds it: C#dim7 before Dm, F#dim7 before G.
+ * from the target's leading tone when it holds it (C#dim7 before Dm, F#dim7 before G), else from a note leading to
+ * another of the target's tones, and stands on the scale step below that tone's.
  */
 export function passingDim7(target)
 {
@@ -87,9 +89,13 @@ export function passingDim7(target)
         const score = tones.filter(t => pcs.includes((t + 1) % 12)).length + (tones.includes(mod(target.root - 1, 12)) ? 0.5 : 0);
         if (score > bestScore) { best = r; bestScore = score; }
     }
-    const leading = mod(target.root - 1, 12);
-    const root = [0, 3, 6, 9].map(t => (best + t) % 12).includes(leading) ? leading : best;
-    return { symbol: 'dim7', root, tones: [0, 3, 6, 9], degree: 0 };
+    const tones = [0, 3, 6, 9].map(t => (best + t) % 12);
+    const led = [...target.tones].sort((a, b)=> (a % 12 === 0 ? -1 : 0) - (b % 12 === 0 ? -1 : 0))
+        .find(t => tones.includes(mod(target.root + t - 1, 12)));
+    if (led === undefined) return { symbol: 'dim7', root: best, tones: [0, 3, 6, 9], degree: 0, step: 0 };
+    // C# is the C of C#dim7 before Dm
+    const step = target.step ? mod(target.step - 2 + toneStep(led, target.tones), 7) + 1 : 0;
+    return { symbol: 'dim7', root: mod(target.root + led - 1, 12), tones: [0, 3, 6, 9], degree: 0, step };
 }
 
 // a key moved by octaves into [lo, hi], nearest the previous one so the line moves smoothly
@@ -108,7 +114,8 @@ function nearestChordTone(pcs, key)
 }
 
 /**
- * A second voice from the melody, in the countermelody's range, note for note.
+ * A second voice from the melody, in the countermelody's range, note for note. Steps are counted from the scale note
+ * an altered melody note stands for, and land on the chord's own accidentals (G# under E major in A minor).
  *   harmony   parallel thirds below; on a strong beat where the third isn't in the chord, a fourth or fifth below
  *             (similar motion) if that one is
  *   contrary  moves the other way by as many steps as the melody, starting a sixth below, snapped to chord tones on
@@ -119,32 +126,35 @@ export function harmonyVoice(lead, sec, timeline, how = 'harmony')
 {
     const [lo, hi] = RANGES.counter;
     const out = [];
-    let prev = null, prevLead = null;
+    let prev = null, prevNatural = null, prevLead = null;
     for (const n of lead)
     {
-        const pcs = chordPitchClasses(chordAt(timeline, n.beat));
+        const chord = chordAt(timeline, n.beat);
+        const pcs = chordPitchClasses(chord);
         const strong = strongBeat(sec.meter, mod(n.beat - sec.beat, sec.beatsPerBar));
+        const from = unalter(n.key, chord, sec.tonic, sec.mode);
+        const below = (steps)=> alterToChord(diatonicShift(from, steps, sec.tonic, sec.mode), chord, sec.tonic, sec.mode);
         let key;
         if (how === 'contrary' && prev !== null)
         {
-            const steps = keyToDegree(sec.tonic, sec.mode, n.key) - keyToDegree(sec.tonic, sec.mode, prevLead);
-            key = diatonicShift(prev, -steps, sec.tonic, sec.mode);
+            const steps = keyToDegree(sec.tonic, sec.mode, from) - keyToDegree(sec.tonic, sec.mode, prevLead);
+            key = alterToChord(diatonicShift(prevNatural, -steps, sec.tonic, sec.mode), chord, sec.tonic, sec.mode);
             if (strong) key = nearestChordTone(pcs, key);
         }
-        else if (how === 'contrary') key = nearestChordTone(pcs, diatonicShift(n.key, -5, sec.tonic, sec.mode));
+        else if (how === 'contrary') key = nearestChordTone(pcs, below(-5));
         else
         {
-            key = diatonicShift(n.key, -2, sec.tonic, sec.mode);
+            key = below(-2);
             if (strong && !pcs.includes(mod(key, 12)))
                 for (const s of [-3, -4])
                 {
-                    const k = diatonicShift(n.key, s, sec.tonic, sec.mode);
+                    const k = below(s);
                     if (pcs.includes(mod(k, 12))) { key = k; break; }
                 }
         }
         key = place(key, lo, Math.min(hi, n.key - 1), prev);
         out.push({ key, beat: n.beat, beats: n.beats, vel: velocity(sec, 'counter', sec.energy, n.beat - sec.beat) });
-        prev = key; prevLead = n.key;
+        prev = key; prevNatural = unalter(key, chord, sec.tonic, sec.mode); prevLead = from;
     }
     return out;
 }
@@ -167,8 +177,10 @@ export function callAndResponse(lead, sec, timeline)
     {
         const at = n.beat + span;
         if (at >= end - 1e-9) continue;
-        const pcs = chordPitchClasses(chordAt(timeline, at));
-        let key = diatonicShift(n.key, -2, sec.tonic, sec.mode);
+        const chord = chordAt(timeline, at);
+        const pcs = chordPitchClasses(chord);
+        const from = unalter(n.key, chordAt(timeline, n.beat), sec.tonic, sec.mode);
+        let key = alterToChord(diatonicShift(from, -2, sec.tonic, sec.mode), chord, sec.tonic, sec.mode);
         if (strongBeat(sec.meter, mod(at - sec.beat, sec.beatsPerBar))) key = nearestChordTone(pcs, key);
         key = place(key, lo, hi, prev);
         answers.push({ key, beat: at, beats: Math.min(n.beats, end - at), vel: velocity(sec, 'counter', Math.min(1, sec.energy + 0.1), at - sec.beat) });

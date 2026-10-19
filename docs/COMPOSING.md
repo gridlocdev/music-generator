@@ -163,16 +163,17 @@ Chords are written as Roman numerals relative to the song's key and mode, so a p
 |---|---|
 | `I` `IV` `V` | uppercase = major triad: C, F, G |
 | `ii` `iii` `vi` | lowercase = minor triad: Dm, Em, Am |
-| `vii°` | diminished: Bdim |
+| `vii°` | diminished: Bdim; on the leading tone in every mode (G#dim in A minor) |
 | `ø` `+` | half-diminished seventh, augmented |
 | `V7` `ii7` `Imaj7` `IV6` `V9` `Imaj9` | sevenths, sixths and ninths; lowercase `7` is minor seventh |
-| `Isus2` `Vsus4` | suspended: the third replaced by the 2nd or 4th |
+| `Isus2` `Vsus4` `V7sus4` `V9sus4` | suspended: the third replaced by the 2nd or 4th |
 | `Iadd9` | triad plus ninth |
 | `bVII` `bVI` `#iv°` | with a flat or sharp, the numeral counts from the major scale: Bb, Ab, F#dim in any mode |
 | `III7` `II7` | uppercase on a minor step = a secondary dominant (E7 = V of vi, D7 = V of V) |
+| `V7/vi` `vii°7/V` | X/Y: chord X in the major key of Y's root, the secondary dominants and leading-tone chords by function |
 | `V:2` `ii:0.5` | length in bars (default 1) |
 
-Plain numerals count in the song's mode. In A minor, `VI` is F major and `V` is E major (the harmonic-minor dominant). With an accidental they count from the major scale, as is usual: `bVII` is a whole step below the tonic whatever the mode, so the heroic `I bVII IV` means the same in D major and D mixolydian. The parser is `parseChord` in `src/lib/music-theory.js`.
+Plain numerals count in the song's mode. In A minor, `VI` is F major and `V` is E major (the harmonic-minor dominant), and `VII` is G major; only a diminished `vii°` or `viiø` takes the leading tone, G#. With an accidental they count from the major scale, as is usual: `bVII` is a whole step below the tonic whatever the mode, so the heroic `I bVII IV` means the same in D major and D mixolydian. The parser is `parseChord` in `src/lib/music-theory.js`.
 
 ### Function: what each chord wants
 
@@ -221,6 +222,17 @@ Cadences are punctuation, and each section ends with the one its job needs (`end
 | plagal | IV → I | a soft "amen" | by request |
 | deceptive | V → vi | a surprise | a chorus followed straight by another: the payoff is delayed once more |
 
+**Modal cadences.** A major V brings in a leading tone that mixolydian, dorian and phrygian don't have, so in those modes the cadence uses the mode's own chords (`CADENCES[…].modal`):
+
+| Mode | Half (`dominant`) | Authentic (`tonic`) | Plagal | Deceptive |
+|---|---|---|---|---|
+| mixolydian | → bVII | bVII → I | IV → I | bVII → vi |
+| dorian | → v | bVII → i | IV → i (the dorian major IV) | bVII → III |
+| phrygian | → bvii | bII → i (the phrygian cadence) | iv → i | bII → bVI |
+| lydian | → II (the lydian #4 in the bass's chord) | V → I | II → I | V → vi |
+
+Major, minor, harmonic and melodic minor keep V. A progression written with a major V in a modal song plays as written: borrowing it is the author's choice.
+
 The planner makes the section's last bar the cadence chord. If the bar before doesn't already lead in (IV, V or bVII before I), the approach chord takes its second half. A progression that already ends right is left alone, including `Imaj7` for I and a Picardy major I for i. A hand-written melody keeps its own ending: if its last note isn't in the cadence chord, there's no cadence. The melody's last phrase lands on the matching degrees: 2 or 5 on a half cadence, 1 on a full one, 1 or 3 on a deceptive one.
 
 **Harmonic rhythm** follows the section: a pre-chorus or build changes chords twice as fast as written (urgency), and an intro or breakdown half as fast (space). It applies to the emotion's default progressions; a progression written in a spec keeps its timing unless the section sets `harmonicRhythm`.
@@ -266,7 +278,10 @@ For every note, the composer scores each scale degree in the lead's range and ke
 | the same pitch twice in a row | 0.8 | allowed, but motion is better |
 | the same pitch three times in a row | 2.5 | static |
 | a phrase ending off its cadence degrees | 12 | phrases must land |
+| a fifth or octave above the chord's root, then the same over the next root | 3 | parallel fifths and octaves against the bass hollow out the two outer voices |
 | reaching the highest note so far a third time | 4 | the peak is special: once or twice, at the emotional high point |
+
+**Accidentals follow the chord.** Degrees are scale steps, but a chord from outside the mode alters some of them, and the melody takes the chord's version of that step (`alterToChord` in `music-theory.js`): G becomes G# under E major in A minor, A becomes Ab under the borrowed iv in C, F becomes F# under `V7/V`, C becomes C# under a Picardy I. Only the step the chord alters moves: G stays G under Fm in C, where it is a ninth, not a clash. Chord tones are judged after the change, and the harmony voice and call-and-response answers follow the same rule. A hand-written melody is played as written.
 
 A beat is strong if it starts one of the meter's beat groups: beats 1 and 3 in 4/4, beat 1 in 3/4, beats 1 and 4 (of the eighths) in 6/8. Any note of two beats or more also counts as strong.
 
@@ -555,7 +570,7 @@ A song is a plain object. Only `title` (or `id`) and `emotion` are needed; every
     title: 'First Light',           // also seeds the tie-breaks
     emotion: 'hopeful',             // a key of EMOTIONS: sets everything not given below
     key: 'D',                       // C, C#, Db … B
-    mode: 'major',                  // major, minor, dorian, phrygian, lydian, mixolydian, harmonicMinor
+    mode: 'major',                  // major, minor, dorian, phrygian, lydian, mixolydian, locrian, harmonicMinor, melodicMinor
     tempo: 100,                     // bpm
     groove: 'pop',                  // a key of GROOVES; its beats set the meter (waltz = 3/4)
     swing: 0,                       // 0–1
@@ -730,6 +745,8 @@ The person who wrote the notes this guide grew from learned by making up music a
 | dorian | 0 2 3 5 7 **9** 10 | minor with a raised 6th: soulful, mysterious |
 | minor (aeolian) | 0 2 3 5 7 8 10 | sad, natural |
 | phrygian | 0 **1** 3 5 7 8 10 | flat 2nd: dark, exotic |
+| locrian | 0 **1** 3 5 **6** 8 10 | flat 2nd and 5th: unstable, rarely a home |
 | harmonic minor | 0 2 3 5 7 8 **11** | raised 7th: tense, dramatic |
+| melodic minor | 0 2 3 5 7 **9** **11** | raised 6th and 7th: minor that climbs smoothly to the tonic, jazzy |
 
-**Cadences**: authentic V→I (closed) · plagal IV→I (gentle) · half →V (open) · deceptive V→vi (surprise) · backdoor bVII→I (warm) · Mario bVI→bVII→I (triumph).
+**Cadences**: authentic V→I (closed) · plagal IV→I (gentle) · half →V (open) · deceptive V→vi (surprise) · backdoor bVII→I (warm; the mixolydian and dorian full stop) · phrygian bII→i (dark) · Mario bVI→bVII→I (triumph).
