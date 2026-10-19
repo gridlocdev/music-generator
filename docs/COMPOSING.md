@@ -148,6 +148,7 @@ Each section's parameters, in `SECTIONS`:
 | `feel` | the drums play `half`-time, `double`-time, or a `roll` (section 9) |
 | `entries`, `exits` | parts come in one at a time across it, or leave one at a time |
 | `meter` | a meter of its own (section 9) |
+| `pedal` | a scale degree held in the bass under every chord: `5` for a dominant pedal, `1` for a drone (spec only, section 4) |
 
 A bridge introduces one or more of: a new melody, new chords, new instruments, a new key. It recontextualises the story from a different angle. The pre-chorus differs from the bridge because it prepares for the chorus, while the bridge brings a completely different idea.
 
@@ -171,6 +172,7 @@ Chords are written as Roman numerals relative to the song's key and mode, so a p
 | `bVII` `bVI` `#iv°` | with a flat or sharp, the numeral counts from the major scale: Bb, Ab, F#dim in any mode |
 | `III7` `II7` | uppercase on a minor step = a secondary dominant (E7 = V of vi, D7 = V of V) |
 | `V7/vi` `vii°7/V` | X/Y: chord X in the major key of Y's root, the secondary dominants and leading-tone chords by function |
+| `I/3` `I/5` `V/7` `IV/1` `I/b7` | a scale degree after the slash goes in the bass: C/E, C/G, G/B, F over C, C/Bb (accidentals count from the mode, as in a melody) |
 | `V:2` `ii:0.5` | length in bars (default 1) |
 
 Plain numerals count in the song's mode. In A minor, `VI` is F major and `V` is E major (the harmonic-minor dominant), and `VII` is G major; only a diminished `vii°` or `viiø` takes the leading tone, G#. With an accidental they count from the major scale, as is usual: `bVII` is a whole step below the tonic whatever the mode, so the heroic `I bVII IV` means the same in D major and D mixolydian. The parser is `parseChord` in `src/lib/music-theory.js`.
@@ -238,6 +240,8 @@ The planner makes the section's last bar the cadence chord. If the bar before do
 **Harmonic rhythm** follows the section: a pre-chorus or build changes chords twice as fast as written (urgency), and an intro or breakdown half as fast (space). It applies to the emotion's default progressions; a progression written in a spec keeps its timing unless the section sets `harmonicRhythm`.
 
 **Passing diminished sevenths.** A dim7 is stacked minor thirds, so only three exist. With the style's `dim7` chance, one takes the last beat of a chord before a change of root: whichever of the three has the most notes a semitone below the next chord's notes. That's usually the one on the next root's leading tone (C#dim7 before Dm, F#dim7 before G), and sometimes the common-tone dim7 (Cdim7 before C). A cadence's final V–I is never interrupted.
+
+**Inversions and pedals.** The bass plays each chord's bass note: its root, or the degree written after a slash. That's what makes a bass line move by step under chords that don't: the line cliché `I V/7 vi vi/5` walks C–B–A–G, `I I/3 IV` climbs C–E–F, and the cadential six-four `I/5 V I` holds G in the bass while the upper parts resolve. Over an inversion the bass pattern's 3rd stays on the bass note and its 5th takes the chord's root (E and C under C/E). A section's `pedal` holds one degree under every chord: `pedal: 5` is the dominant pedal that makes a build or a bridge's last bars ache for the tonic, `pedal: 1` a drone for folk or a dreamy intro. A pedal note outside the chord is held, never decorated. The melody's parallel-fifths rule counts against the bass note, not the root.
 
 **Changing key.** `lift` raises the last chorus (section 8). A section's `transpose` moves it by semitones, and its `mode` swaps to the parallel mode (a minor bridge in a major song), with every part following. Borrowed chords (`iv`, `bVI`, `bVII` in major) colour a progression without leaving the key.
 
@@ -604,6 +608,7 @@ A song is a plain object. Only `title` (or `id`) and `emotion` are needed; every
             mute: ['drums'],                        // parts to leave out
             endOn: 'tonic',                         // dominant, tonic, plagal, deceptive, or null
             harmonicRhythm: 2,                      // chords twice as fast
+            pedal: 5,                               // one bass degree under every chord
             meter: '7/4', feel: 'half', tempo: 140, // a meter, drum feel and tempo of its own
             transpose: 5, mode: 'minor',            // a key and mode of its own
             counter: 'harmony',                     // guide, harmony or contrary

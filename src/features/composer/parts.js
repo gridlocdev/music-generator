@@ -1,6 +1,6 @@
 // The accompaniment: chords, pad, arpeggio, countermelody, bass and drums, written from the chord timeline in the
 // section's meter (meter-patterns.js builds what a groove wasn't written for).
-import { chordPitchClasses, voiceChord, degreeToKey, keyToDegree } from '../../lib/music-theory.js';
+import { chordPitchClasses, voiceChord, degreeToKey, keyToDegree, bassOf } from '../../lib/music-theory.js';
 import { RANGES } from './composer-data.js';
 import { DRUM_KEYS, COMP_QUIET } from './patterns-data.js';
 import { STEP, mod, clamp, chordAt, velocity } from './meter.js';
@@ -114,6 +114,9 @@ export function writeCounter(sec, track, memory, lead)
     }
 }
 
+// The bass plays each chord's bass note (its root, or the degree after a slash) and the pattern's other tones around
+// it. Over an inversion the pattern's 3rd stays on the bass note and its 5th takes the chord's root (E–C under C/E);
+// under a pedal, a bass note outside the chord, every tone holds the pedal.
 export function writeBass(sec, track, memory, finalRoot)
 {
     const [lo, hi] = RANGES.bass;
@@ -133,7 +136,7 @@ export function writeBass(sec, track, memory, finalRoot)
         const barStart = sec.beat + bar * sec.beatsPerBar;
         if (sec.ending && bar === sec.bars - 1)
         {
-            const root = place(chordAt(sec.timeline, barStart).root, memory.bass);
+            const root = place(bassOf(chordAt(sec.timeline, barStart)), memory.bass);
             track.notes.push({ key: root, beat: barStart, beats: sec.beatsPerBar, vel: velocity(sec, 'bass', sec.energy, 0) });
             break;
         }
@@ -141,16 +144,19 @@ export function writeBass(sec, track, memory, finalRoot)
         {
             const t = barStart + step * STEP;
             const chord = chordAt(sec.timeline, t);
-            const root = place(chord.root, memory.bass);
+            const bass = bassOf(chord);
+            const root = place(bass, memory.bass);
+            const pedal = !chordPitchClasses(chord).includes(bass), inverted = bass !== chord.root;
             let key = root;
-            if (tone === '3') key = root + (chord.tones[1] ?? 4);
-            else if (tone === '5') key = root + 7 <= hi ? root + 7 : root - 5;
-            else if (tone === '8') key = root + 12 <= hi ? root + 12 : root;
+            if (tone === '8') key = root + 12 <= hi ? root + 12 : root;
+            else if (pedal) key = root;
+            else if (tone === '3') key = inverted ? root : root + (chord.tones[1] ?? 4);
+            else if (tone === '5') key = inverted ? place(chord.root, root) : root + 7 <= hi ? root + 7 : root - 5;
             else if (tone === 'A')
             {
                 const nextT = barStart + sec.beatsPerBar;
                 const next = nextT < sec.beat + sec.bars * sec.beatsPerBar ? chordAt(sec.timeline, nextT) : null;
-                const target = place(next ? next.root : finalRoot ?? chord.root, root);
+                const target = place(next ? bassOf(next) : finalRoot ?? bass, root);
                 key = target === root ? root + 7 : target + (target > root ? -1 : 1) * (inScaleStep(sec, target, target > root ? -1 : 1));
             }
             while (key > hi) key -= 12;

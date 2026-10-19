@@ -2,7 +2,7 @@
 // played backwards, slowed, sped up, fragmented) in its motif bars, and answers it with answer, continuation and
 // cadence bars over 4-bar phrases. Every pitch is picked by scoring each candidate degree against MELODY_RULES, and
 // takes the chord's accidental where the chord alters its step. Or a melody written by hand in degree notation.
-import { degreeToKey, keyToDegree, chordPitchClasses, alterToChord, hash } from '../../lib/music-theory.js';
+import { degreeToKey, keyToDegree, chordPitchClasses, alterToChord, bassOf, hash } from '../../lib/music-theory.js';
 import { develop } from '../../lib/motif.js';
 import { RANGES, MELODY_OCTAVE, CONTOURS, MELODY_HOME, MELODY_RULES, CADENCE_DEGREES, CADENCES, PEAK_RULE } from './composer-data.js';
 import { MOTIF, LEITMOTIFS } from './song-craft-data.js';
@@ -177,7 +177,7 @@ export function writeMelody(sec, cfg, variant, motif, timeline)
 
     const out = [];
     let base = 0;                   // the degree the current motif statement is built on
-    let prev = null, prev2 = null, peak = -Infinity, peakTimes = 0, prevKey = null, prevRoot = null;
+    let prev = null, prev2 = null, peak = -Infinity, peakTimes = 0, prevKey = null, prevBass = null;
     events.forEach((e, i)=>
     {
         const beatInPhrase = e.beat - e.phrase * 4 * bpb;
@@ -219,11 +219,11 @@ export function writeMelody(sec, cfg, variant, motif, timeline)
                 }
                 if (d === prev) c += prev === prev2 ? R.repeat : R.repeatOnce;
             }
-            // the bass plays the chord's root: a fifth or octave above it again, on a new root, moves in parallel
-            if (prevKey !== null && chord.root !== prevRoot)
+            // a fifth or octave above the bass again, over a new bass note, moves in parallel
+            if (prevKey !== null && bassOf(chord) !== prevBass)
             {
-                const k = keyUnder(sec, chord, d), now = mod(k - chord.root, 12);
-                if (k !== prevKey && (now === 0 || now === 7) && now === mod(prevKey - prevRoot, 12)) c += R.parallel;
+                const k = keyUnder(sec, chord, d), now = mod(k - bassOf(chord), 12);
+                if (k !== prevKey && (now === 0 || now === 7) && now === mod(prevKey - prevBass, 12)) c += R.parallel;
             }
             if (d === peak && peakTimes >= PEAK_RULE.times) c += PEAK_RULE.cost;
             if (e.cadence && !CADENCE_DEGREES[e.cadence].includes(mod(d - 1, 7) + 1)) c += R.cadence;
@@ -234,7 +234,7 @@ export function writeMelody(sec, cfg, variant, motif, timeline)
         else if (best === peak) peakTimes++;
         const key = keyUnder(sec, chord, best);
         out.push({ beat: e.beat, beats: e.beats, degree: best, accidental: key - degreeToKey(tonic, mode, best, MELODY_OCTAVE), last: e.last || !!e.cadence });
-        prev2 = prev; prev = best; prevKey = key; prevRoot = chord.root;
+        prev2 = prev; prev = best; prevKey = key; prevBass = bassOf(chord);
     });
     return out;
 }

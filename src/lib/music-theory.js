@@ -85,13 +85,18 @@ const CHORD = /^(b|#)?(VII|VI|V|IV|III|II|I|vii|vi|v|iv|iii|ii|i)(°|o|ø|\+)?(m
  * in minor is the flat seven), except a diminished vii, which is built on the leading tone in every mode; with b or #
  * it counts from the major scale, as usual: bVII is a whole step below the tonic in any mode, bVI and bIII are
  * borrowed from the parallel minor, bII is the Neapolitan. `X/Y` is chord X in the major key of chord Y's root, the
- * secondary dominants and leading-tone chords: V7/vi, vii°7/V.
- * @returns {{ symbol: string, root: number, tones: number[], degree: number, step: number }}
+ * secondary dominants and leading-tone chords: V7/vi, vii°7/V. A scale degree after the slash puts that degree in the
+ * bass: I/3 is the first inversion, I/5 the cadential six-four, V/7 the G/B of a falling bass line, IV/1 F over a C
+ * pedal, I/b7 the C/Bb of a mixolydian bass line (accidentals count from the mode, as in a melody).
+ * @returns {{ symbol: string, root: number, tones: number[], degree: number, step: number, bass?: number }}
  *   root is a pitch class, tones are semitones above it (root first), degree is the numeral's step 1–7 (0 for X/Y),
- *   step is the scale step the root stands on (the G of G# in A minor), 0 when unknown
+ *   step is the scale step the root stands on (the G of G# in A minor), 0 when unknown; bass is the pitch class under
+ *   the chord when it isn't the root
  */
 export function parseChord(symbol, tonic, mode)
 {
+    const over = /\/([b#]?[1-7])$/.exec(symbol);
+    if (over) return { ...parseChord(symbol.slice(0, over.index), tonic, mode), symbol, bass: degreePitchClass(over[1], tonic, mode) };
     const slash = symbol.indexOf('/');
     if (slash >= 0)
     {
@@ -124,6 +129,17 @@ export function parseChord(symbol, tonic, mode)
     else if (ext === '9sus4') tones = [0, 5, ...tones.slice(2), 10, 14];
     return { symbol, root, tones: [...new Set(tones)], degree, step: degree };
 }
+
+/** a scale degree written like a melody's ('5', 'b7', '#4') as a pitch class */
+export function degreePitchClass(text, tonic, mode)
+{
+    const m = /^([b#]?)([1-7])$/.exec(String(text));
+    if (!m) throw new Error(`not a degree: ${text}`);
+    return mod(degreeToKey(tonic, mode, Number(m[2]), 4, m[1] === 'b' ? -1 : m[1] === '#' ? 1 : 0), 12);
+}
+
+/** the pitch class the bass plays under a chord: its slash bass, else its root */
+export const bassOf = (chord)=> chord.bass ?? chord.root;
 
 /** the chord's pitch classes */
 export const chordPitchClasses = (chord)=> chord.tones.map(t => mod(chord.root + t, 12));
@@ -170,14 +186,15 @@ export function chordName(chord, flats = false)
 {
     const t = new Set(chord.tones.map(x => x % 12));
     const name = pitchName(chord.root, flats);
+    const over = chord.bass !== undefined && chord.bass !== chord.root ? `/${pitchName(chord.bass, flats)}` : '';
     const third = t.has(4) ? '' : t.has(3) ? 'm' : '';
     const sus = !t.has(3) && !t.has(4) ? (t.has(5) ? 'sus4' : t.has(2) ? 'sus2' : '5') : '';
-    if (t.has(3) && t.has(6)) return name + (t.has(10) ? 'm7b5' : t.has(9) ? 'dim7' : 'dim');
-    if (t.has(4) && t.has(8)) return name + 'aug';
+    if (t.has(3) && t.has(6)) return name + (t.has(10) ? 'm7b5' : t.has(9) ? 'dim7' : 'dim') + over;
+    if (t.has(4) && t.has(8)) return name + 'aug' + over;
     const ninth = chord.tones.includes(14);
     const seventh = t.has(11) ? (ninth ? 'maj9' : 'maj7') : t.has(10) ? (ninth ? '9' : '7') : t.has(9) ? '6' : '';
     const add = ninth && !seventh ? 'add9' : '';
-    return name + third + seventh + sus + add;
+    return name + third + seventh + sus + add + over;
 }
 
 /**

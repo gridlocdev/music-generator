@@ -97,6 +97,7 @@ export function planSong(spec)
         s.answer = over.answer ?? base.answer ?? false;
         s.feel = over.feel ?? base.feel ?? null;
         s.texture = over.texture ?? 'homophonic';
+        s.pedal = over.pedal ?? null;
         s.entries = i === 0 && (over.entries ?? base.entries ?? false);
         s.exits = s.ending && (over.exits ?? base.exits ?? false);
         s.vary = { lastBar: !!v.lastBar, octave: !!v.octave };

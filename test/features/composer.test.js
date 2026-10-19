@@ -299,6 +299,23 @@ test('a composed melody takes the chord\'s accidental: G# under E major in A min
     assert.ok(overV.some(n => n.key % 12 === 8), 'the raised seventh is used');
 });
 
+test('slash chords and pedals: the bass plays the written bass note; an inversion alternates it with the root', ()=>
+{
+    const bassUnder = (progression, extra = {})=>
+    {
+        const s = compose({ title: 'Bass line', emotion: 'joyful', key: 'C', style: { syncopation: 0 }, form: ['verse'],
+            sections: { verse: { progression, bars: 4, endOn: null, ...extra } } });
+        const bass = s.tracks.find(t => t.role === 'bass').notes;
+        return [0, 1, 2, 3].map(bar => bass.filter(n => n.beat >= bar * 4 && n.beat < bar * 4 + 4 - 1e-9).map(n => n.key % 12));
+    };
+    // the line cliché: C, C/B, Am, Am/G
+    const line = bassUnder('I V/7 vi vi/5');
+    assert.deepEqual(line.map(b => b[0]), [0, 11, 9, 7]);
+    assert.ok(line[1].every(pc => [11, 7].includes(pc)), `G/B plays B and G: ${line[1]}`);
+    // a dominant pedal: G under every chord
+    assert.ok(bassUnder('I IV vi V', { pedal: 5 }).flat().every(pc => pc === 7));
+});
+
 test('call and response: in the bridge the lead and the countermelody take turns and never overlap', ()=>
 {
     const s = compose({ title: 'Answer', emotion: 'joyful', style: { syncopation: 0 } });

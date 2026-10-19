@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import * as MT from '../../src/lib/music-theory.js';
 import {
     pitchClass, degreeToKey, keyToDegree, parseChord, chordPitchClasses, chordName, parseProgression, voiceChord, hash, MODES,
-    alterToChord, unalter,
+    alterToChord, unalter, bassOf,
 } from '../../src/lib/music-theory.js';
 
 test('pitch classes', ()=> assert.deepEqual(['C', 'F#', 'Bb', 'B', 'Cb'].map(pitchClass), [0, 6, 10, 11, 11]));
@@ -47,6 +47,18 @@ test('secondary chords: X/Y is X in the major key of Y', ()=>
     assert.deepEqual(chordPitchClasses(parseChord('vii°7/V', 0, 'major')), [6, 9, 0, 3]);   // F#dim7
     assert.deepEqual(chordPitchClasses(parseChord('V/V', 9, 'minor')), [11, 3, 6]);         // B major in A minor
     assert.deepEqual(parseProgression('I V7/V:0.5 V', 0, 'major').map(p => p.bars), [1, 0.5, 1]);
+});
+
+test('slash chords put a scale degree in the bass: inversions, pedals, and with a secondary chord', ()=>
+{
+    const name = (s, t = 0, m = 'major')=> chordName(parseChord(s, t, m));
+    assert.deepEqual(['I/3', 'I/5', 'V/7', 'IV/1', 'V7/4', 'vii°/2'].map(s => name(s)), ['C/E', 'C/G', 'G/B', 'F/C', 'G7/F', 'Bdim/D']);
+    assert.equal(chordName(parseChord('I/b7', 0, 'major'), true), 'C/Bb');   // accidentals count from the mode, as in a melody
+    assert.equal(name('V7/V/#4'), 'D7/F#');                          // D7 over F#: V7/V in first inversion
+    assert.equal(bassOf(parseChord('I', 0, 'major')), 0);
+    assert.equal(bassOf(parseChord('I/3', 0, 'major')), 4);
+    assert.deepEqual(chordPitchClasses(parseChord('IV/1', 0, 'major')), [5, 9, 0]);   // the pedal isn't a chord tone
+    assert.throws(()=> parseChord('I/8', 0, 'major'));
 });
 
 test('a scale note moves onto the chord\'s own version of its step, and only that step', ()=>

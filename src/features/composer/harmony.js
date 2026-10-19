@@ -1,18 +1,26 @@
 // Harmony across a section and between voices: the progression at the section's harmonic rhythm, ended on its
 // cadence; passing diminished sevenths before chord changes; harmony voices derived from the melody; and call and
 // response, where the countermelody answers the lead. Pure.
-import { parseProgression, parseChord, chordPitchClasses, diatonicShift, isMinorMode, keyToDegree, alterToChord, unalter, toneStep, hash } from '../../lib/music-theory.js';
+import { parseProgression, parseChord, chordPitchClasses, diatonicShift, isMinorMode, keyToDegree, alterToChord, unalter, toneStep, degreePitchClass, hash } from '../../lib/music-theory.js';
 import { CADENCES, LEADS_IN, RANGES } from './composer-data.js';
 import { CALL_BARS } from './song-craft-data.js';
 import { chordTimeline, chordAt, mod, strongBeat, velocity } from './meter.js';
 
-/** a section's chords over its bars: its progression, sped up or slowed by its harmonic rhythm, cadence, passing chords */
+/**
+ * A section's chords over its bars: its progression, sped up or slowed by its harmonic rhythm, cadence, passing chords,
+ * and its pedal, one bass degree held under every chord.
+ */
 export function sectionChords(sec)
 {
     const progression = parseProgression(sec.progression, sec.tonic, sec.mode).map(p => ({ ...p, bars: p.bars / sec.harmonicRhythm }));
     let timeline = chordTimeline(progression, sec.bars, sec.beatsPerBar, sec.beat);
     if (sec.endOn) timeline = withCadence(timeline, sec);
     if (sec.style.dim7 > 0) timeline = withPassingChords(timeline, sec);
+    if (sec.pedal != null)
+    {
+        const bass = degreePitchClass(sec.pedal, sec.tonic, sec.mode);
+        timeline = timeline.map(s => ({ ...s, chord: { ...s.chord, bass } }));
+    }
     return timeline;
 }
 
