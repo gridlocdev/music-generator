@@ -1,7 +1,7 @@
 // Game mode and the save. Each feature owns one slice; nothing else writes it.
 import { storage } from '../platform/storage.js';
 
-const SAVE_KEY = 'soundfont-player-save-v1';
+const SAVE_KEY = 'music-generator-save-v1';
 storage.keys.push(SAVE_KEY);
 
 /** @type {Record<string, any>} */
