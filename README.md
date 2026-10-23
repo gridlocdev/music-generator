@@ -1,4 +1,4 @@
-# SoundFont Player
+# Music Generator
 
 A LittleJS keyboard that plays the instruments of the GeneralUser GS SoundFont library (287 presets in one `.sf2` file, including GS drum kits on bank 128), with a SoundFont 2 parser and Web Audio sampler written from scratch.
 
