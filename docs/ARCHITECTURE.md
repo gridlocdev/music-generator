@@ -34,6 +34,10 @@ A keyboard that plays every instrument in three openly licensed General MIDI Sou
 
 The synth covers the parts of SF2 that matter for these files: key/velocity splits, preset+instrument generator merging, root key and tuning, loop modes, sample address offsets, static low-pass filter (lowered for soft notes, like SF2's default velocity modulator), pan, the DAHDSR volume envelope, and exclusive classes (drum kits). Modulators, LFOs, the modulation envelope, reverb and chorus sends are not implemented.
 
+### SoundFont libraries
+
+The libraries live in `soundfonts/<folder>/`, ignored by git and downloaded by `just soundfonts`; `src/audio/soundfont-libraries-data.js` lists them. The instrument menu is built from `soundfont-catalog-data.js`, generated from the files by `just catalog`, so no `.sf2` (32–216 MB each) is fetched until one of its instruments is picked. `soundfont.js` then downloads it once and keeps it in memory. `soundfont-library.js` holds the library in use: switching it keeps the keyboard on the same instrument when the new library has it, and the next song loads its instruments from the new library. How to add one is in [Developer-Guide.md](Developer-Guide.md#soundfont-libraries).
+
 ## Layout
 
 | Folder | Holds | May import |
@@ -61,3 +65,5 @@ The synth covers the parts of SF2 that matter for these files: key/velocity spli
 just check    # syntax check, then tools/coupling-report.mjs --strict for the layer rules
 just test     # node --test
 ```
+
+Setting up, the other `just` recipes and the tools are in [Developer-Guide.md](Developer-Guide.md).
