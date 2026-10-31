@@ -1,8 +1,9 @@
 # Music Generator
 
-Pick a feeling or a song, and Music Generator composes it: melody, countermelody, arpeggio,
-chords, pad, bass and drums, written by rule and played in the browser with sampled
-instruments. There's no randomness, so the same song always comes out the same.
+I built Music Generator to make it simpler and easier to create music for the games I make.
+Pick a feeling or a song, and it composes one: melody, countermelody, arpeggio, chords, pad,
+bass and drums, written by rule and played in the browser with sampled instruments. There's no
+randomness, so the same song always comes out the same.
 
 ![A song playing: one piano per part (trumpet melody, French horn countermelody, harp arpeggio, string chords, choir pad, double bass and orchestral drums) with notes falling onto their keys, the Intensity slider, Sting and Next section buttons above, and the song's sections along the timeline at the bottom](docs/images/composer.webp)
 
