@@ -38,21 +38,9 @@ _deps:
 catalog:
     node tools/sf2-catalog.mjs
 
-# download the openly licensed SoundFont libraries into soundfonts/
+# download the openly licensed SoundFont libraries into soundfonts/; ones already there are skipped
 soundfonts:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    gu=https://raw.githubusercontent.com/mrbumpy409/GeneralUser-GS/main
-    ms=https://ftp.osuosl.org/pub/musescore/soundfont/MuseScore_General
-    mkdir -p soundfonts/GeneralUser-GS soundfonts/FluidR3_GM soundfonts/MuseScore_General
-    (cd soundfonts/GeneralUser-GS && curl -fSLO $gu/GeneralUser-GS.sf2 && curl -fSLO $gu/documentation/LICENSE.txt)
-    (cd soundfonts/MuseScore_General && for f in MuseScore_General.sf2 MuseScore_General_License.md VERSION; do curl -fSLO $ms/$f; done)
-    # the original MIT FluidR3_GM, as Debian packages it
-    tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
-    curl -fSL -o "$tmp/fluid.deb" https://deb.debian.org/debian/pool/main/f/fluid-soundfont/fluid-soundfont-gm_3.1-6_all.deb
-    (cd "$tmp" && ar x fluid.deb && tar xf data.tar.xz)
-    cp "$tmp/usr/share/sounds/sf2/FluidR3_GM.sf2" soundfonts/FluidR3_GM/
-    cp "$tmp/usr/share/doc/fluid-soundfont-gm/copyright" soundfonts/FluidR3_GM/COPYING
+    bash tools/fetch-soundfonts.sh
 
 # compose a song without the browser: print its plan, optionally its melody and a .mid file
 # e.g. just compose first-light --melody --midi first-light.mid   ·   just compose feel:tender

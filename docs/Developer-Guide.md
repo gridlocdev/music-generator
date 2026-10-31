@@ -74,14 +74,15 @@ length, peak and loudness, has a blind mode, and saves the WAVs in `.ab/out/`, w
 | FluidR3_GM | `soundfonts/FluidR3_GM/` | 148 MB | MIT |
 | MuseScore_General 0.2 | `soundfonts/MuseScore_General/` | 216 MB | MIT; keep its credits in any derivative |
 
-`soundfonts/` is ignored by git; `just soundfonts` downloads every library, with its license
-file next to its `.sf2`. The libraries and their folders are listed in
+`soundfonts/` is ignored by git; `just soundfonts` runs `tools/fetch-soundfonts.sh`, which
+downloads every library that isn't on disk yet, with its license file next to its `.sf2`. The
+deploy runs the same script. The libraries and their folders are listed in
 `src/audio/soundfont-libraries-data.js`.
 
 ### Adding or replacing a library
 
-1. Put the `.sf2` and its license file in `soundfonts/<folder>/`, and add the download to the
-   `soundfonts` recipe in the `justfile`.
+1. Put the `.sf2` and its license file in `soundfonts/<folder>/`, and add the download to
+   `tools/fetch-soundfonts.sh`, so `just soundfonts` and the deploy fetch it too.
 2. Add the library to `LIBRARY_SOURCES` in `src/audio/soundfont-libraries-data.js`.
 3. Run `just catalog` to regenerate `src/audio/soundfont-catalog-data.js`, the list of every
    file and preset that lets the instrument menu load without the files.
