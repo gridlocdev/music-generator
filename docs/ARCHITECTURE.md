@@ -4,7 +4,7 @@ The game is native ES modules served as static files, with no bundler. `src/main
 
 ## This game
 
-A keyboard that plays every instrument in the GeneralUser GS SoundFont library (`soundfonts/GeneralUser-GS/*.sf2`), and a rule-based composer that writes multi-instrument songs from a feeling and plays them as a grid of pianos with falling notes. The composing method is in [COMPOSING.md](COMPOSING.md).
+A keyboard that plays every instrument in three openly licensed General MIDI SoundFont libraries (`soundfonts/`), switchable to compare them, and a rule-based composer that writes multi-instrument songs from a feeling and plays them as a grid of pianos with falling notes. The composing method is in [COMPOSING.md](COMPOSING.md).
 
 | File | Does |
 |---|---|
@@ -23,7 +23,9 @@ A keyboard that plays every instrument in the GeneralUser GS SoundFont library (
 | `src/platform/input.js` | computer keys → semitone offsets, octave, instrument step, section step, sustain |
 | `src/audio/soundfont.js` | downloads and caches `.sf2` files; `createInstrument(font, preset, destination)` plays notes as Web Audio voices, with optional delayed vibrato and legato glides |
 | `src/audio/mixer.js` | a song's mixer: channel strips (layer gain, fader, pan with optional auto-pan, low cut, tone filter) and shared reverb and tempo-synced, slowly modulated delay buses |
-| `src/audio/soundfont-catalog-data.js` | generated list of every preset and its file, so the menu doesn't need the file up front (`just catalog`) |
+| `src/audio/soundfont-libraries-data.js` | the libraries: id, name, folder and license |
+| `src/audio/soundfont-catalog-data.js` | generated list of every library's files and presets, so the menu doesn't need the files up front (`just catalog`) |
+| `src/audio/soundfont-library.js` | the library in use, switched from the keyboard's control bar; songs load their instruments from it |
 | `src/features/keyboard/` | the playable piano: picker bar, on-screen keys, mouse/keys/MIDI input, its save slice; steps aside while an activity runs |
 | `src/features/composer/` | song spec → score, top down: the song plan (`plan.js`: form, keys, meters, energy curve, cadences, tempo map, loop), chords per section (`harmony.js`: cadences, harmonic rhythm, passing dim7s, harmony voices, call and response), the motif and melody (`melody.js`; repeats in `melody-repeats.js`, hand-written degree notation in `notation.js`), the parts in any meter (`parts.js`, `meter-patterns.js`, `meter.js`), arrangement and rhythm passes (`arrange.js`, `syncopation.js`), all driven by `compose.js`. The knowledge tables: `composer-data.js`, `patterns-data.js`, `song-craft-data.js` (styles, variation, curve, tempo, motifs), `genre-data.js` (genre profiles: defaults, progressions, extensions, voicing, cadences, scales, blue notes, phrase repeats), `performance-data.js`, `adaptive-data.js` (layers, stingers, ear candy). Written songs: `songs-data.js`, `genre-songs-data.js` (one per genre, with a story) and `game-songs-data.js` (loops, a meter-changing boss, a leitmotif in two moods). The performance (`perform.js`: ghost notes, scoops, slides, vibrato, swing, timing; `ear-candy.js`), the mix plan (`mix-plan.js`), stingers (`stingers.js`), the instruments a score needs (`band-loader.js`), audio-clock playback with loops, section queueing and intensity layers (`song-player.js`), the falling-notes grid (`song-view.js`) and its control bar; a playing song is an activity |
 | `src/features/adventure/` | a test level for adaptive music: walk a corridor whose zones raise the music's intensity, with coins, guards, a hidden alcove and an arena that switches the song's phase. It drives the composer only through `music:*` events (`level.js` the rules, `level-view.js` the drawing, `adventure-data.js` the layout) |

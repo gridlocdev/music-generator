@@ -1,13 +1,12 @@
-// Finds and loads the instruments a score's parts play: each part's SoundFont preset from the catalog, and the .sf2
-// files they live in, downloaded once and shared.
-import { SOUNDFONTS } from '../../audio/soundfont-catalog-data.js';
+// Finds and loads the instruments a score's parts play: each part's SoundFont preset from the current library, and
+// the .sf2 files they live in, downloaded once and shared.
+import { soundfontLibrary } from '../../audio/soundfont-library.js';
 import { loadSoundFont, findPreset } from '../../audio/soundfont.js';
-
-const presets = SOUNDFONTS.flatMap(font => font.presets.map(p => ({ ...p, url: font.url })));
 
 /** the catalog entry for a part: its exact bank/program, or the same program on any bank, or the first preset */
 export function presetFor(bank, program)
 {
+    const presets = soundfontLibrary.presets();
     return presets.find(p => p.bank === bank && p.program === program)
         ?? presets.find(p => (p.bank >= 127) === (bank >= 127) && p.program === program)
         ?? presets.find(p => (p.bank >= 127) === (bank >= 127))

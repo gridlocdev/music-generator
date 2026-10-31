@@ -1,11 +1,12 @@
 # Music Generator
 
-A LittleJS keyboard that plays the instruments of the GeneralUser GS SoundFont library (287 presets in one `.sf2` file, including GS drum kits on bank 128), with a SoundFont 2 parser and Web Audio sampler written from scratch.
+A LittleJS keyboard that plays the instruments of three openly licensed General MIDI SoundFont libraries (GeneralUser GS, FluidR3_GM and MuseScore_General), with a SoundFont 2 parser and Web Audio sampler written from scratch.
 
 ```sh
 just play     # serve on localhost:8000 and open the browser
 just check    # syntax + layer rules
 just test     # node --test
+just soundfonts  # download GeneralUser GS, FluidR3_GM and MuseScore_General into soundfonts/
 just catalog  # regenerate the instrument list after changing the .sf2 files
 just compose first-light --melody --midi first-light.mid   # compose without a browser
 ```
@@ -16,8 +17,14 @@ just compose first-light --melody --midi first-light.mid   # compose without a b
 
 **Compare versions:** `just ab` (or `just ab <commit>`) serves a page at http://localhost:8010/tools/ab/ that renders every song with that commit and with your checkout, so you can hear what a change did. It shows each render's length, peak and loudness, has a blind mode, and saves the WAVs in `.ab/out/`. Songs are plain specs in `src/features/composer/songs-data.js`; they can also be played from the console (`composer.play({ title: 'Test', emotion: 'tender' })`) or a link (`#song=first-light`, `#feel=heroic`). How it composes and how to write a song: [docs/COMPOSING.md](docs/COMPOSING.md).
 
-The `.sf2` is 32 MB and downloads the first time you pick an instrument; it stays in memory afterwards.
+**Libraries:** the first list in the control bar switches library. The keyboard keeps the same instrument when the new library has it, and the next song you play uses the new library, so you can compare them by ear. Each `.sf2` file (32–216 MB) downloads the first time you pick one of its instruments and stays in memory afterwards.
 
-The library lives in `soundfonts/GeneralUser-GS/` (ignored here; download it from https://github.com/mrbumpy409/GeneralUser-GS and see its LICENSE.txt). The game serves the `.sf2` file from that folder.
+| Library | Folder | Size | License |
+|---|---|---|---|
+| GeneralUser GS 2.0.3 | `soundfonts/GeneralUser-GS/` | 32 MB | GeneralUser GS License v2.0: free for commercial music and software |
+| FluidR3_GM | `soundfonts/FluidR3_GM/` | 148 MB | MIT |
+| MuseScore_General 0.2 | `soundfonts/MuseScore_General/` | 216 MB | MIT; keep its credits in any derivative |
+
+`soundfonts/` is ignored here; each library's license file sits next to its `.sf2`. The libraries and their folders are listed in `src/audio/soundfont-libraries-data.js`.
 
 Layout and rules: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).

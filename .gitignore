@@ -1,6 +1,6 @@
 node_modules/
 
-# the SoundFont library (32 MB); see README.md
+# the openly licensed libraries (~400 MB); `just soundfonts` downloads them
 soundfonts/
 .DS_Store
 

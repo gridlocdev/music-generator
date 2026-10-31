@@ -4,14 +4,14 @@ import { input } from '../../platform/input.js';
 import { midi } from '../../platform/midi.js';
 import { audioEngine } from '../../platform/audio-engine.js';
 import { octaveC } from '../../lib/notes.js';
-import { SOUNDFONTS } from '../../audio/soundfont-catalog-data.js';
+import { soundfontLibrary } from '../../audio/soundfont-library.js';
 import { loadSoundFont, findPreset, createInstrument } from '../../audio/soundfont.js';
 import { DEFAULTS, OCTAVE_MIN, OCTAVE_MAX, KEY_VELOCITY, SUSTAIN_CC } from './keyboard-data.js';
 import { fitCamera, drawPiano, keyAt } from './piano-view.js';
 import { createPicker } from './picker.js';
 
-// every preset in the library, flat, in catalog order
-const entries = SOUNDFONTS.flatMap((font, part)=> font.presets.map(p => ({ ...p, url: font.url, part })));
+// every preset in the current library, flat, in catalog order
+let entries = soundfontLibrary.presets();
 
 let settings;               // this feature's save slice
 let picker;
@@ -53,7 +53,7 @@ async function choose(index, state, events)
 {
     current = (index + entries.length) % entries.length;
     const entry = entries[current];
-    Object.assign(settings, { url: entry.url, bank: entry.bank, program: entry.program });
+    Object.assign(settings, { bank: entry.bank, program: entry.program });
     state.write();
     picker.select(current);
 
@@ -81,6 +81,21 @@ async function choose(index, state, events)
     }
 }
 
+// switches library and keeps the same instrument when the new one has it, to compare them side by side
+function chooseLibrary(id, state, events)
+{
+    const library = soundfontLibrary.select(id);
+    settings.library = library.id;
+    const { bank, program } = entries[current];
+    entries = soundfontLibrary.presets();
+    const same = entries.findIndex(e => e.bank === bank && e.program === program);
+    const sameProgram = entries.findIndex(e => (e.bank >= 127) === (bank >= 127) && e.program === program);
+    const index = same >= 0 ? same : Math.max(0, sameProgram);
+    picker.setLibrary(library, entries, index);
+    events.emit('notice', { text: `${library.name}: ${library.license}` });
+    choose(index, state, events);
+}
+
 function setOctave(n)
 {
     settings.octave = Math.min(OCTAVE_MAX, Math.max(OCTAVE_MIN, n));
@@ -92,13 +107,17 @@ export default {
     build({ state, events })
     {
         settings = state.slice('keyboard', DEFAULTS);
-        const saved = entries.findIndex(e => e.url === settings.url && e.bank === settings.bank && e.program === settings.program);
+        soundfontLibrary.select(settings.library);
+        entries = soundfontLibrary.presets();
+        const saved = entries.findIndex(e => e.bank === settings.bank && e.program === settings.program);
         audioEngine.volume = settings.volume;
 
         picker = createPicker({
+            libraries: soundfontLibrary.all,
+            library: soundfontLibrary.current,
             entries,
-            parts: SOUNDFONTS,
             selected: Math.max(0, saved),
+            onLibrary: (id)=> chooseLibrary(id, state, events),
             volume: settings.volume,
             onSelect: (i)=> choose(i, state, events),
             onVolume: (v, done)=> { audioEngine.volume = settings.volume = v; if (done) state.write(); },
