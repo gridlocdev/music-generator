@@ -80,3 +80,7 @@ Setting up, checking your work, writing songs, composing from the command line, 
 versions by ear and adding a library are covered in the
 [developer guide](docs/Developer-Guide.md). The code layout and its rules are in
 [ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+## License
+
+[MIT](LICENSE). The sound libraries have their own licenses, listed above.
