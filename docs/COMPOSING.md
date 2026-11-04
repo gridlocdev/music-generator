@@ -606,6 +606,8 @@ A song is a plain object. Only `title` (or `id`) and `emotion` are needed; every
     ritardando: true,               // slow the ending down
     swingSub: 0.5,                  // swing eighths (0.5) or sixteenths (0.25)
     band: { lead: 73, drums: 40, counter: null },   // GM programs per role; null removes a part
+    sound: 'chip',                  // 'chip': chip instruments (audio/chip-instruments-data.js) in place of GM ones;
+                                    // band programs the chip bank has are kept, the rest fall back per role
     sections: {
         chorus: {
             progression: 'IV I V vi',               // Roman numerals, ':bars'

@@ -42,6 +42,7 @@ export function planSong(spec)
         legato: choose('legato'),
         dynamics: spec.dynamics ?? feel.dynamics,
         power: choose('power') ?? false,
+        sound: choose('sound') ?? 'gm',
         arp, groove, grooveName, style, genre,
         swing: choose('swing') ?? groove.swing ?? style.swing ?? 0,
         swingSub: spec.swingSub ?? 0.5,

@@ -31,6 +31,14 @@ check:
 test:
     node --test
 
+# report how an NSF file's songs are built (keep the files in reference/, which git ignores)
+nsf file *songs:
+    node tools/nsf-report.mjs {{file}} {{songs}}
+
+# report how recorded game music's lead moves (any file ffmpeg reads; keep them in reference/)
+audio +files:
+    node tools/audio-report.mjs {{files}}
+
 _deps:
     @[ -d node_modules/littlejsengine ] || npm install
 

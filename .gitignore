@@ -10,3 +10,6 @@ soundfonts/
 
 # the A/B listening tool: old versions to compare against, and its renders
 .ab/
+
+# reference music for tools/nsf (not ours to redistribute)
+reference/

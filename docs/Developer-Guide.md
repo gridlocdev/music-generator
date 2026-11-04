@@ -59,6 +59,31 @@ just compose first-light --midi first-light.mid        # and a Standard MIDI Fil
 just compose feel:tender
 ```
 
+### Studying NES soundtracks
+
+`just nsf <file.nsf> [songs…]` (`tools/nsf-report.mjs`) plays an NSF file's music driver in a
+6502 emulator and reports what each song does: each channel's range and duty, the row length, how
+the lead moves (interval sizes, turns, leaps), note lengths, vibrato, slides, arpeggios, echo
+channels, drum hits and the loop. `--json out.json` saves the notes too. Keep the files in
+`reference/`, which git ignores; they are for learning techniques, not for copying tunes into the
+song lists. It reads the 2A03 and the VRC6 expansion; other expansion chips are ignored.
+
+```bash
+just nsf reference/Shovel_Knight_Music.nsf 1 4
+```
+
+For music that isn't an NSF (an OGG or MP3 soundtrack), `just audio <files…>`
+(`tools/audio-report.mjs`, needs ffmpeg) follows the loudest high pitched line and reports the same
+lead statistics, plus the tempo and how much of the lead stays on seven pitch classes. It is a
+guess from the mixed sound: checked against Mega Man 2 rendered from its NSF it picks the right
+note 67–85% of the time. It counts too few repeated notes and too many leaps, and it can't see
+fast arpeggios. Busy mixes with pads, reverb or a loud bass confuse it more. Compare its numbers
+with each other rather than with `just nsf`'s.
+
+```bash
+just audio reference/vvvvvv/ogg/*.ogg
+```
+
 ### Comparing versions by ear
 
 `just ab` (or `just ab <commit>`, default `main`) serves a page at
@@ -87,6 +112,29 @@ deploy runs the same script. The libraries and their folders are listed in
 3. Run `just catalog` to regenerate `src/audio/soundfont-catalog-data.js`, the list of every
    file and preset that lets the instrument menu load without the files.
 4. Run `just check` and `just test`.
+
+### Chip instruments
+
+The chip instruments aren't a file. `src/lib/chip-synth.js` builds them in memory the first time
+one is played: pulse waves at the NES's 12.5%, 25% and 50% widths, a pulse-width sweep, triangle,
+saw and sine, each stored with only the harmonics its notes can play cleanly, and drum kits made
+from NES-style LFSR noise and falling tones. They come with every library, listed under
+"Chip · built in" (melodic on bank 64, kits on bank 192). A song uses them with `sound: 'chip'`.
+The Chiptune genre sets that.
+
+To change how they sound, edit `src/audio/chip-instruments-data.js`; the fields are documented
+at the top of `chip-synth.js`:
+
+- `wave`: the shape. `steps` quantises it, like the NES triangle's 16 levels.
+- `soft`: how far the upper harmonics are rolled off. 0 is the raw chip; 0.3–0.6 is the modern sound.
+- `layers`: detuned, panned or octave copies, for width.
+- `env`: attack, decay, sustain and release.
+- `filter`: a low-pass, optionally swept for a pluck.
+- `velocityTone: false`: soft notes are quieter but not darker.
+
+Keep each program in its General MIDI family (80–87 leads, 38–39 bass, 88–95 pads), so the
+composer's vibrato, slide and scoop rules still pick it up. `CHIP_ROLES` is the instrument each part
+falls back to when the band names one the chip bank doesn't have.
 
 ## Adding a feature
 

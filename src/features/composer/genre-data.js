@@ -3,7 +3,8 @@
 // A spec's `genre` names one (case and spaces don't matter: 'Bossa nova' is bossa-nova); a genre with no profile
 // changes nothing. Every field is optional, and anything the spec sets itself wins.
 //
-// Defaults, in place of the emotion's: mode, groove, comp, arp, style, swing, legato, form, power
+// Defaults, in place of the emotion's: mode, groove, comp, arp, style, swing, legato, form, power, sound ('chip': the
+//              chip instruments of audio/chip-instruments-data.js in place of General MIDI ones)
 // Harmony:
 //   progressions  per section type, in place of the emotion's; a genre that sets its mode brings them, so the chords
 //              are written for that mode
@@ -106,7 +107,7 @@ export const GENRES = {
         extend: 'add9',
     },
     'chiptune': {
-        groove: 'rock', comp: 'eighths', arp: 'chip',
+        groove: 'rock', comp: 'eighths', arp: 'chip', sound: 'chip',
     },
     // the hook climbs to a held high note an octave over the verse, enters off the beat, and leaps where pop steps
     'disco': {

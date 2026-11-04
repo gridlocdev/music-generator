@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { compose, parseMelody, sectionSeek, describe } from '../../src/features/composer/compose.js';
+import { compose, parseMelody, sectionSeek, describe, instrumentFor } from '../../src/features/composer/compose.js';
 import { EMOTIONS, FORMS, SECTIONS, RHYTHMS, CONTOURS, RANGES, ROLES } from '../../src/features/composer/composer-data.js';
 import { MIX } from '../../src/features/composer/performance-data.js';
 import { GROOVES, BASS, COMPING, ARPS, DRUM_KEYS, METERS } from '../../src/features/composer/patterns-data.js';
@@ -527,4 +527,17 @@ test('a hand-written melody plays as written every time; describe spells keys li
     assert.deepEqual(tune(choruses[1]), tune(choruses[0]));
     const moved = compose({ title: 'Flats', emotion: 'melancholy', key: 'D', sections: { bridge: { transpose: 8 } } });
     assert.ok(moved.flats && describe(moved).includes('(Bb minor)'), describe(moved).split('\n').find(l => l.includes('Bridge')));
+});
+
+test('sound chip: every part plays a chip instrument, keeping the band program when the chip bank has it', ()=>
+{
+    assert.deepEqual(instrumentFor('lead', 80, 'chip'), { bank: 64, program: 80 });
+    assert.deepEqual(instrumentFor('lead', 40, 'chip'), { bank: 64, program: 80 });     // no chip violin: the role's lead
+    assert.deepEqual(instrumentFor('drums', 1, 'chip'), { bank: 192, program: 1 });
+    assert.deepEqual(instrumentFor('drums', 24, 'chip'), { bank: 192, program: 0 });
+    assert.deepEqual(instrumentFor('bass', 33), { bank: 0, program: 33 });
+    const score = compose({ emotion: 'heroic', genre: 'Chiptune', seed: 'chip' });
+    assert.ok(score.tracks.every(t => t.bank === (t.role === 'drums' ? 192 : 64)));
+    const gm = compose({ emotion: 'heroic', genre: 'Chiptune', seed: 'chip', sound: 'gm' });
+    assert.ok(gm.tracks.every(t => t.bank === (t.role === 'drums' ? 128 : 0)));
 });

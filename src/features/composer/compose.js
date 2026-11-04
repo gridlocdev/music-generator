@@ -20,6 +20,7 @@ import { notatedMelody } from './notation.js';
 import { writeChords, writePad, writeArp, writeCounter, writeBass, writeDrums } from './parts.js';
 import { arrangeSection } from './arrange.js';
 import { syncopate } from './syncopation.js';
+import { CHIP_BANK, CHIP_KIT_BANK, CHIP_ROLES, CHIP_INSTRUMENTS, CHIP_KITS } from '../../audio/chip-instruments-data.js';
 
 export { parseMelody } from './notation.js';
 
@@ -38,6 +39,18 @@ export { parseMelody } from './notation.js';
  */
 
 /**
+ * A part's bank and program. With `sound: 'chip'` every part plays a chip instrument: the band's program when the
+ * chip bank has it, else the role's usual one (CHIP_ROLES), so a band written for General MIDI still works.
+ */
+export function instrumentFor(role, program, sound = 'gm')
+{
+    const drums = role === 'drums';
+    if (sound !== 'chip') return { bank: drums ? 128 : 0, program };
+    const has = (drums ? CHIP_KITS : CHIP_INSTRUMENTS).some(i => i.program === program);
+    return { bank: drums ? CHIP_KIT_BANK : CHIP_BANK, program: has ? program : CHIP_ROLES[role] };
+}
+
+/**
  * @param {object} spec  see docs/COMPOSING.md, "The song spec"
  * @returns {Score}
  */
@@ -48,9 +61,7 @@ export function compose(spec)
     const motif = songMotif(spec, plan);
 
     /** @type {Track[]} */
-    const tracks = ROLES.filter(r => band[r] != null).map(role => ({
-        role, name: ROLE_NAMES[role], program: band[role], bank: role === 'drums' ? 128 : 0, notes: [],
-    }));
+    const tracks = ROLES.filter(r => band[r] != null).map(role => ({ role, name: ROLE_NAMES[role], ...instrumentFor(role, band[role], song.sound), notes: [] }));
     const track = Object.fromEntries(tracks.map(t => [t.role, t]));
 
     const sections = [], chords = [], themes = {};
@@ -164,7 +175,7 @@ export function describe(score)
     for (const t of score.tracks)
     {
         const keys = t.notes.map(n => n.key);
-        lines.push(`  ${t.name.padEnd(14)} program ${t.bank === 128 ? 'kit ' : ''}${t.program}, ${t.notes.length} notes, keys ${Math.min(...keys)}–${Math.max(...keys)}`);
+        lines.push(`  ${t.name.padEnd(14)} program ${t.bank >= 128 ? 'kit ' : ''}${t.bank && t.bank !== 128 ? `${t.bank}:` : ''}${t.program}, ${t.notes.length} notes, keys ${Math.min(...keys)}–${Math.max(...keys)}`);
     }
     return lines.join('\n');
 }

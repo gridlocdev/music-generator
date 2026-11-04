@@ -35,6 +35,9 @@ DEFAULTS[GEN.overridingRootKey] = -1;
 DEFAULTS[GEN.keynum] = -1;
 DEFAULTS[GEN.velocity] = -1;
 
+/** a fresh generator list holding the spec defaults, for building regions in code */
+export const defaultGenerators = ()=> Int16Array.from(DEFAULTS);
+
 // generators a preset zone may not set, or that don't add (ranges are intersected separately)
 const NOT_ADDITIVE = new Set([0, 1, 2, 3, 4, 12, 41, 43, 44, 45, 46, 47, 50, 53, 54, 57, 58]);
 

@@ -2,7 +2,9 @@
 // (sample → optional low-pass, swept by the modulation envelope → volume envelope → optional pan → instrument output).
 import { parseSf2, regionsFor } from '../lib/sf2.js';
 import { voiceParams, voiceLevel, sweepCents, ENV_TIME_CONSTANTS } from '../lib/sf2-voice.js';
+import { buildChipFont } from '../lib/chip-synth.js';
 import { audioEngine } from '../platform/audio-engine.js';
+import { CHIP_URL, CHIP_BANK, CHIP_KIT_BANK, CHIP_INSTRUMENTS, CHIP_KITS } from './chip-instruments-data.js';
 
 const MAX_VOICES = 96;          // oldest voices are cut beyond this, released or not
 const MIN_RELEASE = 0.03;       // seconds; shorter releases click
@@ -14,7 +16,8 @@ const fonts = new Map();        // url → { promise, listeners: Set<onProgress>
 const active = [];              // every sounding voice, oldest first
 
 /**
- * Downloads and parses a .sf2 file once; later calls share the same load and all get progress.
+ * Downloads and parses a .sf2 file once; later calls share the same load and all get progress. CHIP_URL is the
+ * chip instruments, built in memory the first time they're asked for.
  * @param {string} url
  * @param {(loaded: number, total: number)=> void} [onProgress]
  */
@@ -24,7 +27,9 @@ export function loadSoundFont(url, onProgress)
     if (!load)
     {
         const listeners = new Set();
-        const promise = download(url, (loaded, total)=> { for (const fn of listeners) fn(loaded, total); })
+        const promise = url === CHIP_URL
+            ? Promise.resolve().then(()=> ({ url, ...buildChipFont({ bank: CHIP_BANK, kitBank: CHIP_KIT_BANK, instruments: CHIP_INSTRUMENTS, kits: CHIP_KITS }) }))
+            : download(url, (loaded, total)=> { for (const fn of listeners) fn(loaded, total); })
             .then(buffer => ({ url, ...parseSf2(buffer) }));
         promise.catch(()=> fonts.delete(url)).finally(()=> listeners.clear());   // a failed load can be retried
         fonts.set(url, load = { promise, listeners });

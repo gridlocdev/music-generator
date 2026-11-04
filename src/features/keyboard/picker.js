@@ -32,17 +32,19 @@ export function createPicker({ libraries, library, entries, selected, volume, on
     {
         entries = list;
         select.replaceChildren();
-        library.files.forEach((file, i)=>
+        // one group per .sf2 file, then the chip instruments, which are made in code and come with every library
+        const groups = [...library.files.map(file => `${fileName(file.url)} · ${megabytes([file])} MB`), 'Chip · built in'];
+        groups.forEach((name, i)=>
         {
             const group = document.createElement('optgroup');
-            group.label = `${fileName(file.url)} · ${megabytes([file])} MB`;
+            group.label = name;
             entries.forEach((e, j)=>
             {
                 if (e.file !== i) return;
                 const label = e.bank >= 127 ? `Drums ${e.program} · ${e.name}` : `${e.bank ? `Bank ${e.bank} · ` : ''}${e.program + 1}. ${e.name}`;
                 group.append(new Option(label, String(j)));
             });
-            select.append(group);
+            if (group.childElementCount) select.append(group);
         });
         select.value = String(index);
     }
