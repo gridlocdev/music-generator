@@ -62,7 +62,9 @@ export function createMixer({ tempo })
          */
         channel({ volumeDb = -6, pan = 0, lowCut = 20, reverb = 0, delay: delaySend = 0, autoPan = null } = {})
         {
-            const input = node(new GainNode(ctx));
+            // always stereo: a strip whose voices are all centred (unpanned, mono) would otherwise run mono, and its
+            // panner pans mono with equal power, 3 dB quieter than the same notes beside one panned voice
+            const input = node(new GainNode(ctx, { channelCount: 2, channelCountMode: 'explicit' }));
             const layer = node(new GainNode(ctx));
             const tone = node(new BiquadFilterNode(ctx, { type: 'lowpass', frequency: OPEN_TONE, Q: 0 }));
             const level = dbToGain(volumeDb);

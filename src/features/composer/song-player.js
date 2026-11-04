@@ -97,7 +97,8 @@ export function playScore(score, band)
             for (const [param, keyframes] of params)
             {
                 if (!keyframes) continue;
-                param.cancelScheduledValues(s.at);
+                // just after s.at, so the last segment's ramp ending at s.at isn't dropped short of its target
+                param.cancelScheduledValues(s.at + 0.001);
                 param.setValueAtTime(valueAt(keyframes, s.from), Math.max(ctx.currentTime, s.at));
                 for (const f of keyframes)
                 {
