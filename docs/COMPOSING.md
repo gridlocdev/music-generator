@@ -685,7 +685,9 @@ The recipes above are songs: the genre lives in what was written for them. A **p
 | `avoid` | scale steps the melody leaves out except in passing (`MELODY_RULES.avoid`), by brightness: `{ bright: [4, 7], dark: [2, 6] }` is pentatonic | country, rock, reggae, funk: pentatonic · celtic: the gapped hexatonic · blues: no major 7th |
 | `blue` | steps the melody may flatten (`MELODY_RULES.blue`), outside cadences; a step the chord already flattens (the b7 of I7) is just a chord tone | blues: 3 and 7 |
 | `phrases` | which 4-bar phrases of a composed section repeat an earlier one: `'aab'` repeats line one over IV, then answers it. A repeated note the old chord altered takes the new chord's accidental, so the G# of E7 becomes the G of A7: the blue third, for free. The copy moves an octave where that joins it more closely to the note before | blues |
-| `rules` | `MELODY_RULES` weights of its own: jazz and bossa charge less for a non-chord tone on the beat, since a 9th there is colour | blues, jazz, bossa |
+| `rules` | `MELODY_RULES` weights of its own: jazz and bossa charge less for a non-chord tone on the beat, since a 9th there is colour; disco charges less for thirds, leaps and turns, and more for straying from the contour | blues, jazz, bossa, disco |
+| `span` | how far the contours reach, as a multiple of `CONTOURS`' heights: 1.75 takes an arch up an octave, so a hook climbs to a held high note instead of circling a fifth | disco |
+| `offbeat` | how many notes nearer the section's density a rhythm cell with an offbeat entry counts, so syncopated cells (`[0.5, 1, 0.5, 2]`, `[1.5, 0.5, 1, 1]`) win over straight ones | disco |
 
 A profile changes every song in its genre, hand-written hooks excepted. The genre songs above keep their own grooves, progressions and hooks, and gain the profile's harmony and melody: the funk song's triads become dominant sevenths, the gospel organ opens into drop-2 ninths, the bossa guitar plays shells.
 

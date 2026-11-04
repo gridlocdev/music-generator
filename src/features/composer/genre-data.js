@@ -19,6 +19,9 @@
 //   phrases    which 4-bar phrases of a composed section repeat an earlier one: 'aab' is the blues' line, line again
 //              (over IV), answer
 //   rules      MELODY_RULES weights of its own
+//   span       how far the contours reach, as a multiple of CONTOURS' heights: 1.75 takes an arch up an octave
+//   motif      MOTIF.cost weights of its own, for the motif it invents
+//   offbeat    how much nearer the section's density a rhythm cell with an offbeat entry counts, in notes
 export const GENRES = {
     'blues': {
         mode: 'major', groove: 'swing', swing: 0.67, comp: 'offbeat', form: 'blues',
@@ -104,6 +107,13 @@ export const GENRES = {
     },
     'chiptune': {
         groove: 'rock', comp: 'eighths', arp: 'chip',
+    },
+    // the hook climbs to a held high note an octave over the verse, enters off the beat, and leaps where pop steps
+    'disco': {
+        mode: 'dorian', groove: 'dance', comp: 'chop', arp: 'sixteenths', style: 'funky', legato: 0.6,
+        span: 1.75, offbeat: 1,
+        motif: { repeat: 0.3, skip: 0, leap: 0.4, recover: 0.8, narrow: 1.5, peakFirst: 1.5 },
+        rules: { contour: 1.5, skip: 0.3, leap: 0.6, recover: 4, turn: 0.6 },
     },
     'edm': {
         groove: 'dance', comp: 'upbeats', arp: 'sixteenths', style: 'electronic', form: 'edm',

@@ -13,6 +13,8 @@ import { chordAt, clamp, mod, strongBeat } from './meter.js';
 import { rhythmsFor } from './meter-patterns.js';
 
 const noteCount = (cell)=> cell.filter(d => d > 0).length;
+// whether a cell has a note starting off the beat; a genre that syncopates (GENRES offbeat) counts those cells nearer
+const offbeat = (cell)=> { let t = 0; return cell.some(d => { const off = d > 0 && mod(t, 1) > 1e-9; t += Math.abs(d); return off; }); };
 
 /** a degree's key under a chord: the scale note, or the chord's version of it (G# under E major in A minor) */
 export function keyUnder(sec, chord, d)
@@ -53,13 +55,13 @@ function inventMotif(sec, seed)
 {
     const { cells } = rhythmsFor(sec.meter);
     const [minN, maxN] = MOTIF.notes;
-    const want = clamp(Math.round((sec.base.melody?.density ?? 0.8) * sec.beatsPerBar), minN, maxN);
+    const want = clamp(Math.round((sec.over.density ?? sec.base.melody?.density ?? 0.8) * sec.beatsPerBar), minN, maxN);
     const cell = cells.filter(c => noteCount(c) >= minN && noteCount(c) <= maxN)
-        .map((c, i)=> ({ c, d: Math.abs(noteCount(c) - want), h: hash(seed, 'motif-cell', i) }))
+        .map((c, i)=> ({ c, d: Math.abs(noteCount(c) - want) - (offbeat(c) ? sec.genre.offbeat ?? 0 : 0), h: hash(seed, 'motif-cell', i) }))
         .sort((a, b)=> a.d - b.d || a.h - b.h)[0]?.c ?? Array(sec.beatsPerBar).fill(1);
     const count = noteCount(cell);
     const start = MOTIF.starts[hash(seed, 'motif-start') % MOTIF.starts.length];
-    const C = MOTIF.cost;
+    const C = { ...MOTIF.cost, ...sec.genre.motif };
     let best = [0], bestCost = Infinity;
     const shape = [0];
     const score = ()=>
@@ -76,6 +78,7 @@ function inventMotif(sec, seed)
         }
         const top = Math.max(...shape), span = top - Math.min(...shape);
         if (span > MOTIF.range) c += C.range * (span - MOTIF.range);
+        if (span < MOTIF.wide) c += C.narrow * (MOTIF.wide - span);
         c += changes === 0 ? C.flat : changes > 2 ? C.zigzag * (changes - 2) : 0;
         if (shape.indexOf(top) === 0) c += C.peakFirst;
         if (![1, 3, 5].includes(mod(start + shape.at(-1) - 1, 7) + 1)) c += C.unstable;
@@ -129,7 +132,7 @@ export function writeMelody(sec, cfg, variant, motif, timeline, before = null)
     const rhythms = rhythmsFor(meter);
     const want = cfg.density * bpb;
     const ranked = rhythms.cells
-        .map((cell, i)=> ({ cell, d: Math.abs(noteCount(cell) - want), h: hash(seed, type, 'cell', i) }))
+        .map((cell, i)=> ({ cell, d: Math.abs(noteCount(cell) - want) - (offbeat(cell) ? sec.genre.offbeat ?? 0 : 0), h: hash(seed, type, 'cell', i) }))
         .sort((a, b)=> a.d - b.d || a.h - b.h)
         .map(r => r.cell);
     const answer = ranked[1 + variant % 2] ?? ranked[1] ?? ranked[0];
@@ -190,7 +193,7 @@ export function writeMelody(sec, cfg, variant, motif, timeline, before = null)
     const [lowKey, highKey] = RANGES.lead;
     const lowDeg = keyToDegree(tonic, mode, lowKey, MELODY_OCTAVE) + 1;
     const highDeg = keyToDegree(tonic, mode, highKey, MELODY_OCTAVE) - 1;
-    const contour = CONTOURS[cfg.contour] ?? CONTOURS.arch;
+    const contour = (CONTOURS[cfg.contour] ?? CONTOURS.arch).map(h => h * (sec.genre.span ?? 1));
     const home = MELODY_HOME + cfg.register;
     const R = { ...MELODY_RULES, ...sec.genre.rules };
     const avoid = (isMinorMode(mode) ? sec.genre.avoid?.dark : sec.genre.avoid?.bright) ?? [];
