@@ -296,3 +296,20 @@ test('a tracker arpeggio strikes the chord’s lowest note and steps through the
     const played = perform(score)[i].filter(n => n.cycle);
     assert.ok(played.every(n => n.arp.steps === n.cycle && Math.abs(n.arp.seconds - CHIP.arp.frames / 60) < 1e-9 && n.arp.until > 0));
 });
+
+test('a chip part changes pulse width with the section: darker when quiet, thinner at its loudest', ()=>
+{
+    const score = compose(GENRE_SONGS.find(s => s.id === 'pixel-knight'));
+    const i = score.tracks.findIndex(t => t.role === 'lead');
+    assert.equal(score.tracks[i].program, 80);
+    const T = CHIP.timbre, energyAt = (beat)=> score.sections.findLast(s => s.beat <= beat + 1e-9).energy;
+    const notes = perform(score)[i];
+    for (const n of notes)
+    {
+        const e = energyAt(n.grid);
+        assert.equal(n.program ?? 80, e < T.darker ? 83 : e >= T.brighter ? 82 : 80, `beat ${n.grid} energy ${e}`);
+    }
+    assert.ok(notes.some(n => n.program === 82) && notes.some(n => n.program === 83));
+    const gm = compose({ ...GENRE_SONGS.find(s => s.id === 'pixel-knight'), sound: 'gm' });
+    assert.ok(perform(gm).flat().every(n => n.program === undefined));
+});

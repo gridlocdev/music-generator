@@ -561,6 +561,7 @@ A song with `sound: 'chip'` (the Chiptune genre sets it) plays the chip instrume
 
 - **Echo.** In the bars where the countermelody rests, a part of its own repeats the lead about 0.16 s later (rounded to a sixteenth) at about half its velocity. Mega Man 2 and DuckTales echo the lead on the second pulse channel 8–12 frames late; one channel then sounds like a room.
 - **Tracker arpeggios.** The `tracker` arpeggio pattern strikes each chord's lowest note on the eighths, and that one voice steps through the chord's notes every `CHIP.arp.frames` sixtieth of a second, the shimmer of a tracker's `0xy` effect. The score keeps the struck note and the chord's offsets (`cycle`); the view and the MIDI file show the struck note only. The Chiptune genre uses it.
+- **Pulse width follows the section.** The lead, countermelody and echo, when they play a pulse (`CHIP.timbre.groups`: the modern 50%, 25% and 12.5% pulses, or the NES 50% and 25%), go one width darker in a section under 0.5 energy and one thinner and brighter from 0.85 up. Pixel Knight's lead is a 25% pulse in the verses, 12.5% in the choruses and 50% in the bridge, as Flash Man's lead moves between widths.
 
 ## 11. Adaptive music for games
 

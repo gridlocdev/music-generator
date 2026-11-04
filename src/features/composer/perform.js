@@ -17,10 +17,11 @@ import { EAR_CANDY } from './adaptive-data.js';
 
 /**
  * @typedef {import('./compose.js').Note & import('../../audio/pitch-moves.js').PitchMoves & { grid: number, glideFrom?: number,
- *   held?: boolean, ghost?: boolean, candy?: boolean }} PerformedNote
+ *   held?: boolean, ghost?: boolean, candy?: boolean, program?: number }} PerformedNote
  *   grid: where the note belongs, before anticipation, swing and drift moved it; a loop or a jump to a beat plays the
  *   notes whose grid is at or after it, even those that sound a little before it.
- *   glideFrom: slide into this note from that key on the same voice; held: no note-off, the next note glides on from it
+ *   glideFrom: slide into this note from that key on the same voice; held: no note-off, the next note glides on from it;
+ *   program: play this note on another program of the part's bank (a chip part changing pulse width)
  */
 
 /**
@@ -48,6 +49,7 @@ export function perform(score, pass = 0, candy = planEarCandy(score, pass))
         if (melodic && EXPRESSION.scoop.roles.includes(t.role) && bends(t.program)) addScoops(notes, t.role, ends, score, unit, style.scoops ?? 0);
         if (score.swing) swing(notes, score, sectionAt);
         if (EXPRESSION.glide.roles.includes(t.role) && EXPRESSION.glide.programs.includes(t.program) && melodic) addGlides(notes, sectionAt, unit, t.role);
+        if (score.sound === 'chip' && CHIP.timbre.roles.includes(t.role) && melodic) changeTimbre(notes, t.program, sectionAt);
         if (EXPRESSION.vibrato.roles.includes(t.role) && EXPRESSION.vibrato.programs.includes(t.program) && melodic)
         {
             const v = EXPRESSION.vibrato;
@@ -235,6 +237,20 @@ function endBeforeRepeats(notes)
         next.set(n.key, n);
     }
     return merged.size ? notes.filter(n => !merged.has(n)) : notes;
+}
+
+// a chip part's pulse width follows the section: one step darker when it's quiet, one brighter at its loudest
+function changeTimbre(notes, program, sectionAt)
+{
+    const T = CHIP.timbre, group = T.groups.find(g => g.includes(program));
+    if (!group) return;
+    for (const n of notes)
+    {
+        const { energy } = sectionAt(n.grid);
+        const step = energy < T.darker ? -1 : energy >= T.brighter ? 1 : 0;
+        const to = group[clamp(group.indexOf(program) + step, 0, group.length - 1)];
+        if (to !== program) n.program = to;
+    }
 }
 
 // marks notes to slide into from the one before; that one is then held into it rather than released

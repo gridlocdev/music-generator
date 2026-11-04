@@ -86,11 +86,15 @@ export function createInstrument(font, preset, destination = audioEngine.output)
     return {
         preset,
         // when: an AudioContext time to start at, for notes scheduled ahead (a song); omitted = now
-        /** @param {import('./pitch-moves.js').PitchMoves} [opts] */
+        /**
+         * @param {import('./pitch-moves.js').PitchMoves & { program?: number }} [opts]  program: this note on another
+         *   program of the preset's bank, e.g. a chip lead changing pulse width
+         */
         noteOn(key, velocity = 100, when = 0, opts = {})
         {
             this.noteOff(key, true, when);
-            const voices = regionsFor(preset, key, velocity).map(r => startVoice(font, voiceParams(r, key, velocity), output, when, opts));
+            const p = opts.program === undefined ? preset : findPreset(font, preset.bank, opts.program) ?? preset;
+            const voices = regionsFor(p, key, velocity).map(r => startVoice(font, voiceParams(r, key, velocity), output, when, opts));
             // a new voice in an exclusive class chokes the others in it (open/closed hi-hat)
             for (const v of voices)
                 if (v.exclusiveClass)

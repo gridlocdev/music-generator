@@ -73,7 +73,11 @@ export const MOVEMENT = {
 //         (0.13–0.2 s). null: no echo.
 //   arp: a tracker arpeggio (the `tracker` pattern) steps to the chord's next note every `frames` 60ths of a second;
 //        1 is the classic shimmer, 2–3 a slower, more legible one
+//   timbre: these parts change pulse width with the section, as Flash Man's lead moves between widths: a part
+//           whose program is in one of `groups` (darkest to brightest) plays one step darker in a section under
+//           `darker` energy and one brighter from `brighter` up. The modern widths are 50%, 25%, 12.5%; the NES ones 50%, 25%.
 export const CHIP = {
     echo: { seconds: 0.16, vel: 0.55 },
     arp: { frames: 1 },
+    timbre: { roles: ['lead', 'counter', 'echo'], groups: [[83, 80, 82], [87, 86]], darker: 0.5, brighter: 0.85 },
 };
