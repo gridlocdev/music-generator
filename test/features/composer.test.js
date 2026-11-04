@@ -142,7 +142,8 @@ test('composed melodies put chord tones on strong beats and end phrases on a cad
         const tonic = pitchClass(s.key);
         for (const sec of s.sections.filter(x => SECTIONS[x.type].melody?.cadences.at(-1) === 'full' && s.sections.indexOf(x) > 0))
         {
-            const last = lead.notes.filter(n => n.beat >= sec.beat && n.beat < sec.beat + sec.beats).at(-1);
+            // (a note anticipating the next section, a sixteenth early, belongs to that one)
+            const last = lead.notes.filter(n => (n.anticipates ?? n.beat) >= sec.beat && (n.anticipates ?? n.beat) < sec.beat + sec.beats).at(-1);
             if (last && !EMOTIONS[emotion].lift) assert.equal(last.key % 12, tonic, `${emotion} ${sec.label}`);
         }
     }
@@ -599,4 +600,21 @@ test('sound chip: an echo repeats the lead a sixteenth or more later, softer, on
         assert.ok(!counter.some(n => n.beat < e.beat + e.beats - 1e-9 && n.beat + n.beats > e.beat + 1e-9), `echo at ${e.beat} under the counter`);
     }
     assert.ok(!compose({ emotion: 'heroic', genre: 'Chiptune', seed: 'chip', sound: 'gm' }).tracks.some(t => t.role === 'echo'));
+});
+
+test('a lead moves at the song\'s pace: quicker when excited, slower when calm, and never past two notes a beat', ()=>
+{
+    // the median time between lead notes, in seconds
+    const gap = spec =>
+    {
+        const on = notesIn(compose(spec), 'lead', 0, Infinity).map(n => n.beat).sort((a, b)=> a - b);
+        const g = on.slice(1).map((b, i)=> b - on[i]).filter(d => d > 1e-9).sort((a, b)=> a - b);
+        return g[g.length >> 1] * 60 / spec.tempo;
+    };
+    const song = (emotion, tempo)=> ({ title: 'Pace', emotion, key: 'C', mode: 'major', tempo, form: ['verse', 'chorus'] });
+    const excited = gap(song('joyful', 140)), calm = gap(song('serene', 140));
+    assert.ok(excited < 0.25, `an excited lead at 140 bpm moves every ${excited.toFixed(2)} s`);
+    assert.ok(calm > 1.5 * excited, `a calm one is slower: ${calm.toFixed(2)} s against ${excited.toFixed(2)} s`);
+    const slow = gap(song('joyful', 70));
+    assert.ok(slow >= 0.5 * 60 / 70 - 1e-9, `at 70 bpm it keeps to eighths (${slow.toFixed(2)} s)`);
 });

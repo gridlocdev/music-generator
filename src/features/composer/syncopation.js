@@ -25,6 +25,9 @@ export function syncopate(tracks, sections, song)
         const i = lead.findIndex(n => n.beat >= p - 1e-9 && n.beat < p + 1 - 1e-9);
         const n = lead[i];
         if (!n || n.beat < STEP || roll('ant', p) >= amount * SYNCOPATION.anticipate) continue;
+        // not into a breath the lead keeps silent: the drop's first note waits for the drop
+        const ending = sections.find(s => Math.abs(s.beat + s.beats - p) < 1e-9);
+        if (ending?.breath && !ending.breath.keep.includes('lead')) continue;
         const before = lead[i - 1];
         if (before && before.beat + before.beats > n.beat - STEP + 1e-9)
         {

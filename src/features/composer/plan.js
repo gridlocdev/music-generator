@@ -38,7 +38,7 @@ export function planSong(spec)
     if (band.drums !== null && grooveName === 'none') band.drums = null;
 
     const song = {
-        tonic: pitchClass(keyName), mode, tempo: spec.tempo ?? feel.tempo,
+        tonic: pitchClass(keyName), mode, tempo: spec.tempo ?? feel.tempo, arousal: feel.arousal,
         legato: choose('legato'),
         dynamics: spec.dynamics ?? feel.dynamics,
         power: choose('power') ?? false,

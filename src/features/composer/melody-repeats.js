@@ -9,7 +9,7 @@ import { keyUnder } from './melody.js';
 /**
  * A phrase whose letter came earlier in the pattern ('aab') plays that phrase again, degree for degree, over its own
  * chords: a note the old chord altered takes the new chord's accidental (G# over E7 is G over A7 in E, the blue
- * third), a blue note stays blue. Only whole 4-bar phrases repeat, and never into a section's closing cadence. The
+ * third), a blue note stays blue, and so does a blue step the old chord flattened (E7's D over A7). Only whole 4-bar phrases repeat, and never into a section's closing cadence. The
  * copy moves an octave where that joins it to the note before more closely and the lead's range has room.
  */
 export function repeatPhrases(notes, sec, timeline, pattern = sec.genre.phrases)
@@ -19,6 +19,9 @@ export function repeatPhrases(notes, sec, timeline, pattern = sec.genre.phrases)
     const closing = sec.endOn || sec.ending ? Math.floor((sec.bars - 1) / 4) : Infinity;
     const alteration = (n, beat)=> keyUnder(sec, chordAt(timeline, sec.beat + beat), n.degree) - degreeToKey(sec.tonic, sec.mode, n.degree, MELODY_OCTAVE);
     const inPhrase = (n, p)=> n.beat >= p * span - 1e-9 && n.beat < (p + 1) * span - 1e-9;
+    // a flattened blue step stays flat where the new chord leaves it alone: E7's D is A7's blue 7th, not D#
+    const blue = sec.genre.blue ?? [];
+    const follow = (n, now)=> n.accidental < 0 && now === 0 && blue.includes(mod(n.degree - 1, 7) + 1) ? n.accidental : now;
     let out = notes;
     for (let p = 1; p < Math.min(phrases, pattern.length); p++)
     {
@@ -30,7 +33,7 @@ export function repeatPhrases(notes, sec, timeline, pattern = sec.genre.phrases)
         const octave = before && source.length ? closestOctave(source, before.degree, sec) : 0;
         const copy = source.map(n => ({
             ...n, beat: n.beat + shift, degree: n.degree + octave,
-            accidental: n.accidental === alteration(n, n.beat) ? alteration(n, n.beat + shift) : n.accidental,
+            accidental: n.accidental === alteration(n, n.beat) ? follow(n, alteration(n, n.beat + shift)) : n.accidental,
         }));
         out = [...out.filter(n => !inPhrase(n, p)), ...copy].sort((a, b)=> a.beat - b.beat);
     }

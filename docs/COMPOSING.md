@@ -263,7 +263,7 @@ Each section is cut into 4-bar phrases. Each bar has a role:
 |---|---|---|
 | 1 | **motif**: the basic idea | the motif's own rhythm |
 | 2 | **answer**: a contrasting idea | a *rhyme*: the motif's first beat group, then an ending of its own, as busy as the next-closest cell to the section's density (varies per verse) |
-| 3 | **motif again** in the first phrase, **continuation** (busier) in the second | the continuation is *fragmentation*: the motif's busier half, twice |
+| 3 | **motif again** in the first phrase, **continuation** (busier) in the second | the continuation is *fragmentation*: the motif's busier half that starts on a note, twice |
 | 4 | **cadence**: a long note that ends the phrase | `[2, 2]` for a half cadence, `[4]` for a full one |
 
 This is the classical *sentence*: idea, idea, development, cadence. Because the answer and continuation take their rhythm from the motif, a phrase has one rhythmic idea instead of four unrelated cells, and a recognisable rhythm is what makes a tune sound written. A motif with a note across the middle of the bar, or a meter of one beat group (3/4), can't be cut in half, so those bars use the plain cells: the next-closest cell for the answer, a busier one for the continuation. Two phrases make a *period*. The first ends with a half cadence (a question, on degree 2 or 5) and the second with a full cadence (the answer, on degree 1). Choruses and verses use `['half', 'full']`. Bridges use `['half', 'half']` so they keep pushing toward the last chorus.
@@ -405,6 +405,8 @@ Rules:
 
 Melody rhythms come from a fixed library of one-bar cells (`RHYTHMS`), chosen by how close their note count is to the section's density. Negative values are rests: `[-1, 1, 2]` waits a beat and then enters, which gives a verse room to breathe. Dotted cells (`[1.5, 0.5, 2]`) and offbeat entries (`[0.5, 1, 0.5, 2]`) add syncopation. A cadence bar holds a long note so the phrase audibly ends.
 
+**Pace.** A section's `density` is relative to the song's pace (`MELODY_PACE`), not a count of notes per beat. The pace runs from 2.2 notes a second for a calm song to 5 for an excited one (the emotion's arousal), turned into notes per beat at the tempo and held between ¾ and 2 a beat. So a density of 1 is "the pace" at any tempo: an excited song at 140 bpm runs in eighths, a calm one at the same tempo moves about half as often, and a fast tempo doesn't push the lead into sixteenths. The numbers come from game soundtracks (Shovel Knight, Mega Man 2, DuckTales, VVVVVV, Undertale), whose leads move every 0.13–0.18 s; ours took 0.5–0.6 s before. The busy cells (running eighths, a sixteenth pickup into a beat, an eighth-rest entry) are there for that pace.
+
 ## 7. Arrangement and orchestration
 
 ### Roles
@@ -443,7 +445,7 @@ The countermelody has four ways to relate to the lead (a section's `counter`):
 ### Entries, exits, space and texture
 
 - **Entry order.** In the first section, parts come in one at a time in `ENTRY_ORDER` (pad, chords, arpeggio, bass, drums, countermelody), so the listener hears each one arrive. In the outro they leave in reverse, and the final bar (last chord, bass root, crash) stays whole.
-- **The breath.** A pre-chorus's last two beats keep only the lead and the drums' fill. A build's last two beats are silent, so the drop lands on everything at once. Taking parts away is as strong as adding them.
+- **The breath.** A pre-chorus's last two beats keep only the lead and the drums' fill. A build's last two beats are silent, so the drop lands on everything at once; an anticipation doesn't pull the drop's first note into that silence. Taking parts away is as strong as adding them.
 - **Texture.** `texture: 'solo'` leaves only the lead (a lone cello in a bridge). `'polyphonic'` brings the countermelody in whatever the fullness.
 - **Fullness.** By default the parts that play follow energy. A section's `fullness` overrides that for the arrangement only.
 
@@ -704,7 +706,7 @@ The recipes above are songs: the genre lives in what was written for them. A **p
 | `cadences` | the cadence chords, over `CADENCES`: V7–I7 in the blues, V7–Imaj7 in jazz, the minor plagal iv–I "amen" in gospel, bVII–I in rock; a modal mode's own cadence still wins | blues, jazz, bossa, gospel, country, rock, tango |
 | `avoid` | scale steps the melody leaves out except in passing (`MELODY_RULES.avoid`), by brightness: `{ bright: [4, 7], dark: [2, 6] }` is pentatonic | country, rock, reggae, funk: pentatonic · celtic: the gapped hexatonic · blues: no major 7th |
 | `blue` | steps the melody may flatten (`MELODY_RULES.blue`), outside cadences; a step the chord already flattens (the b7 of I7) is just a chord tone | blues: 3 and 7 |
-| `phrases` | which 4-bar phrases of a composed section repeat an earlier one: `'aab'` repeats line one over IV, then answers it. A repeated note the old chord altered takes the new chord's accidental, so the G# of E7 becomes the G of A7: the blue third, for free. The copy moves an octave where that joins it more closely to the note before | blues |
+| `phrases` | which 4-bar phrases of a composed section repeat an earlier one: `'aab'` repeats line one over IV, then answers it. A repeated note the old chord altered takes the new chord's accidental, so the G# of E7 becomes the G of A7: the blue third, for free. A blue step the old chord flattened stays flat where the new chord leaves it alone: E7's D is A7's blue 7th, not D#. The copy moves an octave where that joins it more closely to the note before | blues |
 | `rules` | `MELODY_RULES` weights of its own: jazz and bossa charge less for a non-chord tone on the beat, since a 9th there is colour; disco charges less for thirds, leaps and turns, and more for straying from the contour | blues, jazz, bossa, disco |
 | `span` | how far the contours reach, as a multiple of `CONTOURS`' heights: 1.75 takes an arch up an octave, so a hook climbs to a held high note instead of circling a fifth | disco |
 | `offbeat` | how many notes nearer the section's density a rhythm cell with an offbeat entry counts, so syncopated cells (`[0.5, 1, 0.5, 2]`, `[1.5, 0.5, 1, 1]`) win over straight ones | disco |

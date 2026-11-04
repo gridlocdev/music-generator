@@ -7,7 +7,7 @@
 import { degreeToKey, keyToDegree, chordPitchClasses, alterToChord, bassOf, inScale, isMinorMode, hash } from '../../lib/music-theory.js';
 import { develop } from '../../lib/motif.js';
 import { parseMelody } from './notation.js';
-import { RANGES, MELODY_OCTAVE, CONTOURS, MELODY_HOME, MELODY_RULES, MELODY_SEARCH, CADENCE_DEGREES, CADENCES, PEAK_RULE } from './composer-data.js';
+import { RANGES, MELODY_OCTAVE, CONTOURS, MELODY_HOME, MELODY_RULES, MELODY_SEARCH, CADENCE_DEGREES, CADENCES, PEAK_RULE, MELODY_PACE } from './composer-data.js';
 import { MOTIF, LEITMOTIFS } from './song-craft-data.js';
 import { chordAt, clamp, mod, strongBeat, metricWeight } from './meter.js';
 import { rhythmsFor } from './meter-patterns.js';
@@ -55,7 +55,7 @@ function inventMotif(sec, seed)
 {
     const { cells } = rhythmsFor(sec.meter);
     const [minN, maxN] = MOTIF.notes;
-    const want = clamp(Math.round((sec.over.density ?? sec.base.melody?.density ?? 0.8) * sec.beatsPerBar), minN, maxN);
+    const want = clamp(Math.round(notesPerBeat(sec, sec.over.density ?? sec.base.melody?.density ?? 0.8) * sec.beatsPerBar), minN, maxN);
     const cell = cells.filter(c => noteCount(c) >= minN && noteCount(c) <= maxN)
         .map((c, i)=> ({ c, d: Math.abs(noteCount(c) - want) - (offbeat(c) ? sec.genre.offbeat ?? 0 : 0), h: hash(seed, 'motif-cell', i) }))
         .sort((a, b)=> a.d - b.d || a.h - b.h)[0]?.c ?? Array(sec.beatsPerBar).fill(1);
@@ -156,11 +156,19 @@ function fitMotif(motif, sec)
  * @param {number | null} before  the MIDI key of the lead's note just before the section, which the line leads on from
  * @returns {{ beat: number, beats: number, degree: number, accidental: number, last?: boolean }[]}
  */
+/** notes per beat for a section's density: the density times the song's pace (MELODY_PACE) at its tempo */
+export function notesPerBeat(sec, density)
+{
+    const { calm, excited, perBeat: [lo, hi] } = MELODY_PACE;
+    const a = clamp(sec.arousal ?? 0.5, 0, 1);
+    return density * clamp((calm + (excited - calm) * a) * 60 / sec.tempo, lo, hi);
+}
+
 export function writeMelody(sec, cfg, variant, motif, timeline, before = null)
 {
     const { beatsPerBar: bpb, tonic, mode, seed, type, meter } = sec;
     const rhythms = rhythmsFor(meter);
-    const want = cfg.density * bpb;
+    const want = notesPerBeat(sec, cfg.density) * bpb;
     const ranked = rhythms.cells
         .map((cell, i)=> ({ cell, d: Math.abs(noteCount(cell) - want) - (offbeat(cell) ? sec.genre.offbeat ?? 0 : 0), h: hash(seed, type, 'cell', i) }))
         .sort((a, b)=> a.d - b.d || a.h - b.h)
@@ -179,8 +187,10 @@ export function writeMelody(sec, cfg, variant, motif, timeline, before = null)
         .map((h, i)=> ({ h, d: Math.abs(noteCount(halves[0]) + noteCount(h[1]) - noteCount(ownAnswer)), i }))
         .sort((a, b)=> a.d - b.d || a.i - b.i)[0]?.h;
     const answer = rhyme ? [...halves[0], ...rhyme[1]] : ownAnswer;
-    const busier = halves && (noteCount(halves[1]) > noteCount(halves[0]) ? halves[1] : halves[0]);
-    const fragment = busier && noteCount(busier) >= 2 && Math.abs(2 * at - bpb) < 1e-9 && busier[0] > 0 ? [...busier, ...busier] : null;
+    // the busier half that starts on a note (one that starts with a rest would leave a hole on the beat)
+    const busier = halves && Math.abs(2 * at - bpb) < 1e-9
+        && [...halves].sort((a, b)=> noteCount(b) - noteCount(a)).find(h => noteCount(h) >= 2 && h[0] > 0);
+    const fragment = busier ? [...busier, ...busier] : null;
     const continuation = fragment ?? ranked.find(c => noteCount(c) > noteCount(ranked[0])) ?? ranked[2] ?? ranked[0];
     const develops = sec.over.develop ?? sec.base.develop ?? ['repeat', 'sequence'];
     const finalCadence = sec.endOn ? CADENCES[sec.endOn].melody : null;

@@ -142,7 +142,7 @@ export const FORMS = {
 // energy 0..1 drives loudness, the drum level, comping and (unless fullness is given) which parts play (ARRANGEMENT).
 // melody: null = instrumental.
 //   register  scale degrees above the emotion's home pitch; choruses sit higher than verses
-//   density   melody notes per beat
+//   density   how busy the melody is against the song's pace (MELODY_PACE): 1 is the pace, 0.5 half as many notes
 //   contour   default shape (CONTOURS); the emotion can override per section
 //   cadences  how each 4-bar phrase ends: 'half' (on 2/5, asks a question) or 'full' (on 1, answers it);
 //             the last phrase follows endOn instead, when the section has one
@@ -234,13 +234,17 @@ export const RHYTHMS = {
             [-0.5, 0.5, 1, 2], [1, 0.5, 0.5, 2], [0.5, 0.5, 1, 1, 1], [1.5, 0.5, 1, 1],
             [0.5, 1, 0.5, 2], [-1, 0.5, 0.5, 1, 1], [0.5, 0.5, 0.5, 0.5, 1, 1], [1, 0.5, 0.5, 1, 1],
             [0.5, 1, 0.5, 1, 1], [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1],
+            // busy bars, for a quick pace: running eighths, and a sixteenth pickup into a beat
+            [-0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1], [1, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5], [0.25, 0.25, 0.5, 0.5, 0.5, 1, 1],
+            [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5], [0.5, 0.25, 0.25, 0.5, 0.5, 0.5, 0.5, 1],
+            [0.5, 0.5, 0.5, 0.25, 0.25, 0.5, 0.5, 1],
         ],
         cadence: { half: [2, 2], full: [4], final: [4] },
     },
     '3/4': {
         cells: [
             [3], [2, 1], [1, 2], [-1, 1, 1], [1, 1, 1], [1.5, 0.5, 1], [0.5, 0.5, 1, 1], [1, 0.5, 0.5, 1],
-            [0.5, 0.5, 0.5, 0.5, 1],
+            [0.5, 0.5, 0.5, 0.5, 1], [1, 0.5, 0.5, 0.5, 0.5], [0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
         ],
         cadence: { half: [2, 1], full: [3], final: [3] },
     },
@@ -294,6 +298,11 @@ export const MELODY_RULES = {
     blue: 0.6,              // a blue note (GENRES blue): a flattened 3rd or 7th, the genre's own colour
     tieBreak: 0.01,         // scale of the hashed tie-break
 };
+// The lead's pace, the notes per second a section of density 1 aims at: from `calm` to `excited` with the emotion's
+// arousal, turned into notes per beat at the song's tempo and kept within `perBeat`. Game soundtracks (Shovel Knight,
+// Mega Man 2, DuckTales, VVVVVV, Undertale) move their leads every 0.13–0.18 s, where ours used to take 0.5–0.6 s; the
+// measured figures count some accompaniment too, so this aims at about half their rate, slower for calm songs.
+export const MELODY_PACE = { calm: 2.2, excited: 5, perBeat: [0.75, 2] };
 // how many of the cheapest melodies so far the note search keeps going: more plans further ahead, slower
 export const MELODY_SEARCH = { beam: 16 };
 export const CADENCE_DEGREES = { half: [2, 5], full: [1], final: [1], deceptive: [1, 3] };
