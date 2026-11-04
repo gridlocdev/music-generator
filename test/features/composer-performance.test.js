@@ -348,3 +348,17 @@ test('a chip song plays its lead, echo and bass one note at a time; its chords a
     const other = compose(GENRE_SONGS.find(s => s.id !== 'pixel-knight'));
     assert.ok(perform(other).flat().every(n => !n.mono));
 });
+
+test('a chip lead and its echo wobble deeper and sooner, on shorter notes than other songs\' leads', ()=>
+{
+    const score = compose(GENRE_SONGS.find(s => s.id === 'pixel-knight'));
+    const played = perform(score), V = { ...EXPRESSION.vibrato, ...CHIP.vibrato };
+    for (const role of ['lead', 'echo'])
+    {
+        const i = score.tracks.findIndex(t => t.role === role);
+        const spb = 60 / score.tempoMap[0].bpm;
+        const vib = played[i].filter(n => n.vibrato);
+        assert.ok(vib.some(n => n.beats * spb < EXPRESSION.vibrato.minSeconds), `${role}: short notes wobble too`);
+        for (const n of vib) assert.ok(n.vibrato.cents === V.cents && n.vibrato.delay === V.delay);
+    }
+});

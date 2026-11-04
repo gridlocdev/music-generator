@@ -51,9 +51,10 @@ export function perform(score, pass = 0, candy = planEarCandy(score, pass))
         if (score.swing) swing(notes, score, sectionAt);
         if (EXPRESSION.glide.roles.includes(t.role) && EXPRESSION.glide.programs.includes(t.program) && melodic) addGlides(notes, sectionAt, unit, t.role);
         if (score.sound === 'chip' && CHIP.timbre.roles.includes(t.role) && melodic) changeTimbre(notes, t.program, sectionAt);
-        if (EXPRESSION.vibrato.roles.includes(t.role) && EXPRESSION.vibrato.programs.includes(t.program) && melodic)
+        const vib = score.sound === 'chip' ? { ...EXPRESSION.vibrato, ...CHIP.vibrato } : EXPRESSION.vibrato;
+        if (vib.roles.includes(t.role) && vib.programs.includes(t.program) && melodic)
         {
-            const v = EXPRESSION.vibrato;
+            const v = vib;
             for (const n of notes)
                 if (n.beats * spbAt(n.beat) >= v.minSeconds)
                     n.vibrato = { rate: v.rate + (unit(t.role, 'vib', n.beat) * 2 - 1) * v.rateSpread, cents: v.cents, delay: v.delay, ramp: v.ramp };

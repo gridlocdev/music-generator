@@ -564,6 +564,7 @@ A song with `sound: 'chip'` (the Chiptune genre sets it) plays the chip instrume
 - **Pulse width follows the section.** The lead, countermelody and echo, when they play a pulse (`CHIP.timbre.groups`: the modern 50%, 25% and 12.5% pulses, or the NES 50% and 25%), go one width darker in a section under 0.5 energy and one thinner and brighter from 0.85 up. Pixel Knight's lead is a 25% pulse in the verses, 12.5% in the choruses and 50% in the bridge, as Flash Man's lead moves between widths.
 - **Falls and zaps.** A lead or countermelody note of 0.28 s or more that ends a phrase (¾ beat of rest after it) sometimes drops a fifth over its last 0.16 s (`CHIP.fall`). A lead note after such a rest, outside quiet sections, sometimes starts an octave above itself and sweeps down onto it in 45 ms (`CHIP.zap`), the pitch-envelope blip trackers put on attacks. Both play on the voice's own detune, so they add to vibrato, scoops and slides.
 - **One note per channel.** The lead, countermelody, echo, arpeggio and bass play one note at a time (`CHIP.mono`): a new note cuts the one before, release tail and all, as a chip channel could only play one. The chords and pad keep their overlap; they stand in for the extra channels a modern chip song adds.
+- **Chip vibrato.** The lead, countermelody and echo wobble 25 cents at 6 Hz, from 0.12 s into any note of 0.3 s or more (`CHIP.vibrato`, over the usual settings): a sound driver's vibrato table, deeper and sooner than a singer's.
 
 ## 11. Adaptive music for games
 
