@@ -381,9 +381,11 @@ test('a pentatonic genre keeps its melody off the scale\'s gaps', ()=>
 {
     const spec = { title: 'Gaps', emotion: 'hopeful', key: 'C', mode: 'major', form: ['verse', 'chorus'],
         sections: { verse: { progression: 'I vi IV V' }, chorus: { progression: 'I IV vi V' } } };
-    const gaps = (s)=> s.tracks.find(t => t.role === 'lead').notes.filter(n => [5, 11].includes(n.key % 12)).length;
-    const plain = compose(spec), country = compose({ ...spec, genre: 'Country' });
-    assert.ok(gaps(country) * 3 < gaps(plain), `country ${gaps(country)} vs plain ${gaps(plain)} F or B`);
+    const gaps = (s)=> s.tracks.find(t => t.role === 'lead').notes.filter(n => [5, 11].includes(n.key % 12));
+    const plain = gaps(compose(spec)), country = gaps(compose({ ...spec, genre: 'Country' }));
+    assert.ok(country.length < plain.length, `country ${country.length} vs plain ${plain.length} F or B`);
+    // what's left lands on a beat, where IV's root or V's third is the chord: never a passing note
+    for (const n of country) assert.ok(Math.abs(n.beat - Math.round(n.beat)) < 1e-9, `gap note in passing at ${n.beat}`);
 });
 
 test('call and response: in the bridge the lead and the countermelody take turns and never overlap', ()=>

@@ -273,7 +273,11 @@ export const MELODY_RULES = {
     motif: 2,               // per degree away from the motif's shape, in a motif bar
     strongNonChord: 5,      // a non-chord tone on a strong beat
     weakNonChordLeap: 3,    // a non-chord tone on a weak beat that isn't reached by step (not a passing/neighbour tone)
-    skip: 0.6,              // a third: fine, but a line that mostly steps sounds sung, not arpeggiated
+    beatNonChord: 2.5,      // a non-chord tone on a beat that isn't strong (2 and 4 in 4/4): "land, pass, land" puts
+                            // the passing notes between the beats, where they're heard least
+    heldNonChord: 3,        // per beat a non-chord tone lasts beyond half a beat: a dissonance should be short
+    hangingNonChord: 6,     // a non-chord tone followed by a rest: it never resolves
+    skip: 1,                // a third: fine, but a line that mostly steps sounds sung, not arpeggiated
     leap: 1.2,              // per degree of a leap beyond a third
     bigLeap: 6,             // per degree beyond a sixth
     recover: 6,             // a leap of a fourth or more not followed by a step back the other way

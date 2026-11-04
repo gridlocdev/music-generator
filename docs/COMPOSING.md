@@ -280,7 +280,10 @@ The composer scores each scale degree in the lead's range against `MELODY_RULES`
 | distance from the motif's shape, in a motif bar | 2 per degree | keeps the idea recognisable |
 | non-chord tone on a strong beat | 5 | strong beats must agree with the harmony |
 | non-chord tone on a weak beat not reached by step | 3 | weak-beat dissonance is fine only as a passing or neighbour tone |
-| a third | 0.6 | fine, but a line that mostly steps sounds sung, not arpeggiated |
+| non-chord tone on a beat that isn't strong (2 and 4 in 4/4) | 2.5 | "land, pass, land": passing notes go between the beats, where they're heard least |
+| non-chord tone held beyond half a beat | 3 per beat | a dissonance should be short; a long one is a suspension, and the line doesn't prepare those |
+| non-chord tone followed by a rest | 6 | it never resolves, so the phrase hangs on a wrong note |
+| a third | 1 | fine, but a line that mostly steps sounds sung, not arpeggiated |
 | leap beyond a third | 1.2 per degree | singable lines mostly move by step |
 | leap beyond a sixth | +6 per degree | big leaps are rare and special |
 | leap of a fourth or more not followed by a step back | 6 | gap-fill: a leap creates a gap the ear wants filled |

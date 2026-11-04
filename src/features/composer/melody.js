@@ -9,7 +9,7 @@ import { develop } from '../../lib/motif.js';
 import { parseMelody } from './notation.js';
 import { RANGES, MELODY_OCTAVE, CONTOURS, MELODY_HOME, MELODY_RULES, MELODY_SEARCH, CADENCE_DEGREES, CADENCES, PEAK_RULE } from './composer-data.js';
 import { MOTIF, LEITMOTIFS } from './song-craft-data.js';
-import { chordAt, clamp, mod, strongBeat } from './meter.js';
+import { chordAt, clamp, mod, strongBeat, metricWeight } from './meter.js';
 import { rhythmsFor } from './meter-patterns.js';
 
 const noteCount = (cell)=> cell.filter(d => d > 0).length;
@@ -241,6 +241,11 @@ export function writeMelody(sec, cfg, variant, motif, timeline, before = null)
         const bass = bassOf(chord);
         const isChordTone = (d)=> pcs.includes(mod(keyUnder(sec, chord, d), 12));
         const strong = strongBeat(meter, mod(e.beat, bpb)) || e.beats >= 2;
+        // what a non-chord tone here costs beyond the strong-beat rule: on a beat, held, or left hanging before a rest
+        const after = events[i + 1];
+        const nonChord = (strong ? 0 : metricWeight(meter, mod(e.beat, bpb)) === 'weak' ? R.beatNonChord : 0)
+            + R.heldNonChord * Math.max(0, e.beats - 0.5)
+            + (!after || after.beat - (e.beat + e.beats) >= 0.5 - 1e-9 ? R.hangingNonChord : 0);
         const options = candidates(chord, e.cadence);
         const next = [];
         for (const path of beam)
@@ -275,6 +280,7 @@ export function writeMelody(sec, cfg, variant, motif, timeline, before = null)
                 if (flat) c += R.blue;
                 if (avoid.includes(stepOf(d)) && !flat) c += R.avoid;
                 if (strong && !chordTone) c += R.strongNonChord;
+                if (!chordTone) c += nonChord;
                 if (!strong && !chordTone && prev !== null && Math.abs(d - prev) > 1) c += R.weakNonChordLeap;
                 if (prev !== null)
                 {
