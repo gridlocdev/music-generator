@@ -288,6 +288,8 @@ export const MELODY_RULES = {
     blue: 0.6,              // a blue note (GENRES blue): a flattened 3rd or 7th, the genre's own colour
     tieBreak: 0.01,         // scale of the hashed tie-break
 };
+// how many of the cheapest melodies so far the note search keeps going: more plans further ahead, slower
+export const MELODY_SEARCH = { beam: 16 };
 export const CADENCE_DEGREES = { half: [2, 5], full: [1], final: [1], deceptive: [1, 3] };
 // a melody leaping to the section's highest note again costs this, after it has been there twice: the peak is special
 export const PEAK_RULE = { times: 2, cost: 4 };

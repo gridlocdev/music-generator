@@ -83,15 +83,43 @@ test('every written song and every feeling composes into in-range, in-time parts
         const s = compose(spec);
         assert.ok(s.tracks.length >= 4, `${spec.title}: ${s.tracks.length} parts`);
         assert.ok(s.tracks.some(t => t.role === 'lead'), `${spec.title} has a melody`);
+        const lead = s.tracks.find(t => t.role === 'lead');
         for (const t of s.tracks)
+        {
+            // a part in the lead's instrument family drops under it, down to the bass's floor if it must
+            const floor = sameFamily(t, lead) && t.role !== 'lead' ? RANGES.bass[0] : RANGES[t.role]?.[0];
             for (const n of t.notes)
             {
                 assert.ok(n.key >= 0 && n.key <= 127 && n.vel >= 1 && n.vel <= 127, `${spec.title} ${t.role}`);
                 assert.ok(n.beat >= 0 && n.beats > 0 && n.beat + n.beats <= s.beats + 1e-6, `${spec.title} ${t.role} at ${n.beat}`);
                 const range = RANGES[t.role];
-                if (range && t.role !== 'lead') assert.ok(n.key >= range[0] && n.key <= range[1] + 12, `${spec.title} ${t.role} key ${n.key}`);
+                if (range && t.role !== 'lead') assert.ok(n.key >= floor && n.key <= range[1] + 12, `${spec.title} ${t.role} key ${n.key}`);
+            }
+        }
+    }
+});
+
+const sameFamily = (a, b)=> Math.floor(a.program / 8) === Math.floor(b.program / 8);
+
+test('chords and arpeggio in the lead\'s instrument family stay under it, so the tune is heard', ()=>
+{
+    const specs = [...WRITTEN, ...GENRE_SONGS, ...GAME_SONGS, ...Object.keys(EMOTIONS).map(e => ({ title: e, emotion: e }))];
+    let checked = 0;
+    for (const spec of specs)
+    {
+        const s = compose(spec);
+        const lead = s.tracks.find(t => t.role === 'lead');
+        for (const t of s.tracks.filter(t => ['chords', 'arp'].includes(t.role) && sameFamily(t, lead)))
+            for (const n of t.notes)
+            {
+                // the arpeggio's echo of a held lead note (syncopation.js) is meant to sit on it
+                const echo = (m)=> t.role === 'arp' && n.key === m.key && n.beat > m.beat;
+                const over = lead.notes.find(m => m.beat < n.beat + n.beats - 1e-9 && m.beat + m.beats > n.beat + 1e-9 && n.key >= m.key && !echo(m));
+                assert.ok(!over, `${spec.title} ${t.role} ${n.key} at ${n.beat} is over the lead's ${over?.key}`);
+                checked++;
             }
     }
+    assert.ok(checked > 0);
 });
 
 test('composed melodies put chord tones on strong beats and end phrases on a cadence', ()=>

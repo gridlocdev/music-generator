@@ -1,12 +1,13 @@
 // The lead line. A song has one motif, 3–6 notes in a bar; each section develops it (repeated, sequenced, inverted,
 // played backwards, slowed, sped up, fragmented) in its motif bars, and answers it with answer, continuation and
-// cadence bars over 4-bar phrases. Every pitch is picked by scoring each candidate degree against MELODY_RULES, and
-// takes the chord's accidental where the chord alters its step. The genre leaves out its scale's gaps, flattens its blue
+// cadence bars over 4-bar phrases, the second phrase of a period starting as the first did. The pitches are found
+// together by a beam search scoring each candidate degree against MELODY_RULES, and each takes the chord's
+// accidental where the chord alters its step. The genre leaves out its scale's gaps, flattens its blue
 // notes (genre-data.js). Repeats are melody-repeats.js; a melody written by hand is read by notation.js.
 import { degreeToKey, keyToDegree, chordPitchClasses, alterToChord, bassOf, inScale, isMinorMode, hash } from '../../lib/music-theory.js';
 import { develop } from '../../lib/motif.js';
 import { parseMelody } from './notation.js';
-import { RANGES, MELODY_OCTAVE, CONTOURS, MELODY_HOME, MELODY_RULES, CADENCE_DEGREES, CADENCES, PEAK_RULE } from './composer-data.js';
+import { RANGES, MELODY_OCTAVE, CONTOURS, MELODY_HOME, MELODY_RULES, MELODY_SEARCH, CADENCE_DEGREES, CADENCES, PEAK_RULE } from './composer-data.js';
 import { MOTIF, LEITMOTIFS } from './song-craft-data.js';
 import { chordAt, clamp, mod, strongBeat } from './meter.js';
 import { rhythmsFor } from './meter-patterns.js';
@@ -116,12 +117,13 @@ function fitMotif(motif, sec)
 
 /**
  * Writes a section's melody in scale degrees: the motif, developed, in motif bars; answer, continuation and cadence
- * bars around it over 4-bar phrases; each pitch chosen by scoring every degree in range against MELODY_RULES, with
- * the accidental that fits the chord under it.
+ * bars around it over 4-bar phrases; the pitches chosen together by a search that scores every degree in range
+ * against MELODY_RULES, with the accidental that fits the chord under it.
  * @param {SongMotif} motif
+ * @param {number | null} before  the MIDI key of the lead's note just before the section, which the line leads on from
  * @returns {{ beat: number, beats: number, degree: number, accidental: number, last?: boolean }[]}
  */
-export function writeMelody(sec, cfg, variant, motif, timeline)
+export function writeMelody(sec, cfg, variant, motif, timeline, before = null)
 {
     const { beatsPerBar: bpb, tonic, mode, seed, type, meter } = sec;
     const rhythms = rhythmsFor(meter);
@@ -136,19 +138,32 @@ export function writeMelody(sec, cfg, variant, motif, timeline)
     const develops = sec.over.develop ?? sec.base.develop ?? ['repeat', 'sequence'];
     const finalCadence = sec.endOn ? CADENCES[sec.endOn].melody : null;
     const lastPhrase = Math.floor((sec.bars - 1) / 4);
+    const firstBar = Math.floor((cfg.from ?? 0) * sec.bars);
+    const cadenceOf = (phrase)=> phrase === lastPhrase && finalCadence ? finalCadence : cfg.cadences[phrase % cfg.cadences.length];
 
     // the rhythm, bar by bar
     const events = [];
     const covered = new Set();
     let statement = 0;
-    for (let bar = Math.floor((cfg.from ?? 0) * sec.bars); bar < sec.bars; bar++)
+    for (let bar = firstBar; bar < sec.bars; bar++)
     {
         if (covered.has(bar)) continue;
         const phrase = Math.floor(bar / 4), pos = bar % 4;
         const lastOfPhrase = pos === 3 || bar === sec.bars - 1;
-        const cadence = sec.ending && bar === sec.bars - 1 ? 'final'
-            : phrase === lastPhrase && finalCadence ? finalCadence
-            : cfg.cadences[phrase % cfg.cadences.length];
+        const cadence = sec.ending && bar === sec.bars - 1 ? 'final' : cadenceOf(phrase);
+        // the parallel period: a phrase that answers a half cadence with a full one starts as the question did, its
+        // first two bars note for note (over its own chords), and goes its own way to the cadence
+        if (pos === 0 && phrase > 0 && (phrase - 1) * 4 >= firstBar && bar + 3 < sec.bars
+            && cadenceOf(phrase - 1) === 'half' && ['full', 'deceptive'].includes(cadenceOf(phrase)))
+        {
+            const from = (phrase - 1) * 4 * bpb, to = from + 2 * bpb;
+            events.forEach((ev, j)=>
+            {
+                if (ev.beat >= from - 1e-9 && ev.beat < to - 1e-9) events.push({ ...ev, beat: ev.beat + 4 * bpb, phrase, copy: j, first: false });
+            });
+            covered.add(bar + 1);
+            continue;
+        }
         const role = lastOfPhrase ? 'cadence' : pos === 0 ? 'motif' : pos === 1 ? 'answer' : phrase % 2 ? 'continuation' : 'motif';
         const t0 = bar * bpb;
         if (role === 'motif')
@@ -193,86 +208,123 @@ export function writeMelody(sec, cfg, variant, motif, timeline)
         }
         return out;
     };
-
-    const out = [];
-    let base = 0;                   // the degree the current motif statement is built on
-    let prev = null, prev2 = null, peak = -Infinity, peakTimes = 0, prevKey = null, prevBass = null;
-    let lastMove = 0, prevChordTone = true;     // the last move that changed pitch; whether prev agreed with its chord
-    // what moving from the previous note to d costs: a third a little, a leap more, a big leap much more
-    const motion = (d)=>
+    // what moving from one degree to the next costs: a third a little, a leap more, a big leap much more
+    const motion = (from, d)=>
     {
-        const leap = Math.abs(d - prev);
+        const leap = Math.abs(d - from);
         return (leap === 2 ? R.skip : 0) + (leap > 2 ? R.leap * (leap - 2) : 0) + (leap > 5 ? R.bigLeap * (leap - 5) : 0);
     };
+
+    // A beam search: the MELODY_SEARCH.beam cheapest melodies so far each try every candidate for the next note, and
+    // the cheapest of those go on. A line can take a slightly dearer note now to step into its cadence later.
+    // Each path carries what the rules look back at: the last two notes, the last move, the peak, the motif's base.
+    /** @typedef {{ cost: number, notes: { d: number, key: number, blue?: boolean }[], prev: number | null, prev2: number | null,
+     *    prevKey: number | null, prevBass: number | null, lastMove: number, prevChordTone: boolean, peak: number, peakTimes: number, base: number }} Path */
+    /** @type {Path[]} */
+    const start = before === null ? null : keyToDegree(tonic, mode, before, MELODY_OCTAVE);
+    let beam = [{ cost: 0, notes: [], prev: start, prev2: null, prevKey: null, prevBass: null, lastMove: 0, prevChordTone: true, peak: -Infinity, peakTimes: 0, base: 0 }];
     events.forEach((e, i)=>
     {
         const beatInPhrase = e.beat - e.phrase * 4 * bpb;
         const f = clamp(beatInPhrase / (4 * bpb), 0, 1) * (contour.length - 1);
         const lo = Math.floor(f), frac = f - lo;
-        const contourTarget = home + contour[lo] + (contour[Math.min(lo + 1, contour.length - 1)] - contour[lo]) * frac;
+        // after a section's first phrase, the contour starts where the last one ended and eases into its own shape
+        // over the first bar, so a falling contour doesn't jump back up to start again
+        const ease = e.phrase * 4 > firstBar ? (contour.at(-1) - contour[0]) * Math.max(0, 1 - f) : 0;
+        const contourTarget = home + contour[lo] + (contour[Math.min(lo + 1, contour.length - 1)] - contour[lo]) * frac + ease;
 
         const chord = chordAt(timeline, sec.beat + e.beat);
         const pcs = chordPitchClasses(chord);
+        const bass = bassOf(chord);
         const isChordTone = (d)=> pcs.includes(mod(keyUnder(sec, chord, d), 12));
         const strong = strongBeat(meter, mod(e.beat, bpb)) || e.beats >= 2;
-        if (e.role === 'motif' && e.first)
+        const options = candidates(chord, e.cadence);
+        const next = [];
+        for (const path of beam)
         {
-            // a statement starts on the motif's own degree, in the octave and moved by the step that put its first
-            // note on a chord tone near both the contour and the note before it, so it doesn't jump in
-            const b = fitted.start + 7 * Math.round((contourTarget - fitted.start - e.step) / 7);
-            base = b;
-            let baseCost = Infinity;
-            for (const o of [0, -7, 7]) for (const s of [0, 1, -1, 2, -2, 3, -3])
+            const { prev, prev2, prevKey, prevBass, lastMove, prevChordTone, peak, peakTimes } = path;
+            let base = path.base;
+            if (e.role === 'motif' && e.first)
             {
-                const first = b + o + s + e.step;
-                if (first < lowDeg || first > highDeg || !isChordTone(first)) continue;
-                const c = R.contour * Math.abs(first - contourTarget) + R.anchor * Math.abs(s) + (prev === null ? 0 : motion(first));
-                if (c < baseCost) { baseCost = c; base = b + o + s; }
-            }
-        }
-        const motifNote = e.role === 'motif';
-        const target = motifNote ? base + e.step : contourTarget;
-
-        let best = null, bestKey = null, bestCost = Infinity;
-        for (const { d, key: k, blue: flat } of candidates(chord, e.cadence))
-        {
-            const chordTone = pcs.includes(mod(k, 12));
-            let c = (motifNote ? R.motif : R.contour) * Math.abs(d - target);
-            if (flat) c += R.blue;
-            if (avoid.includes(stepOf(d)) && !flat) c += R.avoid;
-            if (strong && !chordTone) c += R.strongNonChord;
-            if (!strong && !chordTone && prev !== null && Math.abs(d - prev) > 1) c += R.weakNonChordLeap;
-            if (prev !== null)
-            {
-                c += motion(d);
-                const move = d - prev;
-                if (move && lastMove && Math.sign(move) !== Math.sign(lastMove) && Math.abs(lastMove) < 3) c += R.turn;
-                if (!prevChordTone && Math.abs(move) !== 1) c += R.resolve;
-                if (prev2 !== null && Math.abs(prev - prev2) >= 3)
+                // a statement starts on the motif's own degree, in the octave and moved by the step that put its first
+                // note on a chord tone near both the contour and the note before it, so it doesn't jump in
+                const b = fitted.start + 7 * Math.round((contourTarget - fitted.start - e.step) / 7);
+                base = b;
+                let baseCost = Infinity;
+                for (const o of [0, -7, 7]) for (const s of [0, 1, -1, 2, -2, 3, -3])
                 {
-                    const back = Math.sign(prev2 - prev);
-                    if (!(Math.sign(d - prev) === back && Math.abs(d - prev) <= 2)) c += R.recover;
+                    const first = b + o + s + e.step;
+                    if (first < lowDeg || first > highDeg || !isChordTone(first)) continue;
+                    const c = R.contour * Math.abs(first - contourTarget) + R.anchor * Math.abs(s) + (prev === null ? 0 : motion(prev, first));
+                    if (c < baseCost) { baseCost = c; base = b + o + s; }
                 }
-                if (d === prev) c += prev === prev2 ? R.repeat : R.repeatOnce;
             }
-            // a fifth or octave above the bass again, over a new bass note, moves in parallel
-            if (prevKey !== null && bassOf(chord) !== prevBass)
+            // a copied note (the parallel period) is the degree this path played there, scored only for how it joins
+            const source = e.copy === undefined ? null : path.notes[e.copy];
+            const motifNote = e.role === 'motif' && !source;
+            const target = source ? source.d : motifNote ? base + e.step : contourTarget;
+            const pushed = next.length;
+            for (const { d, key: k, blue: flat } of options)
             {
-                const now = mod(k - bassOf(chord), 12);
-                if (k !== prevKey && (now === 0 || now === 7) && now === mod(prevKey - prevBass, 12)) c += R.parallel;
+                if (source && (d !== source.d || !!flat !== !!source.blue)) continue;
+                const chordTone = pcs.includes(mod(k, 12));
+                let c = (motifNote ? R.motif : R.contour) * Math.abs(d - target);
+                if (flat) c += R.blue;
+                if (avoid.includes(stepOf(d)) && !flat) c += R.avoid;
+                if (strong && !chordTone) c += R.strongNonChord;
+                if (!strong && !chordTone && prev !== null && Math.abs(d - prev) > 1) c += R.weakNonChordLeap;
+                if (prev !== null)
+                {
+                    c += motion(prev, d);
+                    const move = d - prev;
+                    if (move && lastMove && Math.sign(move) !== Math.sign(lastMove) && Math.abs(lastMove) < 3) c += R.turn;
+                    if (!prevChordTone && Math.abs(move) !== 1) c += R.resolve;
+                    if (prev2 !== null && Math.abs(prev - prev2) >= 3)
+                    {
+                        const back = Math.sign(prev2 - prev);
+                        if (!(Math.sign(d - prev) === back && Math.abs(d - prev) <= 2)) c += R.recover;
+                    }
+                    if (d === prev) c += prev === prev2 ? R.repeat : R.repeatOnce;
+                }
+                // a fifth or octave above the bass again, over a new bass note, moves in parallel
+                if (prevKey !== null && bass !== prevBass)
+                {
+                    const now = mod(k - bass, 12);
+                    if (k !== prevKey && (now === 0 || now === 7) && now === mod(prevKey - prevBass, 12)) c += R.parallel;
+                }
+                if (d === peak && peakTimes >= PEAK_RULE.times) c += PEAK_RULE.cost;
+                if (e.cadence && !CADENCE_DEGREES[e.cadence].includes(stepOf(d))) c += R.cadence;
+                c += (hash(seed, type, variant, i, d, flat ? 'blue' : '') % 1000) / 1000 * R.tieBreak;
+                next.push({ path, d, key: k, blue: !!flat, cost: path.cost + c, base });
             }
-            if (d === peak && peakTimes >= PEAK_RULE.times) c += PEAK_RULE.cost;
-            if (e.cadence && !CADENCE_DEGREES[e.cadence].includes(stepOf(d))) c += R.cadence;
-            c += (hash(seed, type, variant, i, d, flat ? 'blue' : '') % 1000) / 1000 * R.tieBreak;
-            if (c < bestCost) { best = d; bestKey = k; bestCost = c; }
+            // a copied blue note whose new chord leaves no room to flatten it is played plain
+            if (source && next.length === pushed)
+            {
+                const plain = options.find(o => o.d === source.d && !o.blue);
+                next.push({ path, d: plain.d, key: plain.key, blue: false, cost: path.cost, base });
+            }
         }
-        if (best > peak) { peak = best; peakTimes = 1; }
-        else if (best === peak) peakTimes++;
-        const key = bestKey;
-        out.push({ beat: e.beat, beats: e.beats, degree: best, accidental: key - degreeToKey(tonic, mode, best, MELODY_OCTAVE), last: e.last || !!e.cadence });
-        if (prev !== null && best !== prev) lastMove = best - prev;
-        prevChordTone = pcs.includes(mod(key, 12));
-        prev2 = prev; prev = best; prevKey = key; prevBass = bassOf(chord);
+        next.sort((a, b)=> a.cost - b.cost);
+        // paths that agree on everything the rules look back at are the same from here on: keep the cheapest
+        const seen = new Set();
+        beam = [];
+        for (const n of next)
+        {
+            const { path } = n;
+            const lastMove = path.prev !== null && n.d !== path.prev ? n.d - path.prev : path.lastMove;
+            const peak = Math.max(path.peak, n.d), peakTimes = n.d > path.peak ? 1 : n.d === path.peak ? path.peakTimes + 1 : path.peakTimes;
+            const id = `${path.notes.slice(-3).map(x => x.d)},${n.d},${n.key},${Math.sign(lastMove)},${peak},${peakTimes},${n.base}`;
+            if (seen.has(id)) continue;
+            seen.add(id);
+            beam.push({
+                cost: n.cost, notes: [...path.notes, { d: n.d, key: n.key, blue: n.blue }], prev: n.d, prev2: path.prev,
+                prevKey: n.key, prevBass: bass, lastMove, prevChordTone: pcs.includes(mod(n.key, 12)), peak, peakTimes, base: n.base,
+            });
+            if (beam.length === MELODY_SEARCH.beam) break;
+        }
     });
-    return out;
+    const best = beam[0].notes;
+    return events.map((e, i)=> ({
+        beat: e.beat, beats: e.beats, degree: best[i].d, accidental: best[i].key - degreeToKey(tonic, mode, best[i].d, MELODY_OCTAVE), last: e.last || !!e.cadence,
+    }));
 }

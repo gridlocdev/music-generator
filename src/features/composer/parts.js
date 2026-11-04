@@ -18,9 +18,21 @@ function voicingClasses(chord, power, voicing)
     return pcs.length > 4 ? pcs.filter((_, i)=> i !== 2) : pcs;
 }
 
-export function writeChords(sec, track, memory)
+// The range a part voices its chord in between `from` and `to`: its own, less `reach` for the notes it adds above the
+// voicing (a power chord's octave, an arpeggio's second octave), and kept under the lead: the top `reach` below a
+// semitone under the lead's lowest note there (or a sixteenth after, where syncopation pulls a phrase's first note
+// early), the bottom lowered as far as it must to still hold an octave. `under` is the lead when the part shares its
+// instrument, else empty: the same timbre in the same register buries the tune.
+function rangeUnder(under, from, to, [lo, hi], reach = 0)
 {
-    const [lo, hi] = RANGES.chords;
+    let top = hi;
+    for (const n of under) if (n.beat < to + STEP - 1e-9 && n.beat + n.beats > from + 1e-9) top = Math.min(top, n.key - 1);
+    top -= reach;
+    return [Math.min(lo, top - 11), top];
+}
+
+export function writeChords(sec, track, memory, under = [])
+{
     const stepsPerBar = sec.beatsPerBar * 4;
     const style = sec.ending ? 'sustain' : sec.energy < 0.5 ? (COMP_QUIET[sec.comp] ?? sec.comp) : sec.comp;
     const hits = compBar(style, sec.meter, sec.groove);
@@ -28,12 +40,13 @@ export function writeChords(sec, track, memory)
     const stab = style !== 'sustain' && sec.style.stab > 0 ? sec.style.stab : Infinity;
     for (const span of sec.timeline)
     {
+        const end = span.beat + span.beats;
+        const [lo, hi] = rangeUnder(under, span.beat, end, RANGES.chords, sec.power ? 12 : 0);
         let v = voiceChord(voicingClasses(span.chord, sec.power, sec.genre.voicing), memory.chords, lo, hi);
         if (sec.power) v = [...v, v[0] + 12];
         memory.chords = v;
         // drop 2 opens the close voicing up, where the range has room; the next chord leads on from the close one
         if (sec.genre.voicing === 'drop2' && !sec.power) v = dropTwo(v, lo);
-        const end = span.beat + span.beats;
         for (let bar = Math.floor((span.beat - sec.beat) / sec.beatsPerBar); bar < sec.bars; bar++)
         {
             const barStart = sec.beat + bar * sec.beatsPerBar;
@@ -60,9 +73,8 @@ export function writePad(sec, track, memory)
     }
 }
 
-export function writeArp(sec, track, memory)
+export function writeArp(sec, track, memory, under = [])
 {
-    const [lo, hi] = RANGES.arp;
     const { order, step } = sec.arp;
     const len = step * STEP;
     const total = sec.bars * sec.beatsPerBar;
@@ -72,12 +84,18 @@ export function writeArp(sec, track, memory)
     for (let i = 0; i * len < total - 1e-9; i++)
     {
         const t = sec.beat + i * len;
-        const chord = chordAt(sec.timeline, t);
-        if (chord !== current)
+        const span = sec.timeline.findLast(s => s.beat <= t + 1e-9) ?? sec.timeline[0];
+        if (span !== current)
         {
-            current = chord;
-            const v = memory.arp = voiceChord(voicingClasses(chord, false), memory.arp, lo, hi - 12);
-            notes = [...v, ...v.map(k => k + 12)];
+            current = span;
+            const chord = span.chord;
+            // two octaves, or one where two won't fit under the lead
+            const end = span.beat + span.beats;
+            const two = rangeUnder(under, t, end, RANGES.arp, 12);
+            const octaves = two[0] >= RANGES.arp[0] ? 2 : 1;
+            const [lo, hi] = octaves === 2 ? two : rangeUnder(under, t, end, RANGES.arp);
+            const v = memory.arp = voiceChord(voicingClasses(chord, false), memory.arp, lo, hi);
+            notes = octaves === 2 ? [...v, ...v.map(k => k + 12)] : v;
         }
         const key = notes[order[(i + rotate) % order.length] % notes.length];
         track.notes.push({ key, beat: t, beats: len * sec.legato, vel: velocity(sec, 'arp', sec.energy, t - sec.beat) });

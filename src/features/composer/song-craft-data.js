@@ -25,7 +25,8 @@ export const STYLES = {
 // What changes each time a section comes back, by how many times it has been heard (the last entry repeats).
 // Hand-written melodies are played as written; the arrangement around them still grows.
 //   lastBar  the melody's last bar approaches its final note by step instead of landing on it
-//   octave   the last phrase of the melody goes up an octave, when that fits the lead's range
+//   octave   the end of the melody's last phrase goes up an octave, when that fits the lead's range, from the note
+//            where the jump up joins the line by VARIATION_LIFT.join degrees or less (else it stays where it is)
 //   counter  the countermelody becomes a harmony voice under the lead
 // The song's climax always gets the harmony voice too: a final chorus with an added line.
 export const VARIATION = [
@@ -33,6 +34,7 @@ export const VARIATION = [
     { lastBar: true },
     { lastBar: true, octave: true, counter: 'harmony' },
 ];
+export const VARIATION_LIFT = { join: 5 };
 
 // ---- The energy curve -----------------------------------------------------------------------------------
 // The biggest moment comes two-thirds to nine-tenths of the way in. The planner takes the loudest section starting

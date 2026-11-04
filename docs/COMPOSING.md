@@ -247,7 +247,9 @@ The planner makes the section's last bar the cadence chord. If the bar before do
 
 ### Voice leading
 
-Every chordal part is voiced by `voiceChord` in `music-theory.js`. It tries every placement of the chord's notes in the part's range and picks the one that moves least from the previous chord. That cost also penalises spreads wider than an octave and seconds packed together. As a result, chords glide instead of jumping in parallel blocks, which is the difference between "a keyboard playing chords" and "an arrangement". Chords with five or more notes drop the fifth, which adds least. Power chords (`power: true`) are root, fifth and octave.
+Every chordal part is voiced by `voiceChord` in `music-theory.js`. It tries every placement of the chord's notes in the part's range and picks the one that moves least from the previous chord. That cost also penalises spreads wider than an octave and seconds packed together. As a result, chords glide instead of jumping in parallel blocks, which is the difference between "a keyboard playing chords" and "an arrangement". Chords with five or more notes drop the fifth, which adds least. Power chords (`power: true`) are root, fifth and octave, the octave inside the range too.
+
+**Under the tune.** A chord part or arpeggio in the lead's instrument family (the same eighth of the General MIDI list: distortion guitar chords under a distortion guitar lead, a square arpeggio under a square lead) is voiced below the lead's lowest note while the lead plays, lower than its own range if it must; an arpeggio that can't fit two octaves there plays one. The same timbre in the same register buries the melody. A part in another family may still sit above it: a bell arpeggio over a flute is colour, not a clash.
 
 ## 5. Melody: motif, phrase, cadence
 
@@ -266,9 +268,11 @@ Each section is cut into 4-bar phrases. Each bar has a role:
 
 This is the classical *sentence*: idea, idea, development, cadence. Two phrases make a *period*. The first ends with a half cadence (a question, on degree 2 or 5) and the second with a full cadence (the answer, on degree 1). Choruses and verses use `['half', 'full']`. Bridges use `['half', 'half']` so they keep pushing toward the last chorus.
 
-### Choosing each note
+**The parallel period.** A phrase that answers a half cadence with a full (or deceptive) one starts as the question did: its first two bars repeat the first phrase's note for note, over its own chords, then it goes its own way to the cadence. Listeners hear that repeat as intent: it's what makes a tune sound written rather than generated.
 
-For every note, the composer scores each scale degree in the lead's range and keeps the cheapest (`MELODY_RULES`):
+### Choosing the notes
+
+The composer scores each scale degree in the lead's range against `MELODY_RULES` for every note, and searches for the cheapest line rather than the cheapest next note: it keeps the 16 cheapest melodies so far (`MELODY_SEARCH.beam`), tries every degree on each, and keeps the 16 cheapest of those. A line can take a slightly dearer note now to step into its cadence or fill a leap later. A section's first note leads on from the lead's last note before it, when that ended within a bar.
 
 | Rule | Cost | Why |
 |---|---|---|
@@ -288,15 +292,13 @@ For every note, the composer scores each scale degree in the lead's range and ke
 | a fifth or octave above the chord's root, then the same over the next root | 3 | parallel fifths and octaves against the bass hollow out the two outer voices |
 | reaching the highest note so far a third time | 4 | the peak is special: once or twice, at the emotional high point |
 
-A motif statement starts on the motif's own degree, in the octave and with the shift (`anchor`, 0.5 per degree) that put its first note on a chord tone, scored by its distance from the contour plus the cost of moving there from the note before. So a new statement continues the line instead of jumping to the contour.
-
 **Accidentals follow the chord.** Degrees are scale steps, but a chord from outside the mode alters some of them, and the melody takes the chord's version of that step (`alterToChord` in `music-theory.js`): G becomes G# under E major in A minor, A becomes Ab under the borrowed iv in C, F becomes F# under `V7/V`, C becomes C# under a Picardy I. Only the step the chord alters moves: G stays G under Fm in C, where it is a ninth, not a clash. Chord tones are judged after the change, and the harmony voice and call-and-response answers follow the same rule. A hand-written melody is played as written.
 
 A beat is strong if it starts one of the meter's beat groups: beats 1 and 3 in 4/4, beat 1 in 3/4, beats 1 and 4 (of the eighths) in 6/8. Any note of two beats or more also counts as strong.
 
 ### Contour
 
-The target height follows a contour across the phrase (`CONTOURS`, in scale degrees above the section's home pitch):
+The target height follows a contour across the phrase (`CONTOURS`, in scale degrees above the section's home pitch). After a section's first phrase, the contour starts where the last one ended and eases into its own shape over the first bar, so a falling contour doesn't jump back up to begin again:
 
 | Contour | Shape | Feels |
 |---|---|---|
@@ -329,7 +331,7 @@ Every motif bar states the motif, transformed by the section's `develop` (first 
 | diminish | twice as fast, played twice, rising | pre-choruses |
 | fragment | the first half, repeated a step lower | intros (a fragment of the hook), post-choruses |
 
-Each statement starts on the motif's own degree in the octave nearest the contour, moved by the smallest step that puts its first note on a chord tone of the chord under it. The rest follow the motif's shape, so the idea adapts to new harmony without losing itself. In a meter whose bar is a different length, the motif keeps its steps and takes the rhythm cell with the closest note count.
+Each statement starts on the motif's own degree, in the octave and shifted by the step (`anchor`, 0.5 per degree) that put its first note on a chord tone, scored by its distance from the contour plus the cost of moving there from the note before. So a new statement continues the line instead of jumping to the contour. The rest follow the motif's shape, so the idea adapts to new harmony without losing itself. In a meter whose bar is a different length, the motif keeps its steps and takes the rhythm cell with the closest note count.
 
 **Question and answer.** A phrase ending on a half cadence followed by one ending on a full cadence is call and response within one voice. The `cadences` of each section set this up, and its `endOn` decides the last phrase.
 
@@ -462,7 +464,7 @@ The resulting shape: the intro is pad only, the first verse adds chords, bass an
 - **One clear peak.** The planner picks the climax: the loudest section starting 50–90% of the way through (`CURVE`), usually the last chorus after the bridge. Every other section is kept at least .04 below it. `describe()` (and `just compose`) plots the curve and warns when a song has no dip of .15 or more for contrast. A test checks every song.
 - **Energy drives every lever at once**: which parts play, velocity, the drum level and hi-hat subdivision, comping, melody density, and brightness. The pad, arpeggio, chords and countermelody have a low-pass that follows energy, from 2.5 kHz at 0 to fully open at 1, so a quiet verse is darker than the chorus.
 - **Repeats get a lift** (`REPEAT_LIFT` = .07 per occurrence), so the second verse is fuller than the first: a part enters, the drums go up a level.
-- **Repetition with variation.** A chorus's melody is written once and replayed, because recognition is the point. Each return of a composed melody changes something (`VARIATION`; a hand-written one is played as written every time, though its arrangement still grows): the second time, its last note is approached by step instead of landed on; the third time, also the last phrase up an octave (when it fits) and a harmony voice under it. The climax always gets the harmony voice.
+- **Repetition with variation.** A chorus's melody is written once and replayed, because recognition is the point. Each return of a composed melody changes something (`VARIATION`; a hand-written one is played as written every time, though its arrangement still grows): the second time, its last note is approached by step instead of landed on; the third time, also the end of the last phrase up an octave and a harmony voice under it. The lift starts at the note where the jump up joins the line most closely, and only if that's a sixth or less (`VARIATION_LIFT`) and the range has room. The climax always gets the harmony voice.
 - **Verses vary.** Each verse keeps its motif bars but swaps its answer-bar rhythm, the "change the melody slightly" rule.
 - **The last chorus can lift** a key: `lift: true` raises it a whole step, `lift: 1` a semitone. Every part follows, and the outro stays in the new key. This is the "truck driver's gear change": cheap and effective.
 - **Contrast before the end.** The bridge drops energy and changes harmony, so the final chorus hits harder by comparison.
@@ -682,7 +684,7 @@ The recipes above are songs: the genre lives in what was written for them. A **p
 | `cadences` | the cadence chords, over `CADENCES`: V7–I7 in the blues, V7–Imaj7 in jazz, the minor plagal iv–I "amen" in gospel, bVII–I in rock; a modal mode's own cadence still wins | blues, jazz, bossa, gospel, country, rock, tango |
 | `avoid` | scale steps the melody leaves out except in passing (`MELODY_RULES.avoid`), by brightness: `{ bright: [4, 7], dark: [2, 6] }` is pentatonic | country, rock, reggae, funk: pentatonic · celtic: the gapped hexatonic · blues: no major 7th |
 | `blue` | steps the melody may flatten (`MELODY_RULES.blue`), outside cadences; a step the chord already flattens (the b7 of I7) is just a chord tone | blues: 3 and 7 |
-| `phrases` | which 4-bar phrases of a composed section repeat an earlier one: `'aab'` repeats line one over IV, then answers it. A repeated note the old chord altered takes the new chord's accidental, so the G# of E7 becomes the G of A7: the blue third, for free | blues |
+| `phrases` | which 4-bar phrases of a composed section repeat an earlier one: `'aab'` repeats line one over IV, then answers it. A repeated note the old chord altered takes the new chord's accidental, so the G# of E7 becomes the G of A7: the blue third, for free. The copy moves an octave where that joins it more closely to the note before | blues |
 | `rules` | `MELODY_RULES` weights of its own: jazz and bossa charge less for a non-chord tone on the beat, since a 9th there is colour | blues, jazz, bossa |
 
 A profile changes every song in its genre, hand-written hooks excepted. The genre songs above keep their own grooves, progressions and hooks, and gain the profile's harmony and melody: the funk song's triads become dominant sevenths, the gospel organ opens into drop-2 ninths, the bossa guitar plays shells.

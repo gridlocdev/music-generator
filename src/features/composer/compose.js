@@ -82,7 +82,10 @@ export function compose(spec)
         {
             const variant = ['chorus', 'post', 'drop'].includes(type) ? 0 : sec.n;
             const id = `${type}:${variant}`;
-            themes[id] ??= written ?? repeatPhrases(writeMelody(sec, melodyCfg, variant, motif, timeline), sec, timeline);
+            // the lead's last note, when it ended within a bar of this section: the new tune leads on from it
+            const end = track.lead.notes.at(-1);
+            const before = end && sec.beat - (end.beat + end.beats) <= sec.beatsPerBar ? end.key : null;
+            themes[id] ??= written ?? repeatPhrases(writeMelody(sec, melodyCfg, variant, motif, timeline, before), sec, timeline);
             lead = (written ? themes[id] : varyMelody(themes[id], sec, timeline)).map(m => ({
                 key: degreeToKey(sec.tonic, sec.mode, m.degree, MELODY_OCTAVE, m.accidental),
                 beat: sec.beat + m.beat, beats: m.beats * (m.last ? 1 : song.legato),
@@ -102,8 +105,10 @@ export function compose(spec)
                 : sec.fullness >= ARRANGEMENT[role] || (role === 'counter' && sec.texture === 'polyphonic'));
         if (answers) track.counter.notes.push(...answers);
         else if (on('counter') && !sec.ending) writeCounter(sec, track.counter, memory, lead);
-        if (on('arp') && !sec.ending) writeArp(sec, track.arp, memory);
-        if (on('chords')) writeChords(sec, track.chords, memory);
+        // a part that shares the lead's instrument family keeps under it, or the tune is lost in it
+        const under = (role)=> track.lead && Math.floor(track[role].program / 8) === Math.floor(track.lead.program / 8) ? lead : [];
+        if (on('arp') && !sec.ending) writeArp(sec, track.arp, memory, under('arp'));
+        if (on('chords')) writeChords(sec, track.chords, memory, under('chords'));
         if (on('pad')) writePad(sec, track.pad, memory);
         if (on('bass')) writeBass(sec, track.bass, memory, plan.sections[index + 1] ? null : sec.tonic);
         if (on('drums')) writeDrums(sec, track.drums);
