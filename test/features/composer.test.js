@@ -8,6 +8,7 @@ import { meterOf, rhythmsFor } from '../../src/features/composer/meter-patterns.
 import { SONGS as WRITTEN } from '../../src/features/composer/songs-data.js';
 import { GENRE_SONGS } from '../../src/features/composer/genre-songs-data.js';
 import { GAME_SONGS } from '../../src/features/composer/game-songs-data.js';
+import { CHIP_SONGS } from '../../src/features/composer/chip-songs-data.js';
 import { parseProgression, parseChord, pitchClass, MODES } from '../../src/lib/music-theory.js';
 import { bpmAt } from '../../src/lib/tempo-map.js';
 import { energyShape } from '../../src/features/composer/plan.js';
@@ -16,7 +17,7 @@ import { drumBar, withFeel } from '../../src/features/composer/meter-patterns.js
 import { barAt } from '../../src/features/composer/meter.js';
 import { STYLES, TEMPO } from '../../src/features/composer/song-craft-data.js';
 
-const SONGS = [...WRITTEN, ...GENRE_SONGS, ...GAME_SONGS];
+const SONGS = [...WRITTEN, ...GENRE_SONGS, ...GAME_SONGS, ...CHIP_SONGS];
 
 test('every emotion names a known mode, key, groove, form and parts, and its progressions parse', ()=>
 {
@@ -103,7 +104,7 @@ const sameFamily = (a, b)=> Math.floor(a.program / 8) === Math.floor(b.program /
 
 test('chords and arpeggio in the lead\'s instrument family stay under it, so the tune is heard', ()=>
 {
-    const specs = [...WRITTEN, ...GENRE_SONGS, ...GAME_SONGS, ...Object.keys(EMOTIONS).map(e => ({ title: e, emotion: e }))];
+    const specs = [...WRITTEN, ...GENRE_SONGS, ...GAME_SONGS, ...CHIP_SONGS, ...Object.keys(EMOTIONS).map(e => ({ title: e, emotion: e }))];
     let checked = 0;
     for (const spec of specs)
     {

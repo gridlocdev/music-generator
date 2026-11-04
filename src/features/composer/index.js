@@ -16,6 +16,7 @@ import { compose, sectionSeek } from './compose.js';
 import { SONGS } from './songs-data.js';
 import { GENRE_SONGS } from './genre-songs-data.js';
 import { GAME_SONGS } from './game-songs-data.js';
+import { CHIP_SONGS } from './chip-songs-data.js';
 import { EMOTIONS } from './composer-data.js';
 import { STINGERS, LAYERS } from './adaptive-data.js';
 import { loadBand } from './band-loader.js';
@@ -50,6 +51,7 @@ function seekInput(score, handle)
 // every choice in the menu: the written songs, then one song per feeling composed from its defaults alone
 const choices = [
     ...GAME_SONGS.map(spec => ({ id: spec.id, group: 'Game music', label: `${spec.genre}: ${spec.title}`, story: spec.story, spec })),
+    ...CHIP_SONGS.map(spec => ({ id: spec.id, group: 'Chiptune', label: `${spec.genre}: ${spec.title}`, story: spec.story, spec })),
     ...GENRE_SONGS.map(spec => ({ id: spec.id, group: 'Genres', label: `${spec.genre}: ${spec.title}`, story: spec.story, spec })),
     ...SONGS.map(spec => ({ id: spec.id, group: 'Written songs', label: spec.title, story: spec.story, spec })),
     ...Object.keys(EMOTIONS).map(e => ({ id: `feel:${e}`, group: 'Compose from a feeling', label: `Feeling: ${e}`, spec: { id: e, title: `${e[0].toUpperCase()}${e.slice(1)}`, emotion: e } })),

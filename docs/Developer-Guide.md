@@ -33,7 +33,8 @@ just test    # node --test: the tests in test/ for lib/ and *-data.js files
 ## Writing songs
 
 Songs are plain specs in `src/features/composer/`: `songs-data.js`, `genre-songs-data.js` (one
-per genre, each with a story) and `game-songs-data.js` (the game music). The spec format and how
+per genre, each with a story), `game-songs-data.js` (the game music) and `chip-songs-data.js`
+(chiptune in different moods). The spec format and how
 the composer reads it are in [COMPOSING.md](COMPOSING.md#12-the-song-spec-writing-a-song).
 
 In the browser, a song can also be played from the console or opened from a link:

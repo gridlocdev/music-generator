@@ -559,6 +559,8 @@ Field recordings and other samples aren't part of this synth.
 
 A song with `sound: 'chip'` (the Chiptune genre sets it) plays the chip instruments and adds what the NES soundtracks measured by `tools/nsf-report.mjs` do. The settings are `CHIP` in `performance-data.js`; the score-side passes are in `chip.js`.
 
+The Chiptune menu group (`chip-songs-data.js`) shows the range: a bright overworld loop on the bare NES pulses, a phrygian cave loop, a music-box waltz on the soft modern voices, a 168-bpm shoot-'em-up on PWM and saw, a swung town theme on the sample channel's bass and kit, and a slow harmonic-minor game-over theme.
+
 - **Echo.** In the bars where the countermelody rests, a part of its own repeats the lead about 0.16 s later (rounded to a sixteenth) at about half its velocity. Mega Man 2 and DuckTales echo the lead on the second pulse channel 8–12 frames late; one channel then sounds like a room.
 - **Tracker arpeggios.** The `tracker` arpeggio pattern strikes each chord's lowest note on the eighths, and that one voice steps through the chord's notes every `CHIP.arp.frames` sixtieth of a second, the shimmer of a tracker's `0xy` effect. The score keeps the struck note and the chord's offsets (`cycle`); the view and the MIDI file show the struck note only. The Chiptune genre uses it.
 - **Pulse width follows the section.** The lead, countermelody and echo, when they play a pulse (`CHIP.timbre.groups`: the modern 50%, 25% and 12.5% pulses, or the NES 50% and 25%), go one width darker in a section under 0.5 energy and one thinner and brighter from 0.85 up. Pixel Knight's lead is a 25% pulse in the verses, 12.5% in the choruses and 50% in the bridge, as Flash Man's lead moves between widths.
@@ -644,7 +646,7 @@ A song is a plain object. Only `title` (or `id`) and `emotion` are needed; every
 
 **Where specs go.**
 
-- In the game: add it to `GENRE_SONGS` in `src/features/composer/genre-songs-data.js`, `GAME_SONGS` in `game-songs-data.js` or `SONGS` in `songs-data.js`, and it appears in the Composer menu. The tests check that a hand-written hook puts chord tones on at least 85% of its strong beats, and that every scene names a real section.
+- In the game: add it to `GENRE_SONGS` in `src/features/composer/genre-songs-data.js`, `GAME_SONGS` in `game-songs-data.js`, `CHIP_SONGS` in `chip-songs-data.js` (chiptune, `sound: 'chip'`) or `SONGS` in `songs-data.js`, and it appears in the Composer menu. The tests check that a hand-written hook puts chord tones on at least 85% of its strong beats, and that every scene names a real section.
 - In the browser console, or from a page that embeds the game: `composer.play({ title: 'Test', emotion: 'tender', key: 'A' })`, `composer.play('first-light')`, `composer.stop()`, and `composer.compose(spec)` to get the score without playing it.
 - In a link: `index.html#song=first-light`, `#feel=heroic`, or `#spec=` followed by the URI-encoded JSON. Browsers need a click before sound, so the song starts on the first click or key press.
 - On the command line: `just compose first-light --melody --midi out.mid` prints the plan (sections, energy, chords, parts) and the melody bar by bar, and writes a Standard MIDI File any DAW can open. Run `just compose path/to/spec.json` for a spec saved as a file.

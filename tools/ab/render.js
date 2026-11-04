@@ -73,9 +73,9 @@ try
 {
     const [{ compose }, player, { EMOTIONS }, ...lists] = await Promise.all([
         import(dir + 'compose.js'), import(dir + 'song-player.js'), import(dir + 'composer-data.js'),
-        optional('songs-data.js'), optional('genre-songs-data.js'), optional('game-songs-data.js'),
+        optional('songs-data.js'), optional('genre-songs-data.js'), optional('game-songs-data.js'), optional('chip-songs-data.js'),
     ]);
-    const groups = ['Written songs', 'Genres', 'Game music'];
+    const groups = ['Written songs', 'Genres', 'Game music', 'Chiptune'];
     const written = lists.flatMap((m, i)=> Object.values(m).flat().map(spec => ({ spec, group: groups[i] })));
     const feelings = Object.keys(EMOTIONS).map(e => ({ spec: { id: `feel:${e}`, title: e[0].toUpperCase() + e.slice(1), emotion: e }, group: 'Feelings' }));
     const songs = [...written, ...feelings];
