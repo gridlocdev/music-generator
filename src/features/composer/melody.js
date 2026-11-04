@@ -100,6 +100,36 @@ function inventMotif(sec, seed)
     return { beats: sec.beatsPerBar, start, notes };
 }
 
+// A motif's notes as a rhythm cell: durations in beats, rests negative.
+function cellOf(motif)
+{
+    const cell = [];
+    let t = 0;
+    for (const n of [...motif.notes].sort((a, b)=> a.beat - b.beat))
+    {
+        if (n.beat > t + 1e-9) cell.push(-(n.beat - t));
+        cell.push(n.beats);
+        t = n.beat + n.beats;
+    }
+    if (motif.beats > t + 1e-9) cell.push(-(motif.beats - t));
+    return cell;
+}
+
+// A cell cut in two at `at` beats, or null when a note sounds across that point (a rest there is cut in two).
+function splitCell(cell, at)
+{
+    let t = 0;
+    for (let i = 0; i < cell.length; i++)
+    {
+        if (Math.abs(t - at) < 1e-9) return [cell.slice(0, i), cell.slice(i)];
+        const d = Math.abs(cell[i]);
+        if (t + d > at + 1e-9)
+            return cell[i] < 0 ? [[...cell.slice(0, i), -(at - t)], [-(t + d - at), ...cell.slice(i + 1)]] : null;
+        t += d;
+    }
+    return Math.abs(t - at) < 1e-9 ? [cell, []] : null;
+}
+
 // The motif in a meter whose bar is a different length: the same steps in order, on the meter's rhythm cell with the
 // closest note count. A leitmotif keeps its shape across 4/4, 6/8 and 7/4.
 function fitMotif(motif, sec)
@@ -135,9 +165,23 @@ export function writeMelody(sec, cfg, variant, motif, timeline, before = null)
         .map((cell, i)=> ({ cell, d: Math.abs(noteCount(cell) - want) - (offbeat(cell) ? sec.genre.offbeat ?? 0 : 0), h: hash(seed, type, 'cell', i) }))
         .sort((a, b)=> a.d - b.d || a.h - b.h)
         .map(r => r.cell);
-    const answer = ranked[1 + variant % 2] ?? ranked[1] ?? ranked[0];
-    const continuation = ranked.find(c => noteCount(c) > noteCount(ranked[0])) ?? ranked[2] ?? ranked[0];
     const fitted = fitMotif(motif, sec);
+    // The bars between the motif's statements take their rhythm from it, so the phrase has one rhythmic idea, as a
+    // sentence does: the answer starts as the motif does and ends its own way (a rhyme); the continuation plays the
+    // motif's busier half twice (fragmentation), quickening into the cadence. A motif with a note across the bar's
+    // first group, or a meter of one group, uses the plain cells.
+    const at = meter.groups.length > 1 ? meter.groups[0] : null;
+    const halves = at && splitCell(cellOf(fitted), at);
+    const ownAnswer = ranked[1 + variant % 2] ?? ranked[1] ?? ranked[0];
+    // the ending that keeps the answer as busy as the cell it replaces, the nearer the density the better
+    const rhyme = halves && [ownAnswer, ...ranked].map(c => splitCell(c, at))
+        .filter(h => h && noteCount(h[1]) && h[1].join() !== halves[1].join())
+        .map((h, i)=> ({ h, d: Math.abs(noteCount(halves[0]) + noteCount(h[1]) - noteCount(ownAnswer)), i }))
+        .sort((a, b)=> a.d - b.d || a.i - b.i)[0]?.h;
+    const answer = rhyme ? [...halves[0], ...rhyme[1]] : ownAnswer;
+    const busier = halves && (noteCount(halves[1]) > noteCount(halves[0]) ? halves[1] : halves[0]);
+    const fragment = busier && noteCount(busier) >= 2 && Math.abs(2 * at - bpb) < 1e-9 && busier[0] > 0 ? [...busier, ...busier] : null;
+    const continuation = fragment ?? ranked.find(c => noteCount(c) > noteCount(ranked[0])) ?? ranked[2] ?? ranked[0];
     const develops = sec.over.develop ?? sec.base.develop ?? ['repeat', 'sequence'];
     const finalCadence = sec.endOn ? CADENCES[sec.endOn].melody : null;
     const lastPhrase = Math.floor((sec.bars - 1) / 4);

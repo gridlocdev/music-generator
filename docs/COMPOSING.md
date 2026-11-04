@@ -261,12 +261,12 @@ Each section is cut into 4-bar phrases. Each bar has a role:
 
 | Bar | Role | Rhythm |
 |---|---|---|
-| 1 | **motif**: the basic idea | the rhythm cell closest to the section's density |
-| 2 | **answer**: a contrasting idea | the next-closest cell (varies per verse) |
-| 3 | **motif again** in the first phrase, **continuation** (busier) in the second | |
+| 1 | **motif**: the basic idea | the motif's own rhythm |
+| 2 | **answer**: a contrasting idea | a *rhyme*: the motif's first beat group, then an ending of its own, as busy as the next-closest cell to the section's density (varies per verse) |
+| 3 | **motif again** in the first phrase, **continuation** (busier) in the second | the continuation is *fragmentation*: the motif's busier half, twice |
 | 4 | **cadence**: a long note that ends the phrase | `[2, 2]` for a half cadence, `[4]` for a full one |
 
-This is the classical *sentence*: idea, idea, development, cadence. Two phrases make a *period*. The first ends with a half cadence (a question, on degree 2 or 5) and the second with a full cadence (the answer, on degree 1). Choruses and verses use `['half', 'full']`. Bridges use `['half', 'half']` so they keep pushing toward the last chorus.
+This is the classical *sentence*: idea, idea, development, cadence. Because the answer and continuation take their rhythm from the motif, a phrase has one rhythmic idea instead of four unrelated cells, and a recognisable rhythm is what makes a tune sound written. A motif with a note across the middle of the bar, or a meter of one beat group (3/4), can't be cut in half, so those bars use the plain cells: the next-closest cell for the answer, a busier one for the continuation. Two phrases make a *period*. The first ends with a half cadence (a question, on degree 2 or 5) and the second with a full cadence (the answer, on degree 1). Choruses and verses use `['half', 'full']`. Bridges use `['half', 'half']` so they keep pushing toward the last chorus.
 
 **The parallel period.** A phrase that answers a half cadence with a full (or deceptive) one starts as the question did: its first two bars repeat the first phrase's note for note, over its own chords, then it goes its own way to the cadence. Listeners hear that repeat as intent: it's what makes a tune sound written rather than generated.
 

@@ -384,8 +384,27 @@ test('a pentatonic genre keeps its melody off the scale\'s gaps', ()=>
     const gaps = (s)=> s.tracks.find(t => t.role === 'lead').notes.filter(n => [5, 11].includes(n.key % 12));
     const plain = gaps(compose(spec)), country = gaps(compose({ ...spec, genre: 'Country' }));
     assert.ok(country.length < plain.length, `country ${country.length} vs plain ${plain.length} F or B`);
-    // what's left lands on a beat, where IV's root or V's third is the chord: never a passing note
-    for (const n of country) assert.ok(Math.abs(n.beat - Math.round(n.beat)) < 1e-9, `gap note in passing at ${n.beat}`);
+    // what's left lands on a beat, where IV's root or V's third is the chord, or passes quickly: never a held clash
+    for (const n of country) assert.ok(Math.abs(n.beat - Math.round(n.beat)) < 1e-9 || n.beats <= 0.5, `gap note held at ${n.beat}`);
+});
+
+test('the bars between motif statements take its rhythm: the answer rhymes with it, the continuation fragments it', ()=>
+{
+    const s = compose({ title: 'Sentence', emotion: 'tense', key: 'A', mode: 'minor', tempo: 120, form: ['verse'],
+        sections: { verse: { progression: 'i VII VI VII', density: 1.5 } } });
+    const v = s.sections[0];
+    const onsets = (bar, from, to)=> notesIn(s, 'lead', v.beat + bar * 4 + from, v.beat + bar * 4 + to).map(n => n.beat - v.beat - bar * 4);
+    // bars 1 and 2 of each phrase: the same rhythm for the first half, different in the second
+    for (const p of [0, 4])
+    {
+        assert.deepEqual(onsets(p + 1, 0, 2), onsets(p, 0, 2), `phrase at bar ${p}: the answer starts as the motif does`);
+        assert.notDeepEqual(onsets(p + 1, 0, 4), onsets(p, 0, 4), `phrase at bar ${p}: and ends its own way`);
+    }
+    // the second phrase's third bar: one half of the motif's rhythm, twice
+    const third = onsets(6, 0, 4), half = third.filter(t => t < 2);
+    assert.deepEqual(third.filter(t => t >= 2).map(t => t - 2), half, 'the continuation repeats a half bar');
+    const motif = onsets(0, 0, 4);
+    assert.ok([motif.filter(t => t < 2), motif.filter(t => t >= 2).map(t => t - 2)].some(h => h.join() === half.join()), 'a half of the motif');
 });
 
 test('call and response: in the bridge the lead and the countermelody take turns and never overlap', ()=>
