@@ -2,12 +2,16 @@
 // The version's own modules are loaded after stand-ins are in place, so it plays exactly as it would live:
 //   AudioContext returns an OfflineAudioContext whose currentTime is a clock this page moves;
 //   Worker (the player's ticker) ticks only when told to.
-// The clock steps through the song a tick at a time, and the player schedules ahead from it as usual, so the whole
-// song is scheduled before rendering starts. Voices that would have finished by then get the synth's own onended
-// run early (with its disconnects made harmless), so its voice limit counts what it would count live.
-// Works in any browser: it needs no OfflineAudioContext.suspend, which Firefox lacks.
+// The clock steps through the song a tick at a time, and the player schedules ahead from it as usual. Voices that
+// would have finished by then get the synth's own onended run early, so its voice limit counts what it would count
+// live; their disconnects and LFO stops wait until the render has passed the voice's end.
+// Where OfflineAudioContext.suspend exists (not Firefox), the clock runs only AHEAD seconds in front of the render,
+// which pauses every AHEAD seconds to schedule the next stretch and drop finished voices. A node costs render time
+// in every block while it is connected, played yet or not, so a whole song scheduled up front costs notes × length.
+// Without suspend the whole song is scheduled before rendering starts, and finished voices stay connected.
 // Posts { list } (the song ids) or { wav, stats } back to the page that opened it.
 const STEP = 0.025;             // seconds between scheduler ticks, as live
+const AHEAD = 1;                // seconds the clock runs in front of the render, where it can pause
 const TAIL = 3;                 // seconds rendered after the song, for the reverb
 const RATE = 44100;
 const params = new URLSearchParams(location.search);
@@ -17,26 +21,38 @@ const reply = (msg, transfer = [])=> parent.postMessage(msg, '*', transfer);
 let offline = null, now = 0;
 globalThis.AudioContext = function () { return offline; };
 
-// every sample voice, with when it stops; a stop with no time means the clock's now
-const sources = [];
-let ending = false;             // while a voice's onended runs early: its disconnects and LFO stops must wait
+// every sample voice still sounding → when it stops; a stop with no time means the clock's now
+const sources = new Map();
+let ending = null;              // while a voice's onended runs early: when it ends, so its disconnects and LFO stops wait
+const later = [];               // [time, fn]: those waiting disconnects and stops, run once the render passes the time
 const { start, stop } = AudioBufferSourceNode.prototype;
-AudioBufferSourceNode.prototype.start = function (...a) { sources.push({ node: this, stopAt: Infinity }); return start.apply(this, a); };
+AudioBufferSourceNode.prototype.start = function (...a) { sources.set(this, Infinity); return start.apply(this, a); };
 AudioBufferSourceNode.prototype.stop = function (when)
 {
-    const s = sources.findLast(s => s.node === this);
-    if (s) s.stopAt = when ?? now;
+    if (sources.has(this)) sources.set(this, when ?? now);
     return stop.call(this, when);
 };
 const { disconnect } = AudioNode.prototype, oscStop = OscillatorNode.prototype.stop;
-AudioNode.prototype.disconnect = function (...a) { if (!ending) return disconnect.apply(this, a); };
-OscillatorNode.prototype.stop = function (...a) { if (!ending) return oscStop.apply(this, a); };
+AudioNode.prototype.disconnect = function (...a) { if (ending === null) return disconnect.apply(this, a); later.push([ending, ()=> disconnect.apply(this, a)]); };
+OscillatorNode.prototype.stop = function (...a) { if (ending === null) return oscStop.apply(this, a); later.push([ending, ()=> oscStop.apply(this, a)]); };
 function endVoicesBy(t)
 {
-    ending = true;
-    for (let i = sources.length - 1; i >= 0; i--)
-        if (sources[i].stopAt <= t) { const { node } = sources[i]; sources.splice(i, 1); node.onended?.(new Event('ended')); }
-    ending = false;
+    const ended = [];
+    for (const [node, stopAt] of sources) if (stopAt <= t) ended.push([node, stopAt]);
+    // newest first, as the synth's voice list would see them end
+    for (const [node, stopAt] of ended.reverse())
+    {
+        sources.delete(node);
+        ending = stopAt;
+        try { node.onended?.(new Event('ended')); } finally { ending = null; }
+    }
+}
+// runs the waiting disconnects and stops of voices that ended by t
+function cleanUpBy(t)
+{
+    let kept = 0;
+    for (const item of later) if (item[0] <= t) item[1](); else later[kept++] = item;
+    later.length = kept;
 }
 const tickers = new Set();
 globalThis.Worker = class
@@ -85,11 +101,28 @@ try
         const band = await (loader.loadBand ?? player.loadBand)(score, ()=> {});
         const started = performance.now();
         player.playScore(score, band);
-        for (now = STEP; now < length / RATE; now += STEP)
+        const end = length / RATE;
+        now = 0;
+        const advance = (until)=>
         {
-            endVoicesBy(now);
-            for (const w of tickers) w.onmessage?.({});
+            while (now + STEP < Math.min(until, end))
+            {
+                now += STEP;
+                endVoicesBy(now);
+                for (const w of tickers) w.onmessage?.({});
+            }
+        };
+        if (offline.suspend)
+        {
+            // one pause per render quantum at most, so round each to a block of 128 samples
+            for (let at = AHEAD; at < end - STEP; at += AHEAD)
+            {
+                const t = Math.round(at * RATE / 128) * 128 / RATE;
+                offline.suspend(t).then(()=> { cleanUpBy(t); advance(t + AHEAD); offline.resume(); });
+            }
+            advance(AHEAD);
         }
+        else advance(end);
         const buffer = await offline.startRendering();
         const wav = encodeWav(buffer);
         reply({ wav, stats: { ...levels(buffer), seconds: buffer.duration, renderSeconds: (performance.now() - started) / 1000,
