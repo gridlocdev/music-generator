@@ -285,8 +285,9 @@ The composer scores each scale degree in the lead's range against `MELODY_RULES`
 | non-chord tone followed by a rest | 6 | it never resolves, so the phrase hangs on a wrong note |
 | a third | 1 | fine, but a line that mostly steps sounds sung, not arpeggiated |
 | leap beyond a third | 1.2 per degree | singable lines mostly move by step |
+| a fourth to a sixth from one chord tone to another | 0.4 per degree beyond a third, instead | a leap through the chord outlines the harmony; Undertale's themes leap a 4th or more about a third of the time |
 | leap beyond a sixth | +6 per degree | big leaps are rare and special |
-| leap of a fourth or more not followed by a step back | 6 | gap-fill: a leap creates a gap the ear wants filled |
+| leap of a fourth or more not followed by a step back | 6 | gap-fill: a leap creates a gap the ear wants filled; waived after a leap through the chord when the next note is a chord tone too, as in an arpeggio |
 | a change of direction after a step or third | 1.5 | lines run a few notes one way instead of zigzagging |
 | a non-chord tone not left by step | 4 | a passing or neighbour tone moves on by step; one that leaps away sounds like a wrong note |
 | the same pitch twice in a row | 0.8 | allowed, but motion is better |

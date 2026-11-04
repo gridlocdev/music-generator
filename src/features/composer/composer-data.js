@@ -280,6 +280,8 @@ export const MELODY_RULES = {
     skip: 1,                // a third: fine, but a line that mostly steps sounds sung, not arpeggiated
     leap: 1.2,              // per degree of a leap beyond a third
     bigLeap: 6,             // per degree beyond a sixth
+    chordLeap: 0.4,         // per degree beyond a third, in place of leap, for a fourth to a sixth between chord tones:
+                            // a line that jumps through its chord (Undertale's themes leap a 4th or more a third of the time)
     recover: 6,             // a leap of a fourth or more not followed by a step back the other way
     turn: 1.5,              // a change of direction after a step or third: lines run a few notes one way
     resolve: 4,             // a non-chord tone not left by step (a passing or neighbour tone moves on by step)

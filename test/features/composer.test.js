@@ -407,6 +407,27 @@ test('the bars between motif statements take its rhythm: the answer rhymes with 
     assert.ok([motif.filter(t => t < 2), motif.filter(t => t >= 2).map(t => t - 2)].some(h => h.join() === half.join()), 'a half of the motif');
 });
 
+test('a lead leaps through its chords: a fourth to a sixth is common, and lands on a chord tone', ()=>
+{
+    let moves = 0, leaps = 0, onChord = 0;
+    for (const spec of GAME_SONGS)
+    {
+        const s = compose(spec);
+        const notes = [...s.tracks.find(t => t.role === 'lead').notes].sort((a, b)=> a.beat - b.beat);
+        for (let i = 1; i < notes.length; i++)
+        {
+            moves++;
+            const iv = Math.abs(notes[i].key - notes[i - 1].key);
+            if (iv < 5 || iv > 9) continue;
+            leaps++;
+            const c = s.chords.find(c => c.beat <= notes[i].beat + 1e-9 && c.beat + c.beats > notes[i].beat + 1e-9);
+            if (c?.tones.includes(notes[i].key % 12)) onChord++;
+        }
+    }
+    assert.ok(leaps / moves > 0.15, `leaps of a 4th to a 6th: ${Math.round(100 * leaps / moves)}% of moves`);
+    assert.ok(onChord / leaps > 0.9, `on a chord tone: ${Math.round(100 * onChord / leaps)}%`);
+});
+
 test('call and response: in the bridge the lead and the countermelody take turns and never overlap', ()=>
 {
     const s = compose({ title: 'Answer', emotion: 'joyful', style: { syncopation: 0 } });
