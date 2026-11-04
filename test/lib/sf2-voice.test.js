@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { voiceParams, timecentsToSeconds, centibelsToGain, voiceLevel } from '../../src/lib/sf2-voice.js';
+import { voiceParams, timecentsToSeconds, centibelsToGain, voiceLevel, modulated, sourceValue, sweepCents } from '../../src/lib/sf2-voice.js';
 import { GEN } from '../../src/lib/sf2.js';
 
 const near = (a, b, eps = 1e-6)=> assert.ok(Math.abs(a - b) < eps, `${a} ≉ ${b}`);
@@ -12,7 +12,7 @@ function region(set = {})
     gen[GEN.overridingRootKey] = -1; gen[GEN.keynum] = -1; gen[GEN.velocity] = -1;
     for (const g of [33, 34, 35, 36, 38]) gen[g] = -12000;
     for (const [k, v] of Object.entries(set)) gen[GEN[k]] = v;
-    return { gen, sample: { start: 100, end: 200, loopStart: 120, loopEnd: 180, sampleRate: 44100, originalPitch: 60, pitchCorrection: 0 } };
+    return { gen, mods: [], sample: { start: 100, end: 200, loopStart: 120, loopEnd: 180, sampleRate: 44100, originalPitch: 60, pitchCorrection: 0 } };
 }
 
 test('unit conversions', ()=>
@@ -77,4 +77,43 @@ test('a voice’s level follows its envelope until its release begins, even when
     assert.equal(voiceLevel(env, 0.5, 1, release), 0.5);
     assert.ok(voiceLevel(env, 0.5, 1.01, release) < 0.5 * 0.05);
     assert.equal(voiceLevel(env, 0.5, 0.5, null), 0.5);
+});
+
+test('a font’s own velocity→cutoff modulator replaces the default one', ()=>
+{
+    const r = { ...region({ initialFilterFc: 9000 }), mods: [{ src: 0x102, dest: GEN.initialFilterFc, amount: 0, amountSrc: 0 }] };
+    near(voiceParams(r, 60, 40).filter.hz, voiceParams(r, 60, 127).filter.hz);
+    assert.ok(voiceParams(region({ initialFilterFc: 9000 }), 60, 40).filter.hz < voiceParams(r, 60, 40).filter.hz);
+});
+
+test('modulators on velocity and key add to their generators', ()=>
+{
+    // velocity → mod env to cutoff, positive linear; key → cutoff, bipolar linear (0 at key 63.5)
+    const r = { ...region({ initialFilterFc: 7000 }), mods: [
+        { src: 0x2, dest: GEN.modEnvToFilterFc, amount: 6000, amountSrc: 0 },
+        { src: 0x203, dest: GEN.initialFilterFc, amount: 3200, amountSrc: 0 },
+        { src: 0xdb, dest: GEN.pan, amount: 500, amountSrc: 0 },        // a CC: not known at note-on, left out
+    ] };
+    near(modulated(r, 60, 127)[GEN.modEnvToFilterFc], 6000);
+    near(modulated(r, 60, 0)[GEN.modEnvToFilterFc], 0);
+    assert.ok(modulated(r, 100, 127)[GEN.initialFilterFc] > 7000 && modulated(r, 20, 127)[GEN.initialFilterFc] < 7000);
+    assert.equal(modulated(r, 60, 127)[GEN.pan], 0);
+    near(sourceValue(0x502, 60, 127), 0);
+    near(sourceValue(0x502, 60, 0), 1);
+    assert.equal(sourceValue(0xd02, 60, 100), 0);
+});
+
+test('the modulation envelope sweeps the cutoff up and back to its sustain', ()=>
+{
+    const p = voiceParams(region({ initialFilterFc: 6000, modEnvToFilterFc: 4800, delayModEnv: -12000, holdModEnv: -12000, attackModEnv: 0, decayModEnv: 0, sustainModEnv: 500 }), 60, 127);
+    const s = p.filter.sweep;
+    near(s.attack, 1); near(s.decay, 1); near(s.sustain, 0.5);
+    assert.equal(sweepCents(s, 0), 0);
+    near(sweepCents(s, 0.5), 2400);
+    near(sweepCents(s, 1), 4800);
+    near(sweepCents(s, 1.5), 3600);
+    near(sweepCents(s, 3), 2400);
+    // a filter swept down from fully open still needs a filter; one that only opens further doesn't
+    assert.ok(voiceParams(region({ modEnvToFilterFc: -2400 }), 60, 127).filter);
+    assert.equal(voiceParams(region({ modEnvToFilterFc: 2400 }), 60, 127).filter, null);
 });

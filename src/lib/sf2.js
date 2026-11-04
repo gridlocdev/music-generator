@@ -8,13 +8,17 @@
 //   presets: [{ name, bank, program, regions: [region] }],   sorted by bank, program
 // }
 // A region is one sample played over a key/velocity range:
-//   { keyLo, keyHi, velLo, velHi, sample, gen: Int16Array(61) }  where gen holds final generator values
-//   (instrument value + preset offset), indexed by GEN ids below.
+//   { keyLo, keyHi, velLo, velHi, sample, gen: Int16Array(61), mods: [mod] }  where gen holds final generator values
+//   (instrument value + preset offset), indexed by GEN ids below, and mods are the zone's modulators:
+//   { src, dest, amount, amountSrc }, src and amountSrc in the spec's 16-bit source encoding (SF2.04 §8.2).
+//   An instrument's local modulator replaces its global zone's identical one (same src, dest, amountSrc); the
+//   preset's modulators are added after the instrument's, as offsets.
 
 export const GEN = {
     startAddrsOffset: 0, endAddrsOffset: 1, startloopAddrsOffset: 2, endloopAddrsOffset: 3,
-    startAddrsCoarseOffset: 4, initialFilterFc: 8, initialFilterQ: 9, endAddrsCoarseOffset: 12,
-    pan: 17, delayVolEnv: 33, attackVolEnv: 34, holdVolEnv: 35, decayVolEnv: 36, sustainVolEnv: 37,
+    startAddrsCoarseOffset: 4, initialFilterFc: 8, initialFilterQ: 9, modEnvToFilterFc: 11, endAddrsCoarseOffset: 12,
+    pan: 17, delayModEnv: 25, attackModEnv: 26, holdModEnv: 27, decayModEnv: 28, sustainModEnv: 29, releaseModEnv: 30,
+    keynumToModEnvHold: 31, keynumToModEnvDecay: 32, delayVolEnv: 33, attackVolEnv: 34, holdVolEnv: 35, decayVolEnv: 36, sustainVolEnv: 37,
     releaseVolEnv: 38, keynumToVolEnvHold: 39, keynumToVolEnvDecay: 40, instrument: 41, keyRange: 43,
     velRange: 44, startloopAddrsCoarseOffset: 45, keynum: 46, velocity: 47, initialAttenuation: 48,
     endloopAddrsCoarseOffset: 50, coarseTune: 51, fineTune: 52, sampleID: 53, sampleModes: 54,
@@ -81,13 +85,17 @@ export function parseSf2(buffer)
         : new Int16Array(buffer.slice(smpl.offset, smpl.offset + (smpl.size & ~1)));
 
     const phdr = records('phdr', 38, o => ({ name: text(o, 20), program: view.getUint16(o + 20, true), bank: view.getUint16(o + 22, true), bag: view.getUint16(o + 24, true) }));
-    const bag = (o)=> view.getUint16(o, true);
+    const bag = (o)=> ({ gen: view.getUint16(o, true), mod: view.getUint16(o + 2, true) });
     const gen = (o)=> ({ op: view.getUint16(o, true), amount: view.getInt16(o + 2, true), lo: view.getUint8(o + 2), hi: view.getUint8(o + 3) });
     const pbag = records('pbag', 4, bag);
     const pgen = records('pgen', 4, gen);
     const inst = records('inst', 22, o => ({ name: text(o, 20), bag: view.getUint16(o + 20, true) }));
     const ibag = records('ibag', 4, bag);
     const igen = records('igen', 4, gen);
+    // modulator lists are optional; a font without them plays with the defaults
+    const mod = (o)=> ({ src: view.getUint16(o, true), dest: view.getUint16(o + 2, true), amount: view.getInt16(o + 4, true), amountSrc: view.getUint16(o + 6, true) });
+    const pmod = chunks.pmod ? records('pmod', 10, mod) : [];
+    const imod = chunks.imod ? records('imod', 10, mod) : [];
     const samples = records('shdr', 46, o => ({
         name: text(o, 20),
         start: view.getUint32(o + 20, true),
@@ -100,14 +108,14 @@ export function parseSf2(buffer)
         type: view.getUint16(o + 44, true),
     })).slice(0, -1);
 
-    // zones of one preset or instrument: [{ gens: Map(op → gen), key?: [lo, hi], vel?: [lo, hi] }]
-    const zones = (bags, gens, from, to)=>
+    // zones of one preset or instrument: [{ gens: Map(op → gen), mods: [mod], key?: [lo, hi], vel?: [lo, hi] }]
+    const zones = (bags, gens, mods, from, to)=>
     {
         const out = [];
         for (let b = from; b < to; b++)
         {
-            const z = { gens: new Map(), key: null, vel: null };
-            for (let g = bags[b]; g < bags[b + 1]; g++)
+            const z = { gens: new Map(), mods: mods.slice(bags[b].mod, bags[b + 1].mod).filter(m => m.src || m.dest || m.amount || m.amountSrc), key: null, vel: null };
+            for (let g = bags[b].gen; g < bags[b + 1].gen; g++)
             {
                 const { op, amount, lo, hi } = gens[g];
                 if (op === GEN.keyRange) z.key = [lo, hi];
@@ -122,11 +130,11 @@ export function parseSf2(buffer)
     const splitGlobal = (list, terminal)=>
         list.length && !list[0].gens.has(terminal) ? { global: list[0], local: list.slice(1) } : { global: null, local: list };
 
-    const instruments = inst.slice(0, -1).map((ins, i)=> splitGlobal(zones(ibag, igen, ins.bag, inst[i + 1].bag), GEN.sampleID));
+    const instruments = inst.slice(0, -1).map((ins, i)=> splitGlobal(zones(ibag, igen, imod, ins.bag, inst[i + 1].bag), GEN.sampleID));
 
     const presets = phdr.slice(0, -1).map((p, i)=>
     {
-        const { global: pGlobal, local: pZones } = splitGlobal(zones(pbag, pgen, p.bag, phdr[i + 1].bag), GEN.instrument);
+        const { global: pGlobal, local: pZones } = splitGlobal(zones(pbag, pgen, pmod, p.bag, phdr[i + 1].bag), GEN.instrument);
         const regions = [];
         for (const pz of pZones)
         {
@@ -149,7 +157,8 @@ export function parseSf2(buffer)
                 const offsets = new Map(pGlobal?.gens);
                 for (const [op, v] of pz.gens) offsets.set(op, v);
                 for (const [op, v] of offsets) if (!NOT_ADDITIVE.has(op) && op < GEN_COUNT) g[op] = clamp16(g[op] + v);
-                regions.push({ keyLo, keyHi, velLo, velHi, sample, gen: g });
+                const mods = [...merge(ins.global?.mods, iz.mods), ...merge(pGlobal?.mods, pz.mods)];
+                regions.push({ keyLo, keyHi, velLo, velHi, sample, gen: g, mods });
             }
         }
         return { name: p.name, bank: p.bank, program: p.program, regions };
@@ -158,6 +167,10 @@ export function parseSf2(buffer)
     const name = chunks.INAM ? text(chunks.INAM.offset, chunks.INAM.size) : '';
     return { name, sampleData, samples, presets };
 }
+
+// a global zone's modulators with the local zone's replacing identical ones
+const merge = (global = [], local = [])=>
+    [...global.filter(g => !local.some(l => l.src === g.src && l.dest === g.dest && l.amountSrc === g.amountSrc)), ...local];
 
 // a zone's key or velocity range: its own if set, else its global zone's, else everything
 const range = (z, global, k)=> z[k] ?? global?.[k] ?? [0, 127];

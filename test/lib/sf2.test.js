@@ -108,3 +108,12 @@ test('parses a real SoundFont library', { skip: !existsSync(real) && 'SoundFont 
     for (const r of regionsFor(piano, 60, 100))
         assert.ok(r.sample.end > r.sample.start && r.sample.end <= sf.sampleData.length);
 });
+
+test('reads each region’s modulators', { skip: !existsSync(real) && 'SoundFont library not present' }, ()=>
+{
+    const sf = parseSf2(buffer(readFileSync(real)));
+    const guitar = sf.presets.find(p => p.bank === 0 && p.program === 30);
+    // GeneralUser turns off the default velocity→cutoff modulator with one of its own, at 0
+    for (const r of regionsFor(guitar, 72, 100))
+        assert.ok(r.mods.some(m => m.dest === GEN.initialFilterFc && (m.src & 0x7f) === 2 && m.amount === 0));
+});

@@ -473,7 +473,7 @@ The resulting shape: the intro is pad only, the first verse adds chords, bass an
 
 The score stays on the grid. That's what the falling-notes view draws and what the `.mid` file holds. When a song plays, `perform.js` adds what a player would, and `mix-plan.js` sets up and moves the mix. Both are rules, with a hash where a choice is needed, so a song sounds the same every time. The tables are `EXPRESSION`, `MIX`, `DUCK` and `MOVEMENT` in `composer-data.js`.
 
-- **Velocity is tone as well as volume.** The synth squares velocity for loudness and lowers a low-pass cutoff by up to three octaves for soft notes (`VELOCITY_CUTOFF_CENTS` in `lib/sf2-voice.js`), so a soft note is darker, not just quieter. Section energy already sets velocity, so quiet sections are darker too.
+- **Velocity is tone as well as volume.** The synth squares velocity for loudness and lowers a low-pass cutoff by up to three octaves for soft notes (`VELOCITY_CUTOFF_CENTS` in `lib/sf2-voice.js`, unless the SoundFont sets its own velocity→cutoff modulator), so a soft note is darker, not just quieter. Section energy already sets velocity, so quiet sections are darker too.
 - **Accents** (`DYNAMICS.accent`): the downbeat is loudest, then beat 3, then the other beats, then offbeat eighths, then sixteenths, so busy hi-hats alternate loud and soft.
 - **Phrases breathe.** The lead and countermelody swell across each 4-bar phrase, and the last note of each phrase tapers off.
 - **Timing drifts a little.** Melodic parts move by up to 5–15 ms either way, and drums and bass stay exactly on the grid to hold the groove.

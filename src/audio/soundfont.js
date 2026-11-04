@@ -1,7 +1,7 @@
 // Plays SoundFont presets through Web Audio: loads and caches .sf2 files, then turns notes into voices
-// (sample → optional low-pass → volume envelope → optional pan → instrument output).
+// (sample → optional low-pass, swept by the modulation envelope → volume envelope → optional pan → instrument output).
 import { parseSf2, regionsFor } from '../lib/sf2.js';
-import { voiceParams, voiceLevel, ENV_TIME_CONSTANTS } from '../lib/sf2-voice.js';
+import { voiceParams, voiceLevel, sweepCents, ENV_TIME_CONSTANTS } from '../lib/sf2-voice.js';
 import { audioEngine } from '../platform/audio-engine.js';
 
 const MAX_VOICES = 96;          // oldest voices are cut beyond this, released or not
@@ -165,11 +165,24 @@ function startVoice(font, p, output, when = 0, vibrato = null, scoop = null)
     }
 
     let node = /** @type {AudioNode} */ (source);
+    // the cutoff, `cents` above the filter's own; ramps in Hz are exponential, so they run evenly in cents
+    const sweep = p.filter?.sweep, cutoff = (cents)=> Math.min(p.filter.hz * 2 ** (cents / 1200), ctx.sampleRate / 2);
+    let filter = null;
     if (p.filter)
     {
-        const filter = ctx.createBiquadFilter();
-        filter.frequency.value = Math.min(p.filter.hz, ctx.sampleRate / 2);
+        filter = ctx.createBiquadFilter();
         filter.Q.value = p.filter.q;
+        const f = filter.frequency;
+        f.setValueAtTime(cutoff(0), t);
+        if (sweep)
+        {
+            // DAHDS of the modulation envelope; R happens in release()
+            const from = t + sweep.delay, top = from + Math.max(sweep.attack, MIN_ATTACK);
+            f.setValueAtTime(cutoff(0), from);
+            f.exponentialRampToValueAtTime(cutoff(sweep.cents), top);
+            f.setValueAtTime(cutoff(sweep.cents), top + sweep.hold);
+            f.exponentialRampToValueAtTime(cutoff(sweep.cents * sweep.sustain), top + sweep.hold + Math.max(sweep.decay, 0.001));
+        }
         node = node.connect(filter);
     }
 
@@ -240,6 +253,15 @@ function startVoice(font, p, output, when = 0, vibrato = null, scoop = null)
             else env.gain.cancelScheduledValues(now);
             env.gain.setValueAtTime(releaseLevel, now);
             env.gain.setTargetAtTime(0, now, releaseTime / ENV_TIME_CONSTANTS);
+            // the cutoff falls back over the modulation envelope's own release; a voice cut short is gone too soon to hear it
+            if (sweep && !fast)
+            {
+                const f = filter.frequency;
+                if (f.cancelAndHoldAtTime) f.cancelAndHoldAtTime(now);
+                else f.cancelScheduledValues(now);
+                f.setValueAtTime(cutoff(sweepCents(sweep, now - t, MIN_ATTACK)), now);
+                f.exponentialRampToValueAtTime(cutoff(0), now + Math.max(sweep.release, MIN_RELEASE));
+            }
             // play the sample's tail after the loop
             if (p.loopMode === 3) setTimeout(()=> { source.loop = false; }, Math.max(0, now - ctx.currentTime) * 1000);
             source.stop(now + releaseTime + 0.05);
