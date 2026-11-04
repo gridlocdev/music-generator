@@ -313,3 +313,28 @@ test('a chip part changes pulse width with the section: darker when quiet, thinn
     const gm = compose({ ...GENRE_SONGS.find(s => s.id === 'pixel-knight'), sound: 'gm' });
     assert.ok(perform(gm).flat().every(n => n.program === undefined));
 });
+
+test('a chip lead falls off phrase ends into a rest, and zaps into phrases outside quiet sections', ()=>
+{
+    const score = compose(GENRE_SONGS.find(s => s.id === 'pixel-knight'));
+    const i = score.tracks.findIndex(t => t.role === 'lead');
+    const notes = perform(score)[i], F = CHIP.fall, Z = CHIP.zap;
+    const energyAt = (beat)=> score.sections.findLast(s => s.beat <= beat + 1e-9).energy;
+    const falls = notes.filter(n => n.fall), zaps = notes.filter(n => n.scoop?.cents === Z.cents);
+    assert.ok(falls.length >= 3 && zaps.length >= 2, `${falls.length} falls, ${zaps.length} zaps`);
+    for (const n of falls)
+    {
+        const next = notes.find(m => m.beat > n.beat + 1e-9);
+        assert.ok(!next || next.beat - (n.beat + n.beats) >= F.rest - 1e-9, `fall at ${n.beat} runs into a note`);
+        assert.equal(n.fall.cents, F.cents);
+        assert.ok(n.fall.at >= 0);
+    }
+    for (const n of zaps)
+    {
+        const last = notes.findLast(m => m.beat < n.beat - 1e-9);
+        assert.ok(!last || n.beat - (last.beat + last.beats) >= Z.rest - 1e-9);
+        assert.ok(energyAt(n.grid) >= Z.minEnergy);
+    }
+    const gm = compose({ ...GENRE_SONGS.find(s => s.id === 'pixel-knight'), sound: 'gm' });
+    assert.ok(perform(gm).flat().every(n => !n.fall));
+});

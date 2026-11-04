@@ -66,6 +66,7 @@ export function perform(score, pass = 0, candy = planEarCandy(score, pass))
                 if (!n.held) n.beats = Math.max(0.05, n.beats - Math.max(0, shift));
             }
         notes.sort((a, b)=> a.beat - b.beat || a.key - b.key);
+        if (score.sound === 'chip' && melodic) addFallsAndZaps(notes, t.role, sectionAt, spbAt, unit);
         for (const n of notes) if (n.cycle) n.arp = { steps: n.cycle, seconds: CHIP.arp.frames / 60, until: n.beats * spbAt(n.beat) + 0.5 };
         return endBeforeRepeats(notes);
     });
@@ -237,6 +238,25 @@ function endBeforeRepeats(notes)
         next.set(n.key, n);
     }
     return merged.size ? notes.filter(n => !merged.has(n)) : notes;
+}
+
+// a chip part falls off the end of a phrase, and zaps (a blip down from above) into the next one outside quiet sections
+function addFallsAndZaps(notes, role, sectionAt, spbAt, unit)
+{
+    const F = CHIP.fall, Z = CHIP.zap;
+    const falls = F.roles.includes(role), zaps = Z.roles.includes(role);
+    if (!falls && !zaps) return;
+    notes.forEach((n, i)=>
+    {
+        const before = notes.slice(0, i).findLast(m => m.beat < n.beat - 1e-9), after = notes[i + 1];
+        const seconds = n.beats * spbAt(n.beat);
+        if (falls && !n.held && (!after || after.beat - (n.beat + n.beats) >= F.rest - 1e-9) && seconds >= F.minSeconds
+            && unit(role, 'fall', n.key, n.grid) < F.chance)
+            n.fall = { cents: F.cents, seconds: F.seconds, at: seconds - F.seconds };
+        if (zaps && !n.scoop && n.glideFrom === undefined && (!before || n.beat - (before.beat + before.beats) >= Z.rest - 1e-9)
+            && sectionAt(n.grid).energy >= Z.minEnergy && unit(role, 'zap', n.key, n.grid) < Z.chance)
+            n.scoop = { cents: Z.cents, seconds: Z.seconds };
+    });
 }
 
 // a chip part's pulse width follows the section: one step darker when it's quiet, one brighter at its loudest

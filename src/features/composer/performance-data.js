@@ -76,8 +76,14 @@ export const MOVEMENT = {
 //   timbre: these parts change pulse width with the section, as Flash Man's lead moves between widths: a part
 //           whose program is in one of `groups` (darkest to brightest) plays one step darker in a section under
 //           `darker` energy and one brighter from `brighter` up. The modern widths are 50%, 25%, 12.5%; the NES ones 50%, 25%.
+//   fall: on these parts, a note of `minSeconds` or more followed by `rest` beats of silence (a phrase's end), at
+//         `chance`, drops `cents` over its last `seconds`
+//   zap: on these parts, a note after `rest` beats of silence, in a section of `minEnergy` or more (not a quiet one), at `chance`,
+//        starts `cents` above itself and sweeps down onto it over `seconds`, a pitch-envelope blip
 export const CHIP = {
     echo: { seconds: 0.16, vel: 0.55 },
     arp: { frames: 1 },
     timbre: { roles: ['lead', 'counter', 'echo'], groups: [[83, 80, 82], [87, 86]], darker: 0.5, brighter: 0.85 },
+    fall: { roles: ['lead', 'counter'], cents: -700, seconds: 0.16, minSeconds: 0.28, rest: 0.75, chance: 0.6 },
+    zap: { roles: ['lead'], cents: 1200, seconds: 0.045, rest: 0.75, minEnergy: 0.5, chance: 0.6 },
 };

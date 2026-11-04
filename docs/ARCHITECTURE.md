@@ -23,7 +23,7 @@ A keyboard that plays every instrument in three openly licensed General MIDI Sou
 | `src/platform/midi.js` | Web MIDI input as note/cc messages |
 | `src/platform/input.js` | computer keys → semitone offsets, octave, instrument step, section step, sustain |
 | `src/audio/soundfont.js` | downloads and caches `.sf2` files; `createInstrument(font, preset, destination)` plays notes as Web Audio voices, with optional delayed vibrato and legato glides |
-| `src/audio/pitch-moves.js` | a voice's pitch moves on its detune: delayed vibrato, scoops, tracker arpeggios |
+| `src/audio/pitch-moves.js` | a voice's pitch moves on its detune: delayed vibrato, scoops, tracker arpeggios, falls |
 | `src/audio/mixer.js` | a song's mixer: channel strips (layer gain, fader, pan with optional auto-pan, low cut, tone filter) and shared reverb and tempo-synced, slowly modulated delay buses |
 | `src/audio/soundfont-libraries-data.js` | the libraries: id, name, folder and license |
 | `src/audio/soundfont-catalog-data.js` | generated list of every library's files and presets, so the menu doesn't need the files up front (`just catalog`) |
