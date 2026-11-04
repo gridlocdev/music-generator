@@ -6,7 +6,7 @@
 //   1. song plan (plan.js): form, keys, meters, energy curve, cadences, tempo map, loop; and the motif (melody.js)
 //   2. section plan (harmony.js): the chords at the section's harmonic rhythm, ended on its cadence, passing chords
 //   3. phrases: the melody from the motif, call and response, harmony voices, then the parts (parts.js)
-//   4. arrangement and rhythm passes (arrange.js, syncopation.js)
+//   4. arrangement and rhythm passes (arrange.js, syncopation.js), and a chip song's echo (chip.js)
 // Detail and feel that a player adds (ghost notes, scoops, swing, ear candy) come later, in perform.js.
 import { degreeToKey, chordName, chordPitchClasses, pitchName } from '../../lib/music-theory.js';
 import { beatToSeconds } from '../../lib/tempo-map.js';
@@ -20,6 +20,7 @@ import { notatedMelody } from './notation.js';
 import { writeChords, writePad, writeArp, writeCounter, writeBass, writeDrums } from './parts.js';
 import { arrangeSection } from './arrange.js';
 import { syncopate } from './syncopation.js';
+import { echoTrack } from './chip.js';
 import { CHIP_BANK, CHIP_KIT_BANK, CHIP_ROLES, CHIP_INSTRUMENTS, CHIP_KITS } from '../../audio/chip-instruments-data.js';
 
 export { parseMelody } from './notation.js';
@@ -30,7 +31,7 @@ export { parseMelody } from './notation.js';
  * @typedef {{ role: string, name: string, program: number, bank: number, notes: Note[] }} Track
  * @typedef {{ type: string, label: string, beat: number, beats: number, energy: number, scene: string,
  *   beatsPerBar: number, meter: string, tonic: number, mode: string, climax: boolean }} Section
- * @typedef {{ title: string, genre: string, story: string, emotion: string, key: string, mode: string, tempo: number, beatsPerBar: number,
+ * @typedef {{ title: string, genre: string, story: string, emotion: string, sound: string, key: string, mode: string, tempo: number, beatsPerBar: number,
  *   beats: number, seconds: number, tracks: Track[], sections: Section[],
  *   chords: { beat: number, beats: number, name: string, tones: number[] }[],
  *   tempoMap: import('../../lib/tempo-map.js').TempoSegment[], loop: { from: number, to: number } | null,
@@ -128,9 +129,11 @@ export function compose(spec)
 
     syncopate(tracks, plan.sections, song);
     for (const t of tracks) t.notes.sort((a, b)=> a.beat - b.beat || a.key - b.key);
+    const echo = song.sound === 'chip' ? echoTrack(tracks, plan.beats, plan.tempoMap) : null;
+    if (echo) tracks.push(echo);
 
     return {
-        title: spec.title ?? spec.id ?? 'Untitled', genre: spec.genre ?? '', story: spec.story ?? '', emotion: plan.emotion,
+        title: spec.title ?? spec.id ?? 'Untitled', genre: spec.genre ?? '', story: spec.story ?? '', emotion: plan.emotion, sound: song.sound,
         key: plan.keyName, mode: song.mode, tempo: song.tempo,
         beatsPerBar: plan.sections[0].beatsPerBar, beats: plan.beats, seconds: beatToSeconds(plan.tempoMap, plan.beats),
         tracks: tracks.filter(t => t.notes.length), sections, chords,

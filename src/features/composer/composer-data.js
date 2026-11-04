@@ -316,6 +316,6 @@ export const LEADS_IN = { tonic: [4, 5, 7], plagal: [4], deceptive: [5], dominan
 // one colour per part (rgb 0..1), and how many seconds of notes are visible above each keyboard
 export const ROLE_COLORS = {
     lead: [1, 0.78, 0.4], counter: [0.98, 0.55, 0.62], arp: [0.6, 0.85, 0.5], chords: [0.45, 0.8, 1],
-    pad: [0.7, 0.62, 1], bass: [1, 0.6, 0.35], drums: [0.85, 0.85, 0.9],
+    pad: [0.7, 0.62, 1], bass: [1, 0.6, 0.35], drums: [0.85, 0.85, 0.9], echo: [0.8, 0.66, 0.42],
 };
 export const VIEW_SECONDS = 3;

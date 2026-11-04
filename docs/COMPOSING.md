@@ -555,6 +555,12 @@ A **style** (`STYLES` in `song-craft-data.js`) sets every pass's intensity with 
 
 Field recordings and other samples aren't part of this synth.
 
+### Chip songs
+
+A song with `sound: 'chip'` (the Chiptune genre sets it) plays the chip instruments and adds what the NES soundtracks measured by `tools/nsf-report.mjs` do. The settings are `CHIP` in `performance-data.js`; the score-side passes are in `chip.js`.
+
+- **Echo.** In the bars where the countermelody rests, a part of its own repeats the lead about 0.16 s later (rounded to a sixteenth) at about half its velocity. Mega Man 2 and DuckTales echo the lead on the second pulse channel 8–12 frames late; one channel then sounds like a room.
+
 ## 11. Adaptive music for games
 
 Game music plays for a long time and has to follow the game. A song can be built for that, and the player has the controls.

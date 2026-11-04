@@ -541,3 +541,19 @@ test('sound chip: every part plays a chip instrument, keeping the band program w
     const gm = compose({ emotion: 'heroic', genre: 'Chiptune', seed: 'chip', sound: 'gm' });
     assert.ok(gm.tracks.every(t => t.bank === (t.role === 'drums' ? 128 : 0)));
 });
+
+test('sound chip: an echo repeats the lead a sixteenth or more later, softer, only where the countermelody rests', ()=>
+{
+    const score = compose({ emotion: 'heroic', genre: 'Chiptune', seed: 'chip' });
+    const part = (role)=> score.tracks.find(t => t.role === role);
+    const echo = part('echo'), lead = part('lead'), counter = part('counter')?.notes ?? [];
+    assert.ok(echo?.notes.length > 8);
+    assert.equal(echo.program, lead.program);
+    for (const e of echo.notes)
+    {
+        const src = lead.notes.filter(n => n.key === e.key && e.beat - n.beat >= 0.25 - 1e-9 && e.beat - n.beat <= 1 + 1e-9);
+        assert.ok(src.some(n => e.vel < n.vel), `echo at ${e.beat} copies a lead note`);
+        assert.ok(!counter.some(n => n.beat < e.beat + e.beats - 1e-9 && n.beat + n.beats > e.beat + 1e-9), `echo at ${e.beat} under the counter`);
+    }
+    assert.ok(!compose({ emotion: 'heroic', genre: 'Chiptune', seed: 'chip', sound: 'gm' }).tracks.some(t => t.role === 'echo'));
+});

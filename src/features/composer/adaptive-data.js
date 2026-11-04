@@ -3,7 +3,7 @@
 
 // Vertical layering: a part plays when the intensity (0 calm … 1 combat) reaches its threshold, fading over LAYER_FADE_BARS.
 // Calm keeps the pad and bass; the lead and drums arrive as things heat up.
-export const LAYERS = { pad: 0, bass: 0, chords: 0.2, lead: 0.35, arp: 0.45, drums: 0.6, counter: 0.8 };
+export const LAYERS = { pad: 0, bass: 0, chords: 0.2, lead: 0.35, arp: 0.45, drums: 0.6, echo: 0.7, counter: 0.8 };
 export const LAYER_FADE_BARS = 1;
 
 // Stingers: short cues for game events, played on the next beat in the key of the section that's playing, on the first

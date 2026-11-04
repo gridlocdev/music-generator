@@ -44,6 +44,7 @@ export const MIX = {
     pad:     { volumeDb: -9,  pan: 0.3,   lowCut: 100, reverb: 0.55, delay: 0 },
     bass:    { volumeDb: -2,  pan: 0,     lowCut: 20,  reverb: 0,    delay: 0 },
     drums:   { volumeDb: -3,  pan: 0,     lowCut: 20,  reverb: 0.08, delay: 0 },
+    echo:    { volumeDb: -6,  pan: -0.35, lowCut: 150, reverb: 0.3,  delay: 0 },       // a chip song's echo of the lead
     sting:   { volumeDb: -3,  pan: 0,     lowCut: 150, reverb: 0.35, delay: 0.25 },     // stingers over the song
 };
 // a slow auto-pan on these parts' strips: rate in Hz, depth in pan units
@@ -63,4 +64,13 @@ export const MOVEMENT = {
     brightness: { roles: ['pad', 'arp', 'chords', 'counter'], low: 2500, high: 20000 },
     swell: { roles: ['pad'], amount: 1.5, bars: 4 },
     throw: { roles: ['lead'], base: 0.4, peak: 3 },
+};
+
+// ---- Chip songs (spec `sound: 'chip'`) -------------------------------------------------------------
+// What the NES soundtracks measured in tools/nsf-report.mjs do that other songs don't.
+//   echo: a second channel repeats the lead `seconds` later (rounded to a sixteenth, at least one) at `vel` × its
+//         velocity, in the bars where the countermelody rests. Mega Man 2 and DuckTales echo 8–12 frames late
+//         (0.13–0.2 s). null: no echo.
+export const CHIP = {
+    echo: { seconds: 0.16, vel: 0.55 },
 };
