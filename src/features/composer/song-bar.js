@@ -1,4 +1,4 @@
-// The song controls: a song/feeling list and Play/Stop, and while a song plays, the game-music controls: an
+// The song controls: a song/feeling list (picking one plays it) and Play/Stop, and while a song plays, the game-music controls: an
 // intensity slider (vertical layering), a stinger to fire, and a jump to the next section on the next phrase.
 // Plain DOM in #song-bar, under the keyboard's bar.
 const $ = (id)=> /** @type {HTMLElement} */ (document.getElementById(id));

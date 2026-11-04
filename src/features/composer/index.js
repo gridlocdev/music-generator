@@ -175,7 +175,8 @@ export default {
                 const to = score.sections[i + 1] ? i + 1 : score.sections.findIndex(s => s.beat === score.loop?.from);
                 if (to >= 0) handle.queue(to, 'phrase');
             },
-            onSelect(i) { settings.choice = choices[i].id; ctx.state.write(); },
+            // picking a song plays it, in place of whatever was playing
+            onSelect(i) { settings.choice = choices[i].id; ctx.state.write(); pending = null; play(choices[i].spec, ctx); },
             onPlay(i) { pending = null; play(choices[i].spec, ctx); },
             onStop() { starting++; stop(ctx.activity); bar.setStatus(''); bar.setPlaying(false); },
         });
