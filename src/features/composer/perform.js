@@ -69,6 +69,7 @@ export function perform(score, pass = 0, candy = planEarCandy(score, pass))
             }
         notes.sort((a, b)=> a.beat - b.beat || a.key - b.key);
         if (score.sound === 'chip' && melodic) addFallsAndZaps(notes, t.role, sectionAt, spbAt, unit);
+        if (score.sound === 'chip' && CHIP.staccato.roles.includes(t.role)) chopShortNotes(notes, spbAt);
         if (score.sound === 'chip' && CHIP.mono.roles.includes(t.role)) for (const n of notes) n.mono = true;
         for (const n of notes) if (n.cycle) n.arp = { steps: n.cycle, seconds: CHIP.arp.frames / 60, until: n.beats * spbAt(n.beat) + 0.5 };
         return endBeforeRepeats(notes);
@@ -260,6 +261,16 @@ function addFallsAndZaps(notes, role, sectionAt, spbAt, unit)
             && sectionAt(n.grid).energy >= Z.minEnergy && unit(role, 'zap', n.key, n.grid) < Z.chance)
             n.scoop = { cents: Z.cents, seconds: Z.seconds };
     });
+}
+
+// a chip part's quick notes are cut short, the gap that makes a tracker line bounce; not those slid into or out of,
+// nor an arpeggio's shimmer or a falling note, which need their length
+function chopShortNotes(notes, spbAt)
+{
+    const S = CHIP.staccato;
+    for (const n of notes)
+        if (n.beats <= S.maxBeats + 1e-9 && !n.held && n.glideFrom === undefined && !n.cycle && !n.fall)
+            n.beats = Math.min(n.beats, Math.max(n.beats * S.gate, S.minSeconds / spbAt(n.beat)));
 }
 
 // a chip part's pulse width follows the section: one step darker when it's quiet, one brighter at its loudest

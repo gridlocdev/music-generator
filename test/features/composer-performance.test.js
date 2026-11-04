@@ -362,3 +362,16 @@ test('a chip lead and its echo wobble deeper and sooner, on shorter notes than o
         for (const n of vib) assert.ok(n.vibrato.cents === V.cents && n.vibrato.delay === V.delay);
     }
 });
+
+test('a chip song cuts its quick lead notes short, but not the ones it slides between', ()=>
+{
+    const spec = GENRE_SONGS.find(s => s.id === 'pixel-knight');
+    const chip = compose(spec), plain = { ...chip, sound: undefined };
+    const i = chip.tracks.findIndex(t => t.role === 'lead'), S = CHIP.staccato;
+    const spb = 60 / chip.tempoMap[0].bpm;
+    const quick = perform(chip)[i].filter(n => !n.held && n.glideFrom === undefined && !n.fall && n.beats <= S.maxBeats);
+    assert.ok(quick.length > 20);
+    assert.ok(quick.every(n => n.beats * spb <= Math.max(S.maxBeats * S.gate * spb, S.minSeconds) + 0.03));
+    const plainQuick = perform(plain)[i].filter(n => n.beats <= S.maxBeats);
+    assert.ok(plainQuick.some(n => n.beats > S.maxBeats * S.gate + 0.05), 'other songs keep their length');
+});

@@ -565,6 +565,7 @@ A song with `sound: 'chip'` (the Chiptune genre sets it) plays the chip instrume
 - **Falls and zaps.** A lead or countermelody note of 0.28 s or more that ends a phrase (¾ beat of rest after it) sometimes drops a fifth over its last 0.16 s (`CHIP.fall`). A lead note after such a rest, outside quiet sections, sometimes starts an octave above itself and sweeps down onto it in 45 ms (`CHIP.zap`), the pitch-envelope blip trackers put on attacks. Both play on the voice's own detune, so they add to vibrato, scoops and slides.
 - **One note per channel.** The lead, countermelody, echo, arpeggio and bass play one note at a time (`CHIP.mono`): a new note cuts the one before, release tail and all, as a chip channel could only play one. The chords and pad keep their overlap; they stand in for the extra channels a modern chip song adds.
 - **Chip vibrato.** The lead, countermelody and echo wobble 25 cents at 6 Hz, from 0.12 s into any note of 0.3 s or more (`CHIP.vibrato`, over the usual settings): a sound driver's vibrato table, deeper and sooner than a singer's.
+- **Staccato.** On the lead, countermelody, echo and bass, a note of half a beat or less sounds for half its length, at least 60 ms (`CHIP.staccato`): the note-off a tracker line puts a few frames in, which makes it bounce. Notes slid into or out of, arpeggio shimmers and falling notes keep their length.
 
 ## 11. Adaptive music for games
 
