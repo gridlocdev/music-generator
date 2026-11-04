@@ -273,12 +273,16 @@ export const MELODY_RULES = {
     motif: 2,               // per degree away from the motif's shape, in a motif bar
     strongNonChord: 5,      // a non-chord tone on a strong beat
     weakNonChordLeap: 3,    // a non-chord tone on a weak beat that isn't reached by step (not a passing/neighbour tone)
+    skip: 0.6,              // a third: fine, but a line that mostly steps sounds sung, not arpeggiated
     leap: 1.2,              // per degree of a leap beyond a third
     bigLeap: 6,             // per degree beyond a sixth
-    recover: 3,             // a leap of a fourth or more not followed by a step back the other way
+    recover: 6,             // a leap of a fourth or more not followed by a step back the other way
+    turn: 1.5,              // a change of direction after a step or third: lines run a few notes one way
+    resolve: 4,             // a non-chord tone not left by step (a passing or neighbour tone moves on by step)
+    anchor: 0.5,            // per degree a motif statement is moved off its contour octave to land on a chord tone
     repeatOnce: 0.8,        // the same pitch twice in a row (fine, but movement is better)
     repeat: 2.5,            // the same pitch a third time in a row
-    cadence: 12,            // a phrase ending away from its cadence degrees
+    cadence: 30,            // a phrase ending away from its cadence degrees
     parallel: 3,            // a fifth or octave above the chord's root, then the same over the next root
     avoid: 2.5,             // a step the genre's scale leaves out (GENRES avoid), fine only in passing
     blue: 0.6,              // a blue note (GENRES blue): a flattened 3rd or 7th, the genre's own colour

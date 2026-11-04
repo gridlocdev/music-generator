@@ -276,14 +276,19 @@ For every note, the composer scores each scale degree in the lead's range and ke
 | distance from the motif's shape, in a motif bar | 2 per degree | keeps the idea recognisable |
 | non-chord tone on a strong beat | 5 | strong beats must agree with the harmony |
 | non-chord tone on a weak beat not reached by step | 3 | weak-beat dissonance is fine only as a passing or neighbour tone |
+| a third | 0.6 | fine, but a line that mostly steps sounds sung, not arpeggiated |
 | leap beyond a third | 1.2 per degree | singable lines mostly move by step |
 | leap beyond a sixth | +6 per degree | big leaps are rare and special |
-| leap of a fourth or more not followed by a step back | 3 | gap-fill: a leap creates a gap the ear wants filled |
+| leap of a fourth or more not followed by a step back | 6 | gap-fill: a leap creates a gap the ear wants filled |
+| a change of direction after a step or third | 1.5 | lines run a few notes one way instead of zigzagging |
+| a non-chord tone not left by step | 4 | a passing or neighbour tone moves on by step; one that leaps away sounds like a wrong note |
 | the same pitch twice in a row | 0.8 | allowed, but motion is better |
 | the same pitch three times in a row | 2.5 | static |
-| a phrase ending off its cadence degrees | 12 | phrases must land |
+| a phrase ending off its cadence degrees | 30 | phrases must land |
 | a fifth or octave above the chord's root, then the same over the next root | 3 | parallel fifths and octaves against the bass hollow out the two outer voices |
 | reaching the highest note so far a third time | 4 | the peak is special: once or twice, at the emotional high point |
+
+A motif statement starts on the motif's own degree, in the octave and with the shift (`anchor`, 0.5 per degree) that put its first note on a chord tone, scored by its distance from the contour plus the cost of moving there from the note before. So a new statement continues the line instead of jumping to the contour.
 
 **Accidentals follow the chord.** Degrees are scale steps, but a chord from outside the mode alters some of them, and the melody takes the chord's version of that step (`alterToChord` in `music-theory.js`): G becomes G# under E major in A minor, A becomes Ab under the borrowed iv in C, F becomes F# under `V7/V`, C becomes C# under a Picardy I. Only the step the chord alters moves: G stays G under Fm in C, where it is a ninth, not a clash. Chord tones are judged after the change, and the harmony voice and call-and-response answers follow the same rule. A hand-written melody is played as written.
 

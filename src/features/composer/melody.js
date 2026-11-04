@@ -68,6 +68,8 @@ function inventMotif(sec, seed)
         {
             const s = shape[i] - shape[i - 1], size = Math.abs(s);
             c += size === 0 ? C.repeat : size === 2 ? C.skip : size > 2 ? C.leap * (size - 2) : 0;
+            const before = i > 1 ? shape[i - 1] - shape[i - 2] : 0;
+            if (Math.abs(before) > 2 && !(Math.sign(s) === -Math.sign(before) && size <= 2)) c += C.recover;
             if (s && dir && Math.sign(s) !== dir) changes++;
             if (s) dir = Math.sign(s);
         }
@@ -195,6 +197,13 @@ export function writeMelody(sec, cfg, variant, motif, timeline)
     const out = [];
     let base = 0;                   // the degree the current motif statement is built on
     let prev = null, prev2 = null, peak = -Infinity, peakTimes = 0, prevKey = null, prevBass = null;
+    let lastMove = 0, prevChordTone = true;     // the last move that changed pitch; whether prev agreed with its chord
+    // what moving from the previous note to d costs: a third a little, a leap more, a big leap much more
+    const motion = (d)=>
+    {
+        const leap = Math.abs(d - prev);
+        return (leap === 2 ? R.skip : 0) + (leap > 2 ? R.leap * (leap - 2) : 0) + (leap > 5 ? R.bigLeap * (leap - 5) : 0);
+    };
     events.forEach((e, i)=>
     {
         const beatInPhrase = e.beat - e.phrase * 4 * bpb;
@@ -208,11 +217,18 @@ export function writeMelody(sec, cfg, variant, motif, timeline)
         const strong = strongBeat(meter, mod(e.beat, bpb)) || e.beats >= 2;
         if (e.role === 'motif' && e.first)
         {
-            // a statement starts on the motif's own degree in the octave nearest the contour, moved by the smallest
-            // step that puts its first note on a chord tone
+            // a statement starts on the motif's own degree, in the octave and moved by the step that put its first
+            // note on a chord tone near both the contour and the note before it, so it doesn't jump in
             const b = fitted.start + 7 * Math.round((contourTarget - fitted.start - e.step) / 7);
             base = b;
-            for (const s of [0, 1, -1, 2, -2, 3, -3]) if (isChordTone(b + s + e.step)) { base = b + s; break; }
+            let baseCost = Infinity;
+            for (const o of [0, -7, 7]) for (const s of [0, 1, -1, 2, -2, 3, -3])
+            {
+                const first = b + o + s + e.step;
+                if (first < lowDeg || first > highDeg || !isChordTone(first)) continue;
+                const c = R.contour * Math.abs(first - contourTarget) + R.anchor * Math.abs(s) + (prev === null ? 0 : motion(first));
+                if (c < baseCost) { baseCost = c; base = b + o + s; }
+            }
         }
         const motifNote = e.role === 'motif';
         const target = motifNote ? base + e.step : contourTarget;
@@ -228,9 +244,10 @@ export function writeMelody(sec, cfg, variant, motif, timeline)
             if (!strong && !chordTone && prev !== null && Math.abs(d - prev) > 1) c += R.weakNonChordLeap;
             if (prev !== null)
             {
-                const leap = Math.abs(d - prev);
-                if (leap > 2) c += R.leap * (leap - 2);
-                if (leap > 5) c += R.bigLeap * (leap - 5);
+                c += motion(d);
+                const move = d - prev;
+                if (move && lastMove && Math.sign(move) !== Math.sign(lastMove) && Math.abs(lastMove) < 3) c += R.turn;
+                if (!prevChordTone && Math.abs(move) !== 1) c += R.resolve;
                 if (prev2 !== null && Math.abs(prev - prev2) >= 3)
                 {
                     const back = Math.sign(prev2 - prev);
@@ -253,6 +270,8 @@ export function writeMelody(sec, cfg, variant, motif, timeline)
         else if (best === peak) peakTimes++;
         const key = bestKey;
         out.push({ beat: e.beat, beats: e.beats, degree: best, accidental: key - degreeToKey(tonic, mode, best, MELODY_OCTAVE), last: e.last || !!e.cadence });
+        if (prev !== null && best !== prev) lastMove = best - prev;
+        prevChordTone = pcs.includes(mod(key, 12));
         prev2 = prev; prev = best; prevKey = key; prevBass = bassOf(chord);
     });
     return out;

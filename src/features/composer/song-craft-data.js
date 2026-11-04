@@ -51,12 +51,13 @@ export const METER_CHANGE = { simpleBars: 2 };
 // A song's motif is 3–6 notes in one bar; its sections develop it (SECTIONS.develop). When a spec gives neither a motif
 // nor a hand-written chorus, it is chosen by scoring every shape of `notes` steps no bigger than `maxStep`:
 //   repeat   the same pitch twice         skip   a third        leap   per step beyond a third
+//   recover  a leap beyond a third not followed by a step back
 //   range    per step of span beyond `range`    flat   no change of direction    zigzag  per change beyond two
 //   peakFirst the highest note comes first      unstable  the last note isn't 1, 3 or 5
 // starts are the degrees a motif may begin on; a hash of the song picks among equal scores.
 export const MOTIF = {
     notes: [3, 6], maxStep: 3, range: 5, starts: [1, 3, 5],
-    cost: { repeat: 1, skip: 0.2, leap: 1.2, range: 3, flat: 1.5, zigzag: 1, peakFirst: 1, unstable: 1.5, tieBreak: 0.6 },
+    cost: { repeat: 1, skip: 0.2, leap: 1.2, recover: 1.5, range: 3, flat: 1.5, zigzag: 1, peakFirst: 1, unstable: 1.5, tieBreak: 0.6 },
 };
 
 // Leitmotifs: a character's or place's theme, in degree notation, for any song to use as its motif (spec `motif`).
