@@ -237,7 +237,7 @@ export const GENRE_SONGS = [
         id: 'pixel-knight', title: 'Pixel Knight vs. the Lava King', genre: 'Chiptune',
         story: 'Final boss, one heart left, and the cartridge has started to glitch. Victory, or Game Over.',
         emotion: 'heroic', key: 'C', mode: 'minor', tempo: 152, groove: 'rock', comp: 'eighths', arp: 'tracker', legato: 0.75, dynamics: 0.8,
-        band: { lead: 80, counter: 81, arp: 80, chords: null, pad: null, bass: 38, drums: 24 },
+        band: { lead: 80, counter: 81, arp: 80, chords: null, pad: null, bass: 33, drums: 2 },   // the sample channel's bass and kit
         form: ['intro', 'verse', 'chorus', 'verse', 'chorus', 'bridge', 'chorus', 'outro'],
         sections: {
             intro: { progression: 'i i VI VII', energy: 0.6 },

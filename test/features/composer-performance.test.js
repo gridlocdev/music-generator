@@ -13,6 +13,7 @@ import { beatToSeconds } from '../../src/lib/tempo-map.js';
 import { SONGS } from '../../src/features/composer/songs-data.js';
 import { GENRE_SONGS } from '../../src/features/composer/genre-songs-data.js';
 import { GAME_SONGS } from '../../src/features/composer/game-songs-data.js';
+import { CHIP_BANK, CHIP_KIT_BANK } from '../../src/audio/chip-instruments-data.js';
 
 const ALL = [...SONGS, ...GENRE_SONGS, ...GAME_SONGS];
 
@@ -374,4 +375,12 @@ test('a chip song cuts its quick lead notes short, but not the ones it slides be
     assert.ok(quick.every(n => n.beats * spb <= Math.max(S.maxBeats * S.gate * spb, S.minSeconds) + 0.03));
     const plainQuick = perform(plain)[i].filter(n => n.beats <= S.maxBeats);
     assert.ok(plainQuick.some(n => n.beats > S.maxBeats * S.gate + 0.05), 'other songs keep their length');
+});
+
+test('Pixel Knight plays the sample channel\'s bass and kit', ()=>
+{
+    const score = compose(GENRE_SONGS.find(s => s.id === 'pixel-knight'));
+    const part = (role)=> score.tracks.find(t => t.role === role);
+    assert.deepEqual([part('bass').bank, part('bass').program], [CHIP_BANK, 33]);
+    assert.deepEqual([part('drums').bank, part('drums').program], [CHIP_KIT_BANK, 2]);
 });
