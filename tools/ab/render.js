@@ -91,6 +91,12 @@ try
         const score = compose(spec);
         // &solo=role,role renders only those parts, to track down which one does something
         if (params.has('solo')) score.tracks = score.tracks.filter(t => params.get('solo').split(',').includes(t.role));
+        // &programs=role:program,… plays those parts on another program of their bank, to audition an instrument in a song
+        for (const pair of params.get('programs')?.split(',') ?? [])
+        {
+            const [role, program] = pair.split(':');
+            for (const t of score.tracks) if (t.role === role) t.program = Number(program);
+        }
         // a loop plays its intro and two passes round the loop
         const seconds = score.loop ? score.seconds + (score.seconds - secondsAt(score, score.loop.from)) : score.seconds;
         const length = Math.ceil((seconds + 0.25 + TAIL) * RATE);

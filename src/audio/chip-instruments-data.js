@@ -38,6 +38,9 @@ export const CHIP_INSTRUMENTS = [
     { program: 39, name: 'Chip Pulse Bass', wave: { shape: 'pulse', duty: 0.5 }, soft: 0.3, level: -2,
         layers: [{}, { octave: -1, level: -8 }],
         env: { attack: 0.003, decay: 0.25, sustain: 0.6, release: 0.06 }, filter: { hz: 900, q: 3, sweep: { octaves: 2, decay: 0.15, sustain: 0.2 } } },
+    // the sample channel looping a saw: the gritty, slightly breathy bass of late NES games (see deltaCode)
+    { program: 33, name: 'DPCM Bass', wave: { shape: 'saw', dpcm: 48 }, level: 1, velocityTone: false,
+        env: { attack: 0.002, sustain: 1, release: 0.03 } },
     { program: 46, name: 'Chip Pluck', wave: { shape: 'pulse', duty: 0.25 }, soft: 0.45, layers: WIDE, level: -2,
         env: { attack: 0.002, decay: 0.35, sustain: 0, release: 0.15 }, filter: { hz: 1500, q: 2, sweep: { octaves: 2.5, decay: 0.2, sustain: 0.1 } } },
     { program: 90, name: 'Chip PWM Pad', wave: { shape: 'pwm', from: 0.2, to: 0.5, cycles: 4 }, soft: 0.7, level: -4,
@@ -76,5 +79,21 @@ export const CHIP_KITS = [
         { keys: [51, 53, 59], name: 'ride', noise: { mode: 'short', hz: 110000, decay: 0.6 }, level: -12 },
         { keys: [54], name: 'tambourine', noise: { mode: 'short', hz: 160000, decay: 0.1 }, level: -10 },
         ...toms([41, 43, 45, 47, 48, 50], [80, 100, 120, 145, 170, 200], 'triangle'),
+    ] },
+    // the later NES sound: kick, snare, clap and toms are short recordings on the sample channel, at its own rates
+    // (Hz from the 2A03's table), with hats and cymbals still on the noise channel
+    { program: 2, name: 'DPCM Kit', drums: [
+        { keys: [35, 36], name: 'kick', tone: { from: 200, to: 50, sweep: 0.03, decay: 0.3 }, noise: { hz: 6000, decay: 0.02, level: 0.4 }, dpcm: 11186 },
+        { keys: [38, 40], name: 'snare', tone: { wave: 'triangle', from: 240, to: 170, sweep: 0.02, decay: 0.1, level: 0.7 },
+            noise: { hz: 30000, decay: 0.2, highpass: 600 }, dpcm: 16885 },
+        { keys: [37], name: 'stick', tone: { wave: 'triangle', from: 800, decay: 0.04 }, dpcm: 21307, level: -6 },
+        { keys: [39], name: 'clap', noise: { hz: 20000, decay: 0.16, highpass: 1000 }, dpcm: 13983, level: -2 },
+        { keys: [42], name: 'closed hat', noise: { hz: 110000, decay: 0.04 }, choke: 1, level: -8 },
+        { keys: [44], name: 'pedal hat', noise: { hz: 110000, decay: 0.06 }, choke: 1, level: -10 },
+        { keys: [46], name: 'open hat', noise: { hz: 110000, decay: 0.3 }, choke: 1, level: -8 },
+        { keys: [49, 52, 55, 57], name: 'crash', noise: { hz: 60000, decay: 1 }, level: -8 },
+        { keys: [51, 53, 59], name: 'ride', noise: { mode: 'short', hz: 110000, decay: 0.6 }, level: -12 },
+        { keys: [54], name: 'tambourine', noise: { mode: 'short', hz: 160000, decay: 0.1 }, level: -10 },
+        ...toms([41, 43, 45, 47, 48, 50], [75, 90, 110, 130, 150, 175], 'sine').map(t => ({ ...t, dpcm: 8363 })),
     ] },
 ];

@@ -13,7 +13,7 @@ A keyboard that plays every instrument in three openly licensed General MIDI Sou
 | `src/lib/notes.js` | MIDI note names and black/white keys |
 | `src/lib/music-theory.js` | keys, modes, scale degrees, Roman-numeral chords (secondary, slash and extended), accidentals that follow a chord, a stable hash for tie-breaks |
 | `src/lib/voicing.js` | chord voicings: least-motion voice leading, shells, drop 2 |
-| `src/lib/chip-synth.js` | chip instruments made in code: band-limited pulse, PWM, triangle, saw and sine cycles per key zone, and drum hits from LFSR noise and falling tones, as an in-memory font in `parseSf2`'s shape |
+| `src/lib/chip-synth.js` | chip instruments made in code: band-limited pulse, PWM, triangle, saw and sine cycles per key zone, drum hits from LFSR noise and falling tones, and the NES sample channel's delta coding for both, as an in-memory font in `parseSf2`'s shape |
 | `src/lib/impulse.js` | a seeded synthetic reverb impulse response |
 | `src/lib/midi-file.js` | writes a Standard MIDI File from a score, with tempo and meter changes (`just compose … --midi`) |
 | `src/lib/tempo-map.js` | a song's tempo over time (steady or ramping segments) and conversion between beats and seconds |

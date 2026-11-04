@@ -125,12 +125,17 @@ The Chiptune genre sets that.
 To change how they sound, edit `src/audio/chip-instruments-data.js`; the fields are documented
 at the top of `chip-synth.js`:
 
-- `wave`: the shape. `steps` quantises it, like the NES triangle's 16 levels.
+- `wave`: the shape. `steps` quantises it, like the NES triangle's 16 levels. `dpcm` plays the
+  cycle through the NES sample channel's delta coding (a counter stepping 2 a clock), for the
+  gritty DPCM Bass; fewer clocks a cycle is grittier.
 - `soft`: how far the upper harmonics are rolled off. 0 is the raw chip; 0.3–0.6 is the modern sound.
 - `layers`: detuned, panned or octave copies, for width.
 - `env`: attack, decay, sustain and release.
 - `filter`: a low-pass, optionally swept for a pluck.
 - `velocityTone: false`: soft notes are quieter but not darker.
+- A kit drum's `dpcm` is the sample-channel rate its hit is delta-coded at. The DPCM Kit (kit
+  program 2) has its kick, snare, clap and toms on the sample channel and its hats on the noise
+  channel, as the later NES soundtracks did.
 
 Keep each program in its General MIDI family (80–87 leads, 38–39 bass, 88–95 pads), so the
 composer's vibrato, slide and scoop rules still pick it up. `CHIP_ROLES` is the instrument each part

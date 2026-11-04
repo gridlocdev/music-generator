@@ -18,10 +18,12 @@ const hz = (key)=> 440 * 2 ** ((key - 69) / 12);
 
 /**
  * @typedef {{ shape: 'pulse', duty: number } | { shape: 'pwm', from: number, to: number, frames?: number, cycles?: number }
- *   | { shape: 'triangle' | 'saw', steps?: number } | { shape: 'sine' }} Wave
+ *   | { shape: 'triangle' | 'saw', steps?: number } | { shape: 'sine' }} WaveShape
+ * @typedef {WaveShape & { dpcm?: number }} Wave
  *   pulse: duty 0.125, 0.25 or 0.5 are the NES's; pwm: the duty sweeps from → to → from over `frames` steps of
  *   `cycles` cycles each (so the sweep speeds up with pitch, like a key-tracked LFO); steps: quantise to that many
- *   levels (the NES triangle has 16)
+ *   levels (the NES triangle has 16); dpcm: play the cycle through the sample channel's delta coding, `dpcm` clocks
+ *   a cycle (fewer is grittier), as an NES sample-channel bass
  * @typedef {{ program: number, name: string, wave: Wave, soft?: number, level?: number,
  *   layers?: { detune?: number, pan?: number, octave?: number, level?: number }[],
  *   env?: { attack?: number, hold?: number, decay?: number, sustain?: number, release?: number },
@@ -35,7 +37,10 @@ const hz = (key)=> 440 * 2 ** ((key - 69) / 12);
  *   a pitch falling from `from` Hz towards `to` (time constant `sweep` s); decay: seconds to fall 60 dB
  * @typedef {{ mode?: 'long' | 'short', hz: number, to?: number, decay: number, level?: number, highpass?: number }} DrumNoise
  *   NES-style LFSR noise clocked at `hz` (gliding to `to`); short mode is the metallic 93-step loop
- * @typedef {{ keys: number[], name: string, tone?: DrumTone, noise?: DrumNoise, level?: number, pan?: number, choke?: number }} ChipDrum
+ * @typedef {{ keys: number[], name: string, tone?: DrumTone, noise?: DrumNoise, level?: number, pan?: number, choke?: number,
+ *   dpcm?: number }} ChipDrum
+ *   dpcm: the hit played back through the sample channel's delta coding, clocked at this many Hz (the NES's rates
+ *   run 4181–33144); lower is duller and grittier
  * @typedef {{ program: number, name: string, drums: ChipDrum[] }} ChipKit
  */
 
@@ -217,7 +222,37 @@ export function waveZones(wave, soft = 0)
     // one scale for every zone, from the fullest (lowest) one, so the level holds across the keyboard
     const rms = Math.sqrt(zones[0].reduce((s, v)=> s + v * v, 0) / zones[0].length) || 1;
     for (const z of zones) for (let i = 0; i < z.length; i++) z[i] *= TARGET_RMS / rms;
-    return zones;
+    return wave.dpcm ? zones.map(z => deltaCode(z, CYCLE / wave.dpcm, true)) : zones;
+}
+
+/**
+ * The NES's sample channel (DPCM): a 7-bit counter that each clock steps 2 up or down, towards the input, and holds
+ * between clocks. It can't follow fast changes, so edges slope and quiet stretches buzz: the gritty sampled kick
+ * and bass of the later NES soundtracks. Input and output are −1..1 (the counter's 0..127).
+ * @param {Float32Array} data
+ * @param {number} every  input samples per clock (fractional is fine)
+ * @param {boolean} [loop]  data is one loop: run it twice and keep the second time round, so the end meets the start
+ */
+export function deltaCode(data, every, loop = false)
+{
+    const out = new Float32Array(data.length);
+    let counter = 64;
+    for (let pass = loop ? 2 : 1; pass > 0; pass--)
+    {
+        let next = 0;
+        for (let i = 0; i < data.length; i++)
+        {
+            if (i >= next)
+            {
+                const up = 64 + data[i] * 63 > counter;
+                if (up && counter <= 125) counter += 2;
+                else if (!up && counter >= 2) counter -= 2;
+                next += every;
+            }
+            out[i] = (counter - 64) / 63;
+        }
+    }
+    return out;
 }
 
 // the duty for each step of a pulse-width sweep: from → to → from, eased so it turns smoothly at both ends
@@ -243,8 +278,8 @@ export function lfsrNoise(length, rate, hz, to = hz, short = false)
     return out;
 }
 
-/** a drum hit rendered at CHIP_RATE, peaking at 0.8 */
-export function drumSample({ tone, noise })
+/** a drum hit rendered at CHIP_RATE, peaking at 0.8 (`dpcm`: through the sample channel; see deltaCode) */
+export function drumSample({ tone, noise, dpcm })
 {
     const fade = (decay)=> (t)=> Math.exp(-t * 6.91 / decay);      // 60 dB over `decay`
     const seconds = Math.max(tone?.decay ?? 0, noise?.decay ?? 0, 0.01);
@@ -279,7 +314,9 @@ export function drumSample({ tone, noise })
     for (let i = 0; i < Math.min(n, 44); i++) out[i] *= i / 44;
     const peak = out.reduce((m, v)=> Math.max(m, Math.abs(v)), 0) || 1;
     for (let i = 0; i < n; i++) out[i] *= 0.8 / peak;
-    return out;
+    if (!dpcm) return out;
+    const coded = deltaCode(out, CHIP_RATE / dpcm), top = coded.reduce((m, v)=> Math.max(m, Math.abs(v)), 0) || 1;
+    return coded.map(v => v * 0.8 / top);
 }
 
 const toInt16 = (data)=> Int16Array.from(data, v => Math.max(-32768, Math.min(32767, Math.round(v * 32767))));

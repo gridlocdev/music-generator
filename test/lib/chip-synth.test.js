@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildChipFont, harmonics, waveZones, lfsrNoise, drumSample, CHIP_RATE } from '../../src/lib/chip-synth.js';
+import { buildChipFont, harmonics, waveZones, lfsrNoise, drumSample, deltaCode, CHIP_RATE } from '../../src/lib/chip-synth.js';
 import { regionsFor } from '../../src/lib/sf2.js';
 import { voiceParams } from '../../src/lib/sf2-voice.js';
 import { CHIP_BANK, CHIP_KIT_BANK, CHIP_INSTRUMENTS, CHIP_KITS, CHIP_ROLES } from '../../src/audio/chip-instruments-data.js';
@@ -79,4 +79,29 @@ test('chip data: every role has a chip instrument', ()=>
     for (const [role, program] of Object.entries(CHIP_ROLES))
         assert.ok((role === 'drums' ? CHIP_KITS : CHIP_INSTRUMENTS).some(i => i.program === program), role);
     assert.equal(new Set(CHIP_INSTRUMENTS.map(i => i.program)).size, CHIP_INSTRUMENTS.length, 'programs are unique');
+});
+
+test('chip sample channel: the counter steps 2 a clock, so it slopes an edge and holds between clocks', ()=>
+{
+    const step = new Float32Array(200).fill(0.5);
+    const coded = deltaCode(step, 4);
+    const jumps = coded.slice(1).map((v, i)=> Math.round((v - coded[i]) * 63));
+    assert.ok(jumps.every(j => j === 0 || Math.abs(j) === 2), 'only steps of 2');
+    assert.equal(jumps.slice(0, 3).filter(j => j).length, 0, 'held between clocks');
+    assert.ok(coded[20] < 0.5 && Math.abs(coded.at(-1) - 0.5) < 3 / 63, 'slopes up, then buzzes about the input');
+    // a looped cycle meets its own start
+    const bass = waveZones({ shape: 'saw', dpcm: 48 })[0];
+    assert.ok(Math.abs(bass.at(-1) - bass[0]) <= 2 / 63 + 1e-6);
+    assert.ok(new Set(bass).size < 70, 'a coarse staircase');
+});
+
+test('chip font: the DPCM kit\'s sampled hits are delta-coded; its hats are still noise', ()=>
+{
+    const kit = CHIP_KITS.find(k => k.name === 'DPCM Kit');
+    const kick = drumSample(kit.drums.find(d => d.name === 'kick'));
+    near(Math.max(...kick.map(Math.abs)), 0.8, 1e-6);
+    const levels = new Set(Array.from(kick, v => Math.round(v * 1e4)));
+    assert.ok(levels.size <= 64, `${levels.size} levels`);
+    assert.ok(!kit.drums.find(d => d.name === 'closed hat').dpcm);
+    assert.ok(font.presets.some(p => p.bank === CHIP_BANK && p.name === 'DPCM Bass'));
 });
