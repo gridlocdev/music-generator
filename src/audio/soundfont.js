@@ -87,12 +87,20 @@ export function createInstrument(font, preset, destination = audioEngine.output)
         preset,
         // when: an AudioContext time to start at, for notes scheduled ahead (a song); omitted = now
         /**
-         * @param {import('./pitch-moves.js').PitchMoves & { program?: number }} [opts]  program: this note on another
-         *   program of the preset's bank, e.g. a chip lead changing pulse width
+         * @param {import('./pitch-moves.js').PitchMoves & { program?: number, mono?: boolean }} [opts]  program: this note
+         *   on another program of the preset's bank, e.g. a chip lead changing pulse width; mono: cut every voice this
+         *   instrument is still sounding, release tails too, as a chip channel plays one note at a time
          */
         noteOn(key, velocity = 100, when = 0, opts = {})
         {
             this.noteOff(key, true, when);
+            if (opts.mono)
+            {
+                const at = Math.max(ctx.currentTime, when);
+                for (const v of active) if (v.output === output && v.start <= at) v.release(true, at);
+                held.clear();
+                sustained.clear();
+            }
             const p = opts.program === undefined ? preset : findPreset(font, preset.bank, opts.program) ?? preset;
             const voices = regionsFor(p, key, velocity).map(r => startVoice(font, voiceParams(r, key, velocity), output, when, opts));
             // a new voice in an exclusive class chokes the others in it (open/closed hi-hat)

@@ -338,3 +338,13 @@ test('a chip lead falls off phrase ends into a rest, and zaps into phrases outsi
     const gm = compose({ ...GENRE_SONGS.find(s => s.id === 'pixel-knight'), sound: 'gm' });
     assert.ok(perform(gm).flat().every(n => !n.fall));
 });
+
+test('a chip song plays its lead, echo and bass one note at a time; its chords and other songs\' parts overlap', ()=>
+{
+    const chip = compose(GENRE_SONGS.find(s => s.id === 'pixel-knight'));
+    const played = perform(chip);
+    chip.tracks.forEach((t, i)=>
+        assert.equal(played[i].every(n => n.mono), CHIP.mono.roles.includes(t.role), t.role));
+    const other = compose(GENRE_SONGS.find(s => s.id !== 'pixel-knight'));
+    assert.ok(perform(other).flat().every(n => !n.mono));
+});

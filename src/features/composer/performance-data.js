@@ -80,10 +80,13 @@ export const MOVEMENT = {
 //         `chance`, drops `cents` over its last `seconds`
 //   zap: on these parts, a note after `rest` beats of silence, in a section of `minEnergy` or more (not a quiet one), at `chance`,
 //        starts `cents` above itself and sweeps down onto it over `seconds`, a pitch-envelope blip
+//   mono: these parts play one note at a time, as a chip channel does: a new note cuts the one before, release tail
+//         and all. The chords and pad keep their overlap, standing in for the channels a modern chip song adds.
 export const CHIP = {
     echo: { seconds: 0.16, vel: 0.55 },
     arp: { frames: 1 },
     timbre: { roles: ['lead', 'counter', 'echo'], groups: [[83, 80, 82], [87, 86]], darker: 0.5, brighter: 0.85 },
     fall: { roles: ['lead', 'counter'], cents: -700, seconds: 0.16, minSeconds: 0.28, rest: 0.75, chance: 0.6 },
     zap: { roles: ['lead'], cents: 1200, seconds: 0.045, rest: 0.75, minEnergy: 0.5, chance: 0.6 },
+    mono: { roles: ['lead', 'counter', 'echo', 'arp', 'bass'] },
 };

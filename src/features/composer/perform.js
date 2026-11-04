@@ -17,11 +17,12 @@ import { EAR_CANDY } from './adaptive-data.js';
 
 /**
  * @typedef {import('./compose.js').Note & import('../../audio/pitch-moves.js').PitchMoves & { grid: number, glideFrom?: number,
- *   held?: boolean, ghost?: boolean, candy?: boolean, program?: number }} PerformedNote
+ *   held?: boolean, ghost?: boolean, candy?: boolean, program?: number, mono?: boolean }} PerformedNote
  *   grid: where the note belongs, before anticipation, swing and drift moved it; a loop or a jump to a beat plays the
  *   notes whose grid is at or after it, even those that sound a little before it.
  *   glideFrom: slide into this note from that key on the same voice; held: no note-off, the next note glides on from it;
- *   program: play this note on another program of the part's bank (a chip part changing pulse width)
+ *   program: play this note on another program of the part's bank (a chip part changing pulse width);
+ *   mono: this note cuts whatever its part is still sounding (a chip channel)
  */
 
 /**
@@ -67,6 +68,7 @@ export function perform(score, pass = 0, candy = planEarCandy(score, pass))
             }
         notes.sort((a, b)=> a.beat - b.beat || a.key - b.key);
         if (score.sound === 'chip' && melodic) addFallsAndZaps(notes, t.role, sectionAt, spbAt, unit);
+        if (score.sound === 'chip' && CHIP.mono.roles.includes(t.role)) for (const n of notes) n.mono = true;
         for (const n of notes) if (n.cycle) n.arp = { steps: n.cycle, seconds: CHIP.arp.frames / 60, until: n.beats * spbAt(n.beat) + 0.5 };
         return endBeforeRepeats(notes);
     });
