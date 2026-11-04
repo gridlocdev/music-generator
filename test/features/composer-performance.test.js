@@ -4,7 +4,7 @@ import { compose } from '../../src/features/composer/compose.js';
 import { perform, swungTracks } from '../../src/features/composer/perform.js';
 import { planMix, valueAt } from '../../src/features/composer/mix-plan.js';
 import { SECTIONS } from '../../src/features/composer/composer-data.js';
-import { EXPRESSION, MOVEMENT, DUCK } from '../../src/features/composer/performance-data.js';
+import { EXPRESSION, MOVEMENT, DUCK, CHIP } from '../../src/features/composer/performance-data.js';
 import { EAR_CANDY } from '../../src/features/composer/adaptive-data.js';
 import { planEarCandy } from '../../src/features/composer/ear-candy.js';
 import { swingTime, swingAmount } from '../../src/features/composer/meter.js';
@@ -280,4 +280,19 @@ test('tape stops swallow the notes in their last seconds, measured through the t
     const secs = (b)=> beatToSeconds(score.tempoMap, b);
     for (const notes of perform(score, 0, candy))
         for (const n of notes) assert.ok(!(n.grid < candy[0].beat && secs(candy[0].beat) - secs(n.grid) < 0.6 - 1e-6 && !n.ghost && n.beat < candy[0].beat), `note at ${n.beat}`);
+});
+
+test('a tracker arpeggio strikes the chord’s lowest note and steps through the chord on that one voice', ()=>
+{
+    const score = compose({ emotion: 'heroic', genre: 'Chiptune', seed: 'chip' });
+    const i = score.tracks.findIndex(t => t.role === 'arp');
+    const cycled = score.tracks[i].notes.filter(n => n.cycle);
+    assert.ok(cycled.length > 20);
+    for (const n of cycled)
+    {
+        assert.equal(n.cycle[0], 0);
+        assert.ok(n.cycle.length >= 2 && n.cycle.every((c, k)=> !k || (c > n.cycle[k - 1] && c < 12)), `${n.cycle}`);
+    }
+    const played = perform(score)[i].filter(n => n.cycle);
+    assert.ok(played.every(n => n.arp.steps === n.cycle && Math.abs(n.arp.seconds - CHIP.arp.frames / 60) < 1e-9 && n.arp.until > 0));
 });

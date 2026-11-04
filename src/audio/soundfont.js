@@ -4,6 +4,7 @@ import { parseSf2, regionsFor } from '../lib/sf2.js';
 import { voiceParams, voiceLevel, sweepCents, ENV_TIME_CONSTANTS } from '../lib/sf2-voice.js';
 import { buildChipFont } from '../lib/chip-synth.js';
 import { audioEngine } from '../platform/audio-engine.js';
+import { startPitchMoves } from './pitch-moves.js';
 import { CHIP_URL, CHIP_BANK, CHIP_KIT_BANK, CHIP_INSTRUMENTS, CHIP_KITS } from './chip-instruments-data.js';
 
 const MAX_VOICES = 96;          // oldest voices are cut beyond this, released or not
@@ -70,13 +71,6 @@ export function findPreset(font, bank, program)
 }
 
 /**
- * @typedef {{ rate: number, cents: number, delay: number, ramp: number }} Vibrato
- *   pitch wobble in cents at `rate` Hz, starting `delay` seconds into the note and reaching full depth `ramp` later
- * @typedef {{ cents: number, seconds: number }} Scoop
- *   start `cents` off pitch (−100: a semitone low) and slide onto it over `seconds`
- */
-
-/**
  * One playable instrument: a preset from a loaded font, with its own output and sustain pedal.
  * @param {AudioNode} [destination]  where its output goes, e.g. a mixer channel; the master output by default
  */
@@ -92,11 +86,11 @@ export function createInstrument(font, preset, destination = audioEngine.output)
     return {
         preset,
         // when: an AudioContext time to start at, for notes scheduled ahead (a song); omitted = now
-        /** @param {{ vibrato?: Vibrato, scoop?: Scoop }} [opts] */
+        /** @param {import('./pitch-moves.js').PitchMoves} [opts] */
         noteOn(key, velocity = 100, when = 0, opts = {})
         {
             this.noteOff(key, true, when);
-            const voices = regionsFor(preset, key, velocity).map(r => startVoice(font, voiceParams(r, key, velocity), output, when, opts.vibrato, opts.scoop));
+            const voices = regionsFor(preset, key, velocity).map(r => startVoice(font, voiceParams(r, key, velocity), output, when, opts));
             // a new voice in an exclusive class chokes the others in it (open/closed hi-hat)
             for (const v of voices)
                 if (v.exclusiveClass)
@@ -153,7 +147,7 @@ export function createInstrument(font, preset, destination = audioEngine.output)
     };
 }
 
-function startVoice(font, p, output, when = 0, vibrato = null, scoop = null)
+function startVoice(font, p, output, when = 0, moves = {})
 {
     const ctx = audioEngine.context;
     const t = Math.max(ctx.currentTime, when);
@@ -212,23 +206,7 @@ function startVoice(font, p, output, when = 0, vibrato = null, scoop = null)
     node.connect(output);
     source.start(t);
 
-    // a player starts the note straight and lets the vibrato in afterwards; vibrato from the first instant sounds synthetic
-    let lfo = null;
-    if (vibrato)
-    {
-        lfo = new OscillatorNode(ctx, { frequency: vibrato.rate });
-        const depth = new GainNode(ctx, { gain: 0 });
-        depth.gain.setValueAtTime(0, t + vibrato.delay);
-        depth.gain.linearRampToValueAtTime(vibrato.cents, t + vibrato.delay + vibrato.ramp);
-        lfo.connect(depth).connect(source.detune);
-        lfo.start(t);
-    }
-    // the +1 trick and its big brother, the octave riser: start off pitch and slide onto it
-    if (scoop)
-    {
-        source.detune.setValueAtTime(scoop.cents, t);
-        source.detune.linearRampToValueAtTime(0, t + scoop.seconds);
-    }
+    const stopPitchMoves = startPitchMoves(ctx, source.detune, t, moves);
     let bent = 0;       // semitones glided away from the note's own key
 
     // where the release starts, so a later fast release can pick up from the level the voice has reached by then;
@@ -293,7 +271,7 @@ function startVoice(font, p, output, when = 0, vibrato = null, scoop = null)
     {
         voice.stopping = true;
         env.disconnect();
-        if (lfo) { lfo.stop(); lfo.disconnect(); }
+        stopPitchMoves();
         const i = active.indexOf(voice);
         if (i >= 0) active.splice(i, 1);
     };

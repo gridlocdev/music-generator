@@ -107,7 +107,7 @@ export const GENRES = {
         extend: 'add9',
     },
     'chiptune': {
-        groove: 'rock', comp: 'eighths', arp: 'chip', sound: 'chip',
+        groove: 'rock', comp: 'eighths', arp: 'tracker', sound: 'chip',
     },
     // the hook climbs to a held high note an octave over the verse, enters off the beat, and leaps where pop steps
     'disco': {

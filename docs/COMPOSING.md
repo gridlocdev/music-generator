@@ -425,7 +425,7 @@ Orchestration rules:
 4. **Match the instrument to the emotion.** Brass is bold, woodwinds intimate, plucked strings light, bowed strings emotional, synths modern or cold, bells magical, distortion aggressive.
 5. **Bass patterns** (`BASS`): roots on strong beats, fifths and octaves for motion, and an **approach note** (A) one step from the next chord's root at the end of the bar, to pull the ear into the change.
 6. **Comping patterns** (`COMPING`): sustain (calm), push (anticipating beat 3, pop), pulse (quarters, tension), eighths (rock), offbeat (2 and 4 stabs, bounce or swing), march, waltz (beats 2 and 3), skank (reggae chops on 2 and 4), bubble (reggae organ on every offbeat), bossa (syncopated guitar), funk (sixteenth clav stabs), habanera. Below .5 energy the busy styles (push, pulse, eighths, march) sustain and funk drops to a skank (`COMP_QUIET`). The others keep their rhythm, because in reggae or bossa the rhythm *is* the genre.
-7. **Arpeggio patterns** (`ARPS`): up, up-down, Alberti (low–high–mid–high, classical), broken, ostinato (a repeated low note against the others, for tension), sixteenths (synth arpeggiator over two octaves), roll (banjo forward roll), and chip (an 8-bit chord faked by a very fast arpeggio).
+7. **Arpeggio patterns** (`ARPS`): up, up-down, Alberti (low–high–mid–high, classical), broken, ostinato (a repeated low note against the others, for tension), sixteenths (synth arpeggiator over two octaves), roll (banjo forward roll), chip (an 8-bit chord spelled out in sixteenths), and tracker (an 8-bit chord faked by one voice stepping through its notes every frame; see Chip songs).
 
 ### Harmony voices and call and response
 
@@ -560,6 +560,7 @@ Field recordings and other samples aren't part of this synth.
 A song with `sound: 'chip'` (the Chiptune genre sets it) plays the chip instruments and adds what the NES soundtracks measured by `tools/nsf-report.mjs` do. The settings are `CHIP` in `performance-data.js`; the score-side passes are in `chip.js`.
 
 - **Echo.** In the bars where the countermelody rests, a part of its own repeats the lead about 0.16 s later (rounded to a sixteenth) at about half its velocity. Mega Man 2 and DuckTales echo the lead on the second pulse channel 8–12 frames late; one channel then sounds like a room.
+- **Tracker arpeggios.** The `tracker` arpeggio pattern strikes each chord's lowest note on the eighths, and that one voice steps through the chord's notes every `CHIP.arp.frames` sixtieth of a second, the shimmer of a tracker's `0xy` effect. The score keeps the struck note and the chord's offsets (`cycle`); the view and the MIDI file show the struck note only. The Chiptune genre uses it.
 
 ## 11. Adaptive music for games
 

@@ -71,6 +71,9 @@ export const MOVEMENT = {
 //   echo: a second channel repeats the lead `seconds` later (rounded to a sixteenth, at least one) at `vel` × its
 //         velocity, in the bars where the countermelody rests. Mega Man 2 and DuckTales echo 8–12 frames late
 //         (0.13–0.2 s). null: no echo.
+//   arp: a tracker arpeggio (the `tracker` pattern) steps to the chord's next note every `frames` 60ths of a second;
+//        1 is the classic shimmer, 2–3 a slower, more legible one
 export const CHIP = {
     echo: { seconds: 0.16, vel: 0.55 },
+    arp: { frames: 1 },
 };

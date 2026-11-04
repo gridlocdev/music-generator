@@ -211,7 +211,8 @@ export const OFFBEAT_COMPS = ['offbeat', 'skank', 'bubble', 'waltz', 'upbeats', 
 // what each comp style plays below 0.5 energy; styles not listed keep their rhythm, because the rhythm is the genre
 export const COMP_QUIET = { push: 'sustain', pulse: 'sustain', eighths: 'sustain', march: 'sustain', funk: 'skank' };
 
-// arpeggio: indexes into the chord's notes (low to high, plus the octave above), and note length in steps
+// arpeggio: indexes into the chord's notes (low to high, plus the octave above), and note length in steps.
+// cycle: a tracker arpeggio instead, each strike one note stepping through the chord every few frames (CHIP.arp)
 export const ARPS = {
     up:       { order: [0, 1, 2, 3], step: 2 },
     updown:   { order: [0, 1, 2, 3, 2, 1], step: 2 },
@@ -220,7 +221,8 @@ export const ARPS = {
     ostinato: { order: [0, 0, 1, 0, 2, 0, 1, 0], step: 1 },
     sixteenths: { order: [0, 1, 2, 3, 4, 3, 2, 1], step: 1 },     // synth arpeggiator
     roll:     { order: [0, 2, 4, 0, 2, 4, 0, 3], step: 2 },       // banjo forward roll
-    chip:     { order: [0, 2, 4, 2], step: 1 },                   // 8-bit "chord" faked by a fast arpeggio
+    chip:     { order: [0, 2, 4, 2], step: 1 },                   // an 8-bit chord spelled out in sixteenths
+    tracker:  { order: [0], step: 2, cycle: true },               // an 8-bit chord faked by one voice cycling its notes
     threes:   { order: [0, 1, 2], step: 2 },                      // polymeter: a 3-note cycle over eighths lines up with 4/4 every 3 bars
     triplets: { order: [0, 1, 2, 3, 2, 1], step: 4 / 3 },         // polyrhythm: triplet eighths, three against two
 };

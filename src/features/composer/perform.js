@@ -7,7 +7,7 @@
 // every pass gets its own small details while the written music stays the same.
 // The score stays on the grid for the view and the MIDI file; only the player uses this.
 import { hash } from '../../lib/music-theory.js';
-import { EXPRESSION } from './performance-data.js';
+import { EXPRESSION, CHIP } from './performance-data.js';
 import { DRUM_KEYS } from './patterns-data.js';
 import { beatToSeconds, bpmAt } from '../../lib/tempo-map.js';
 import { clamp, compound, swingTime, swingAmount, sectionAt as sectionOf } from './meter.js';
@@ -16,8 +16,8 @@ import { planEarCandy } from './ear-candy.js';
 import { EAR_CANDY } from './adaptive-data.js';
 
 /**
- * @typedef {import('./compose.js').Note & { grid: number, glideFrom?: number, held?: boolean, ghost?: boolean, candy?: boolean,
- *   vibrato?: import('../../audio/soundfont.js').Vibrato, scoop?: import('../../audio/soundfont.js').Scoop }} PerformedNote
+ * @typedef {import('./compose.js').Note & import('../../audio/pitch-moves.js').PitchMoves & { grid: number, glideFrom?: number,
+ *   held?: boolean, ghost?: boolean, candy?: boolean }} PerformedNote
  *   grid: where the note belongs, before anticipation, swing and drift moved it; a loop or a jump to a beat plays the
  *   notes whose grid is at or after it, even those that sound a little before it.
  *   glideFrom: slide into this note from that key on the same voice; held: no note-off, the next note glides on from it
@@ -64,6 +64,7 @@ export function perform(score, pass = 0, candy = planEarCandy(score, pass))
                 if (!n.held) n.beats = Math.max(0.05, n.beats - Math.max(0, shift));
             }
         notes.sort((a, b)=> a.beat - b.beat || a.key - b.key);
+        for (const n of notes) if (n.cycle) n.arp = { steps: n.cycle, seconds: CHIP.arp.frames / 60, until: n.beats * spbAt(n.beat) + 0.5 };
         return endBeforeRepeats(notes);
     });
 }

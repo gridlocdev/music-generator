@@ -26,8 +26,9 @@ import { CHIP_BANK, CHIP_KIT_BANK, CHIP_ROLES, CHIP_INSTRUMENTS, CHIP_KITS } fro
 export { parseMelody } from './notation.js';
 
 /**
- * @typedef {{ key: number, beat: number, beats: number, vel: number, anticipates?: number }} Note
- *   anticipates: the beat a note pulled a sixteenth early belongs on
+ * @typedef {{ key: number, beat: number, beats: number, vel: number, anticipates?: number, cycle?: number[] }} Note
+ *   anticipates: the beat a note pulled a sixteenth early belongs on; cycle: a tracker arpeggio's semitones over the
+ *   key, stepped through while the note sounds (the view and the MIDI file show the key alone)
  * @typedef {{ role: string, name: string, program: number, bank: number, notes: Note[] }} Track
  * @typedef {{ type: string, label: string, beat: number, beats: number, energy: number, scene: string,
  *   beatsPerBar: number, meter: string, tonic: number, mode: string, climax: boolean }} Section

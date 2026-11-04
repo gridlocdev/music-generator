@@ -80,7 +80,7 @@ export function writeArp(sec, track, memory, under = [])
     const total = sec.bars * sec.beatsPerBar;
     // a rotated copy of the pattern on repeats, for variety, when the style syncopates
     const rotate = sec.style.syncopation >= 0.3 ? sec.n % 3 : 0;
-    let current = null, notes = [];
+    let current = null, notes = [], chord = [];
     for (let i = 0; i * len < total - 1e-9; i++)
     {
         const t = sec.beat + i * len;
@@ -88,17 +88,17 @@ export function writeArp(sec, track, memory, under = [])
         if (span !== current)
         {
             current = span;
-            const chord = span.chord;
             // two octaves, or one where two won't fit under the lead
             const end = span.beat + span.beats;
             const two = rangeUnder(under, t, end, RANGES.arp, 12);
             const octaves = two[0] >= RANGES.arp[0] ? 2 : 1;
             const [lo, hi] = octaves === 2 ? two : rangeUnder(under, t, end, RANGES.arp);
-            const v = memory.arp = voiceChord(voicingClasses(chord, false), memory.arp, lo, hi);
+            const v = memory.arp = chord = voiceChord(voicingClasses(span.chord, false), memory.arp, lo, hi);
             notes = octaves === 2 ? [...v, ...v.map(k => k + 12)] : v;
         }
-        const key = notes[order[(i + rotate) % order.length] % notes.length];
-        track.notes.push({ key, beat: t, beats: len * sec.legato, vel: velocity(sec, 'arp', sec.energy, t - sec.beat) });
+        const note = { key: notes[order[(i + rotate) % order.length] % notes.length], beat: t, beats: len * sec.legato, vel: velocity(sec, 'arp', sec.energy, t - sec.beat) };
+        // a tracker arpeggio strikes the chord's lowest note and cycles through the rest every few frames
+        track.notes.push(sec.arp.cycle ? { ...note, key: chord[0], cycle: chord.map(k => k - chord[0]) } : note);
     }
 }
 
