@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { guessChords, toProgression, chordVocabulary } from '../../src/lib/chord-guess.js';
+import { guessChords, toProgression, chordVocabulary, chordKey } from '../../src/lib/chord-guess.js';
 import { trackPitch } from '../../src/lib/pitch-track.js';
 import { transcribe, guessKeys } from '../../src/lib/transcribe.js';
 import { parseChord, pitchClass } from '../../src/lib/music-theory.js';
@@ -54,4 +54,20 @@ test('chords: a whistled waltz arpeggio take, from audio to progression', ()=>
     const key = guessKeys(t.notes)[0];
     assert.deepEqual([key.key, key.mode], ['Eb', 'major']);
     assert.equal(toProgression(guessChords(t.notes, { tonic: key.tonic, mode: key.mode, beatsPerBar: 3 }), 3), 'I V/7 vi iii IV I/3 V7 I');
+});
+
+test('chords: 8th-note arpeggios up and down, a borrowed iv, and a held maj7 with its 7th in every bar', ()=>
+{
+    const e = (s)=> s.split(' ').map(d => `${d}:0.5`).join(' ');
+    assert.equal(chords(`${e('1 3 5 8 5 3 1 3')} | ${e('6, 1 3 6 3 1 6, 1')} | ${e('2 4 6 9 6 4 2 4')} | ${e('5, 7, 2 5 2 7, 5, 7,')}`, 'D', 'major'), 'I vi ii V');
+    assert.equal(chords('1 3 5 3 | 4 b6 8 b6 | 1:4', 'F', 'major'), 'I iv I');
+    assert.equal(chords('1 3 5 7 | 3 5 7 8 | 4 6 8 6 | 5 7 9 7', 'C', 'major'), 'Imaj7:2 IV V');
+});
+
+test('chords: the chords settle the key when the notes alone could be either of two relative keys', ()=>
+{
+    const e = (s)=> s.split(' ').map(d => `${d}:0.5`).join(' ');
+    const notes = fromNotation(`${e('1 3 5 8 5 3 1 3')} | ${e('6, 1 3 6 3 1 6, 1')} | ${e('4 6 8 6 4 6 8 6')} | ${e('5, 7, 2 5 2 7, 5, 7,')}`, 'G', 'major');
+    const { key, chords } = chordKey(notes, guessKeys(notes));
+    assert.deepEqual([key.key, key.mode, toProgression(chords)], ['G', 'major', 'I vi IV V']);
 });

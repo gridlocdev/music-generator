@@ -12,3 +12,7 @@ soundfonts/
 
 # reference music for tools/nsf (not ours to redistribute)
 reference/
+
+# whistled takes for `just whistle` and the sketchpad: the audio stays local, transcriptions are kept
+ideas/**/*.wav
+ideas/**/*.m4a

@@ -74,6 +74,18 @@ ignores the audio there but keeps anything else.
 just whistle ideas/lantern-hook.m4a --tempo 60 --meter 3/4
 ```
 
+**Chords.** With `--chords` the take is read as arpeggios: whistle each chord's notes, in any order and
+octave, and the tool finds the chords and where they change (on beats; bar lines and half bars are
+likelier), and prints a `progression:` with each chord's runners-up. Only the chord is kept, so
+the composer voices it to fit the song. Start an arpeggio on the chord's third or seventh for an
+inversion (3-5-8 is `I/3`); starting on the fifth is just the chord. A 7th chord needs its 7th
+whistled in its own bar. Between relative keys (G major and E minor) it keeps the one whose
+chords fit best, which usually means the one the take starts and ends on.
+
+```bash
+just whistle ideas/lantern-chords.m4a --tempo 60 --meter 3/4 --chords
+```
+
 Tips: start each note with your tongue (a soft "t") when repeating a pitch, so it is heard as a new
 note, and leave a second of silence before the first note.
 

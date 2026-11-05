@@ -4,7 +4,8 @@
 // Each stretch of notes is scored against a vocabulary of chords in the key: weighted notes inside the chord count
 // for it, notes outside against, unheard chord tones cost a little (so a 7th chord needs its 7th), and chords outside
 // the key start behind. The changes are found together with the chords, by dynamic programming over beats: a change
-// costs something, less on a bar line or half bar, and less again where the arpeggio starts over (a jump back down);
+// costs something, less on a bar line or half bar, and less between bar lines where the arpeggio starts over (a jump
+// back down; an arpeggio going up and down jumps too, so on a bar line it counts for nothing);
 // common moves (down a fifth, to the tonic) cost less. The first note of a stretch, when it's also the lowest and is
 // the chord's third or seventh, puts that degree in the bass: 3-5-8 is I/3. A fifth isn't taken: whistlers often start
 // an arpeggio on it for range, and I/5 is a cadential six-four to the composer.
@@ -15,11 +16,14 @@ const mod = (n, m)=> ((n % m) + m) % m;
 
 export const CHORD_GUESS = {
     inside: 1, outside: 1.3,            // per weighted beat of a note in or out of the chord
-    missing: 0.35, rootHeard: 0.4,      // per chord tone never heard; the root heard at all
+    missing: 0.35, rootHeard: 0.4,      // per chord tone never heard (less with fewer than 3 notes); the root heard at all
     weight: { bar: 1.5, beat: 1.2, off: 1 },       // a note starting on a bar line, on a beat, between beats
-    prior: { triad: 0, seventh: 0.3, borrowed: 0.7, secondary: 0.8 },
-    change: { bar: 0.3, half: 0.9, beat: 1.8, restart: 0.8 },   // what a change costs where; a restart takes some off
+    prior: { triad: 0, seventh: 0.8, borrowed: 0.7, secondary: 0.8 },   // a 7th chord must beat two triads that share its notes
+    change: { bar: 0.5, half: 0.9, beat: 1.8, restart: 0.8 },   // what a change costs where; a restart takes some off, never below a bar line's
     move: { fifthDown: 0.3, toTonic: 0.15 },        // common moves cost less
+    endOnTonic: 0.6,                    // a take ends at home: a held last note is the tonic chord, not one it also fits
+    startOnTonic: 0.4,                  // and usually starts there: between relative keys, the one whose I comes first
+    keysTried: 4,                       // chordKey reads the take in the likeliest few keys
     maxBars: 4,                         // the longest one chord is searched for
 };
 
@@ -75,7 +79,9 @@ export function scoreChord(chord, notes, from, to, { tonic, mode, beatsPerBar = 
         if (n.beat >= from && first === null) first = n;
         lowest = Math.min(lowest, n.key);
     }
-    score -= C.missing * pcs.filter(pc => !heard.has(pc)).length;
+    // unheard tones count fully once the stretch has three different notes; a held note alone can't sound a chord
+    const distinct = new Set(notes.filter(n => Math.min(n.beat + n.beats, to) > Math.max(n.beat, from)).map(n => mod(n.key, 12))).size;
+    score -= C.missing * pcs.filter(pc => !heard.has(pc)).length * Math.min(1, distinct / 3);
     if (heard.has(chord.root)) score += C.rootHeard;
     let bass = null;
     const above = first ? mod(first.key - chord.root, 12) : -1;
@@ -99,7 +105,8 @@ function moveCost(a, b, tonic)
  * @param {{ beat: number, beats: number, key: number }[]} notes  from transcribe(), beat 0 on a bar line
  * @param {{ tonic: number, mode: string, beatsPerBar?: number }} key
  * @returns {{ beat: number, beats: number, symbol: string, score: number,
- *   others: { symbol: string, score: number }[] }[]} others: the runners-up for the same stretch, best first
+ *   others: { symbol: string, score: number }[] }[] & { total?: number }} others: the runners-up for the same
+ *   stretch, best first; total: the whole reading's score, to compare keys
  */
 export function guessChords(notes, { tonic, mode, beatsPerBar = 4 })
 {
@@ -114,7 +121,7 @@ export function guessChords(notes, { tonic, mode, beatsPerBar = 4 })
     const changeCost = (b)=>
     {
         const base = b % beatsPerBar === 0 ? C.change.bar : (2 * b) % beatsPerBar === 0 ? C.change.half : C.change.beat;
-        return base - (restart.has(b) ? C.change.restart : 0);
+        return Math.max(C.change.bar, base - (restart.has(b) ? C.change.restart : 0));
     };
     // best[b][v]: the best total score of beats 0..b with chord v ending at b
     const best = Array.from({ length: end + 1 }, ()=> new Array(vocab.length).fill(-Infinity));
@@ -134,7 +141,8 @@ export function guessChords(notes, { tonic, mode, beatsPerBar = 4 })
                 const s = scoreOf(v, a, b).score;
                 if (a === 0)
                 {
-                    if (s > best[b][v]) { best[b][v] = s; from[b][v] = { a, u: -1 }; }
+                    const first = s + (vocab[v].chord.root === tonic ? C.startOnTonic : 0);
+                    if (first > best[b][v]) { best[b][v] = first; from[b][v] = { a, u: -1 }; }
                     continue;
                 }
                 for (let u = 0; u < vocab.length; u++)
@@ -145,8 +153,11 @@ export function guessChords(notes, { tonic, mode, beatsPerBar = 4 })
                 }
             }
         }
-    let v = best[end].indexOf(Math.max(...best[end]));
+    const final = best[end].map((s, i)=> s + (vocab[i].chord.root === tonic ? C.endOnTonic : 0));
+    let v = final.indexOf(Math.max(...final));
+    /** @type {ReturnType<typeof guessChords>} */
     const out = [];
+    out.total = final[v];
     for (let b = end; b > 0;)
     {
         const { a, u } = from[b][v];
@@ -157,6 +168,24 @@ export function guessChords(notes, { tonic, mode, beatsPerBar = 4 })
         b = a; v = u;
     }
     return out;
+}
+
+/**
+ * The key and chords of an arpeggio take together: the likeliest few keys from the notes alone (guessKeys), each
+ * read for chords, and the best reading kept. A take that outlines I vi IV V is no more G major than E minor by its
+ * notes; its chords, starting on G, say which.
+ * @param {{ key: string, tonic: number, mode: string }[]} keys  guessKeys(notes), best first
+ * @returns {{ key: { key: string, tonic: number, mode: string }, chords: ReturnType<typeof guessChords> }}
+ */
+export function chordKey(notes, keys, beatsPerBar = 4)
+{
+    let best = null;
+    for (const key of keys.slice(0, CHORD_GUESS.keysTried))
+    {
+        const chords = guessChords(notes, { tonic: key.tonic, mode: key.mode, beatsPerBar });
+        if (!best || chords.total > best.chords.total) best = { key, chords };
+    }
+    return best;
 }
 
 const barsText = (bars)=> String(Math.round(bars * 1000) / 1000);
