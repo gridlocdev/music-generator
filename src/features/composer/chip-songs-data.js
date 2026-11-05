@@ -165,4 +165,41 @@ export const CHIP_SONGS = [
             outro: 'The clock strikes twelve. And stops.',
         },
     },
+    {
+        id: 'lanterns-on-the-lake', title: 'Lanterns on the Lake', genre: 'Love theme',
+        story: 'A festival at dusk: paper lanterns drift over a lake, and two travellers keep ending up at the same rail. '
+            + 'A dance, a misunderstanding, and one lantern launched by two pairs of hands.',
+        sound: 'chip', emotion: 'tender', key: 'Eb', mode: 'major', tempo: 84, groove: 'waltz', arp: 'updown',
+        style: { scoops: 0.4, earCandy: 0.35 },   // gentle, the emotion's, with more slides into notes and a little more sparkle
+        legato: 0.9, dynamics: 0.55, lift: true, ritardando: true,
+        band: { lead: 83, counter: 85, arp: 46, chords: null, pad: 90, bass: 38, drums: 0 },   // hollow square and soft triangle, a harp-like pluck
+        form: ['intro', 'verse', 'pre', 'chorus', 'verse', 'pre', 'chorus', 'bridge', 'chorus', 'outro'],
+        names: { verse: 'Across the rail', pre: 'Closer', chorus: 'Under the lanterns', bridge: 'The wind', outro: 'One lantern' },
+        sections: {
+            // a music box: the pluck and the lead alone, rising into a suspended dominant
+            intro: { progression: 'Imaj7 IVmaj7 Imaj7 V7sus4', mute: ['drums', 'bass'] },
+            // the borrowed minor iv: the sigh of a glance held a moment too long
+            verse: { progression: 'Imaj7 iii7 IVmaj7 iv', mute: ['drums'] },
+            // the bass climbs a step a bar toward the chorus
+            pre: { progression: 'ii iii IV V7sus4', counter: 'contrary' },
+            // the lanterns rise in arpeggios, a sequence a sixth apart, over a Pachelbel bass walking down
+            chorus: { progression: 'I V/7 vi iii IV I/3 V7 I', counter: 'harmony',
+                melody: '3 5 8 | 7:2 5 | 6 8 10 | 10:2 7 | 8:1.5 6:0.5 4 | 5 3 5 | 9:2 7 | 8:3' },
+            // the wind takes their lantern: C minor, and the two voices talk over each other
+            bridge: { progression: 'i VI iv V', transpose: -3, mode: 'minor', answer: true, mute: ['drums'] },
+            // the amen with the borrowed iv, slowing to a stop
+            outro: { progression: 'IV iv I:2', mute: ['drums'] },
+        },
+        scenes: {
+            intro: 'Dusk. The first lanterns are lit.',
+            'verse 1': 'Across the rail, a stranger is watching the same lantern.',
+            'pre 1': 'A step closer. Then another.',
+            'chorus 1': 'Under the lanterns, a dance.',
+            'verse 2': 'Names, and a laugh over a burnt lantern.',
+            'chorus 2': 'The whole lake glows.',
+            bridge: 'A gust of wind. Their lantern tears free, and a word comes out wrong.',
+            'chorus 3': 'One more lantern, launched together.',
+            outro: 'It rises until it is a star.',
+        },
+    },
 ];
