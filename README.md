@@ -43,6 +43,17 @@ just play        # serve on http://localhost:8000 and open it
 
 Each library's file downloads to the browser the first time you pick one of its instruments.
 
+To whistle into the sketchpad without giving a browser the microphone, run it as a desktop app:
+
+```bash
+just install     # install it as an app: ~/Applications/Music Generator.app on macOS
+just app         # or just open it in its own window, without installing
+```
+
+The installed app runs this folder, so it keeps up with your changes and uses its sound libraries. The
+first time you record, macOS asks whether it may use the microphone.
+In the app, **Save to ideas/** writes straight into the repository's `ideas/` folder.
+
 ## Controls
 
 | | Keyboard | Mouse or MIDI |

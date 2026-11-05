@@ -4,16 +4,21 @@ port := "8000"
 default:
     @just --list
 
-# install the pinned engine into node_modules
-install:
-    npm install
+# install the desktop app (~/Applications/Music Generator.app on macOS) that runs this checkout
+install: deps
+    bash tools/install-app.sh
+
+# install the pinned engine and Electron into node_modules
+deps:
+    @[ -d node_modules/littlejsengine ] && [ -d node_modules/electron ] || npm install
+    @[ -f node_modules/electron/path.txt ] || node node_modules/electron/install.js
 
 # serve the game on localhost; ES modules don't load from file://
-serve: _deps
+serve: deps
     python3 -m http.server {{port}}
 
 # serve the game and open it in the default browser
-play: _deps
+play: deps
     #!/usr/bin/env bash
     set -euo pipefail
     python3 -m http.server {{port}} & server=$!
@@ -23,8 +28,18 @@ play: _deps
     wait $server
 
 # serve the game with saving to ideas/ for the sketchpad's whistled takes
-sketch: _deps
+sketch: deps
     node tools/sketch-server.mjs --port {{port}}
+
+# on macOS it starts through `open`, so macOS asks for the microphone for the app, not for the terminal
+# run it in its own window (Electron), without installing: the microphone needs no browser permission, and the sketchpad saves into ideas/
+app: deps
+    #!/usr/bin/env sh
+    if [ "$(uname)" = Darwin ]; then
+        open -W -n node_modules/electron/dist/Electron.app --args "$PWD"
+    else
+        npx electron .
+    fi
 
 # syntax-check every module and check the layer rules
 check:
@@ -48,9 +63,6 @@ audio +files:
 whistle +args:
     node tools/whistle.mjs {{args}}
 
-_deps:
-    @[ -d node_modules/littlejsengine ] || npm install
-
 # rebuild src/audio/soundfont-catalog-data.js after adding or replacing .sf2 files (libraries: src/audio/soundfont-libraries-data.js)
 catalog:
     node tools/sf2-catalog.mjs
@@ -66,5 +78,5 @@ compose *args:
 
 # A/B listening: render each song with an older commit and with this checkout, side by side
 # e.g. just ab   ·   just ab a913205   (then open the URL it prints; port 8010 or the next free one)
-ab rev="main": _deps
+ab rev="main": deps
     node tools/ab-server.mjs {{rev}}

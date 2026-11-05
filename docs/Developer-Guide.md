@@ -11,13 +11,15 @@ code layout and its layer rules are in [ARCHITECTURE.md](ARCHITECTURE.md).
 You need Node.js, Python 3 and [just](https://github.com/casey/just).
 
 ```bash
-just install     # install the pinned LittleJS into node_modules
+just deps        # install the pinned LittleJS and Electron into node_modules
 just soundfonts  # download GeneralUser GS, FluidR3_GM and MuseScore_General into soundfonts/
 just play        # serve on http://localhost:8000 and open the browser
 just serve       # serve on http://localhost:8000 without opening a browser
+just app         # run it in its own window (Electron), with the microphone and ideas/ saving
+just install     # install that window as an app: ~/Applications/Music Generator.app on macOS
 ```
 
-`just play` and `just serve` run `npm install` first if the engine is missing. Pages must be
+`just play`, `just serve`, `just app` and `just install` run `just deps` first if the engine or Electron is missing. Pages must be
 served over HTTP, not opened as files, because ES modules don't load from `file://`. Without
 just: `npm install && npm start`.
 
@@ -80,7 +82,7 @@ the melody and the chords' notes; the key menu overrides it.
 
 **▶ Play sketch** plays the sketch at the song tempo, **Copy** puts the section's lines on the
 clipboard, and **Save to ideas/** writes the melody take and every chord take (`take-n.wav`,
-`take-n.json`) and `section.js.txt` to `ideas/<name>/`. Under any other server, the files download
+`take-n.json`) and `section.js.txt` to `ideas/<name>/`. `just app` saves the same way. Under any other server, the files download
 instead. Audio files dropped on the page become melody takes, read at the tempo set, or the chord for
 a dragged stretch.
 
@@ -144,6 +146,22 @@ just audio reference/vvvvvv/ogg/*.ogg
 http://localhost:8010/tools/ab/ (or the next free port) that renders every song with that commit
 and with your checkout, side by side, so you can hear what a change did. It shows each render's
 length, peak and loudness, has a blind mode, and saves the WAVs in `.ab/out/`, which git ignores.
+
+### The desktop app
+
+`just app` runs the checkout in Electron. `just install` (`tools/install-app.sh`) makes it an app you
+open from the Dock: on macOS a copy of the Electron in `node_modules`, renamed to Music Generator with its own
+bundle id, whose only code is a stub that loads `electron/main.js` from the checkout, so it always runs
+what's checked out, with its `soundfonts/` and `ideas/`. On Linux it adds a launcher to
+`~/.local/share/applications`. Run it again after moving the checkout or updating Electron. There is no
+packaged build to share. `electron/main.js` serves the
+repository on a private `app://game/` origin, lets that origin (and nothing else) use the
+microphone, and answers the same `ideas/` requests as `tools/sketch-server.mjs`
+(`tools/ideas-files.mjs`). The game's save goes to `save.json` in Electron's user data folder
+through `electron/preload.cjs`, so it is separate from the browser's. On macOS `just app` starts
+Electron with `open`, so the microphone prompt is for the app and not for the terminal. If you
+refused it, turn on Electron (or Music Generator, for the installed app) under System Settings →
+Privacy & Security → Microphone.
 
 ## SoundFont libraries
 
