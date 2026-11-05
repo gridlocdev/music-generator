@@ -122,4 +122,47 @@ export const CHIP_SONGS = [
             outro: 'CONTINUE? ▶ YES',
         },
     },
+    {
+        id: 'clocktower-core', title: 'Clocktower Core', genre: 'Boss fight',
+        story: 'The heart of the tower: a clockwork guardian among grinding brass gears, its pendulum as long as a bridge. '
+            + 'Every phase you win knocks a gear loose, and the clock runs faster and stranger until midnight.',
+        sound: 'chip', emotion: 'tense', key: 'D', mode: 'minor', tempo: 152, groove: 'rock', arp: 'tracker',
+        style: { dim7: 0.05, earCandy: 0.6, syncopation: 0.35 },   // cinematic, the emotion's, with more ear candy and push
+        legato: 0.75, dynamics: 0.85, push: 3, ritardando: true,
+        band: { lead: 86, counter: 87, arp: 82, chords: null, pad: 90, bass: 33, drums: 2 },   // NES pulses, a thin ticking arp, the sample channel's bass and kit
+        form: ['intro', 'verse', 'pre', 'chorus', 'post', 'link', 'A', 'breakdown', 'build', 'drop', 'outro'],
+        names: { verse: 'Phase one', pre: 'Gears slip', chorus: 'Clockwork Heart', post: 'Tick, tock', link: 'A gear breaks loose',
+            A: 'Phase two', breakdown: 'Time stops', build: 'Mainspring', drop: 'Overclock', outro: 'Midnight' },
+        sections: {
+            // five beats to the bar: a clock that doesn't tick evenly, over a tolling tonic and the Neapolitan
+            intro: { meter: '5/4', progression: 'i bII i bII', pedal: 1, mute: ['drums'], energy: 0.45 },
+            verse: { progression: 'i VI iv V', counter: 'contrary', density: 1.2 },
+            // the gears slip a half beat every bar, and the chords come twice as fast
+            pre: { meter: '7/8', progression: 'iv V bVI V', energy: 0.7 },
+            chorus: { progression: 'i VI III VII i VI iv V', endOn: 'dominant', energy: 0.88,
+                melody: '1:0.5 3:0.5 5 3:0.5 5:0.5 8 | 8:0.5 6:0.5 8 6:0.5 8:0.5 10 | 10:0.5 9:0.5 10:0.5 12:0.5 10 7 | 9:1.5 7:0.5 9:2 | 1:0.5 3:0.5 5 3:0.5 5:0.5 8 | 8:0.5 6:0.5 8 6:0.5 8:0.5 10 | 11:0.5 10:0.5 8:0.5 6:0.5 8 4 | 5:0.5 #7:0.5 9:0.5 #7:0.5 5:2' },
+            post: { progression: 'bVI bVII i i', counter: 'harmony' },
+            // a minor third up and into phrygian: 2 + 3 + 2, the escapement catching
+            A: { meter: '7/4c', transpose: 3, mode: 'phrygian', progression: 'i bII i VII', answer: true, energy: 0.8 },
+            // the pendulum stops mid-swing: a music-box waltz, alone
+            breakdown: { meter: '3/4', transpose: 3, progression: 'VI bII VI V', texture: 'solo', energy: 0.35 },
+            build: { progression: 'iv V', bars: 4, tempo: 164 },
+            // the hook again, a whole step up and at full speed
+            drop: { progression: 'i VI III VII i VI V i', transpose: 2, tempo: 176, feel: 'double', bars: 8,
+                melody: '1:0.5 3:0.5 5 3:0.5 5:0.5 8 | 8:0.5 6:0.5 8 6:0.5 8:0.5 10 | 10:0.5 9:0.5 10:0.5 12:0.5 10 7 | 9:1.5 7:0.5 9:2 | 1:0.5 3:0.5 5 3:0.5 5:0.5 8 | 8:0.5 6:0.5 8 6:0.5 8:0.5 10 | 9:0.5 #7:0.5 5 #7:0.5 9:0.5 12 | 8:3 r' },
+            outro: { meter: '5/4', transpose: 2, tempo: 176, progression: 'iv V i:2' },
+        },
+        scenes: {
+            intro: 'TICK… TOCK… The great clock face opens.',
+            verse: 'The pendulum sweeps the floor. Jump it.',
+            pre: 'The gears slip a tooth.',
+            chorus: 'Its heart is exposed: hit it!',
+            link: 'CLANG. A gear falls into the dark.',
+            A: 'Phase two: the hands spin backwards.',
+            breakdown: 'Time stops. Only the music box plays.',
+            build: 'The mainspring winds tighter…',
+            drop: 'OVERCLOCK! Everything at double speed.',
+            outro: 'The clock strikes twelve. And stops.',
+        },
+    },
 ];
