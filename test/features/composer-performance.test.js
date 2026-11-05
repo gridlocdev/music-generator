@@ -14,9 +14,10 @@ import { SONGS } from '../../src/features/composer/songs-data.js';
 import { GENRE_SONGS } from '../../src/features/composer/genre-songs-data.js';
 import { GAME_SONGS } from '../../src/features/composer/game-songs-data.js';
 import { CHIP_SONGS } from '../../src/features/composer/chip-songs-data.js';
+import { CLASSICAL_SONGS } from '../../src/features/composer/classical-songs-data.js';
 import { CHIP_BANK, CHIP_KIT_BANK } from '../../src/audio/chip-instruments-data.js';
 
-const ALL = [...SONGS, ...GENRE_SONGS, ...GAME_SONGS, ...CHIP_SONGS];
+const ALL = [...SONGS, ...GENRE_SONGS, ...GAME_SONGS, ...CHIP_SONGS, ...CLASSICAL_SONGS];
 
 test('a performance is deterministic and keeps every note playable', ()=>
 {

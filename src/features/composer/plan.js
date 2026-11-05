@@ -7,6 +7,7 @@ import { GROOVES, ARPS, COMPING } from './patterns-data.js';
 import { STYLES, VARIATION, CURVE, TEMPO, METER_CHANGE } from './song-craft-data.js';
 import { GENRES } from './genre-data.js';
 import { clamp } from './meter.js';
+import { bpmAt } from '../../lib/tempo-map.js';
 import { meterOf, nativeMeter } from './meter-patterns.js';
 
 /**
@@ -34,11 +35,11 @@ export function planSong(spec)
     const loop = !!spec.loop;
     if (loop) { form = [...form]; while (form.length > 1 && SECTIONS[form.at(-1)]?.ending) form.pop(); }
     const style = styleOf(spec.style ?? genre.style, feel.style);
-    const band = { ...feel.band, ...spec.band };
+    const band = { ...feel.band, ...genre.band, ...spec.band };
     if (band.drums !== null && grooveName === 'none') band.drums = null;
 
     const song = {
-        tonic: pitchClass(keyName), mode, tempo: spec.tempo ?? feel.tempo, arousal: feel.arousal,
+        tonic: pitchClass(keyName), mode, tempo: spec.tempo ?? genre.tempo ?? feel.tempo, arousal: feel.arousal,
         legato: choose('legato'),
         dynamics: spec.dynamics ?? feel.dynamics,
         power: choose('power') ?? false,
@@ -73,8 +74,11 @@ export function planSong(spec)
             energy: clamp((over.energy ?? base.energy) + REPEAT_LIFT * n, 0, 1),
             tonic: song.tonic + transpose + (over.transpose ?? 0), mode: over.mode ?? mode, lifted, progression,
             comp: over.comp ?? choose('comp'),
+            // a section may pick its own arpeggio: a sonata's left hand changes figure with the theme
+            arp: over.arp ? ARPS[over.arp] : arp,
         };
         if (!COMPING[s.comp]) throw new Error(`unknown comp: ${s.comp}`);
+        if (!s.arp) throw new Error(`unknown arpeggio: ${over.arp}`);
         beat += s.beats;
         return s;
     });
@@ -154,19 +158,29 @@ function tempoMap(spec, tempo, sections, end)
     const push = spec.push ?? TEMPO.push;
     const climax = sections.find(s => s.climax);
     /** @type {import('../../lib/tempo-map.js').TempoSegment[]} */
-    const map = [{ beat: 0, bpm: tempo }];
+    let map = [{ beat: 0, bpm: tempo }];
+    const rubato = sections[0].style.rubato ?? 0, R = TEMPO.rubato;
     for (const s of sections)
     {
         const bpm = (s.over.tempo ?? tempo) + (climax && s.index >= climax.index ? push : 0);
-        if (bpm !== map.at(-1).bpm) map.push({ beat: s.beat, bpm });
+        const span = Math.min(R.bars, s.bars) * s.beatsPerBar;
+        if (rubato > 0 && s.bars >= 2)
+            for (let p = s.beat; p < s.beat + s.beats - 1e-9; p += span)
+            {
+                const len = Math.min(span, s.beat + s.beats - p), fast = bpm * (1 + R.up * rubato);
+                map.push({ beat: p, bpm, to: fast }, { beat: p + len * R.peak, bpm: fast, to: bpm * (1 - R.down * rubato) });
+            }
+        else if (bpm !== map.at(-1).bpm || map.at(-1).to) map.push({ beat: s.beat, bpm });
     }
+    // one segment per beat: the later wins (a section's first phrase starts where the song does)
+    map = map.filter((seg, i)=> map[i + 1]?.beat !== seg.beat);
     const last = sections.at(-1);
     if (last.ending && spec.ritardando !== false)
     {
         const r = TEMPO.ritardando;
         const from = Math.max(last.beat, end - r.bars * last.beatsPerBar);
-        const bpm = map.at(-1).bpm;
-        if (map.at(-1).beat === from) map.pop();
+        const bpm = bpmAt(map, from);
+        map = map.filter(seg => seg.beat < from);
         map.push({ beat: from, bpm, to: bpm * r.to }, { beat: end, bpm: bpm * r.to });
     }
     return map;

@@ -12,13 +12,20 @@
 //   syncopation  anticipations, offbeat accents, echo-rhythm notes and rotated arpeggios
 //   earCandy     how often the ear-candy layer fires
 //   stab         the longest a comped chord sounds, in beats (0: as written); 0.125 is a thirty-second note
+//   rubato       how far the tempo breathes with each phrase: up toward its high point, back into its cadence (TEMPO.rubato)
+//   ornaments    chance of a trill, turn, mordent or grace note on a melody note that suits one (ORNAMENTS)
+//   swell        times EXPRESSION.phrase.swell: how much louder a phrase grows; above 1 the left hand follows it too
 export const STYLES = {
-    plain:      { swing: 0,   dim7: 0,    scoops: 0.1, ghosts: 0.25, syncopation: 0.15, earCandy: 0.25, stab: 0 },
-    jazzy:      { swing: 0.7, dim7: 0.3,  scoops: 0.4, ghosts: 0.5,  syncopation: 0.4,  earCandy: 0.25, stab: 0 },
-    funky:      { swing: 0,   dim7: 0.1,  scoops: 0.2, ghosts: 0.9,  syncopation: 0.7,  earCandy: 0.3,  stab: 0.125 },
-    gentle:     { swing: 0,   dim7: 0.15, scoops: 0.3, ghosts: 0,    syncopation: 0.1,  earCandy: 0.2,  stab: 0 },
-    cinematic:  { swing: 0,   dim7: 0.15, scoops: 0.2, ghosts: 0.1,  syncopation: 0.1,  earCandy: 0.45, stab: 0 },
-    electronic: { swing: 0,   dim7: 0,    scoops: 0.1, ghosts: 0.2,  syncopation: 0.45, earCandy: 0.6,  stab: 0.25 },
+    plain:      { swing: 0,   dim7: 0,    scoops: 0.1, ghosts: 0.25, syncopation: 0.15, earCandy: 0.25, stab: 0, rubato: 0, ornaments: 0, swell: 1 },
+    jazzy:      { swing: 0.7, dim7: 0.3,  scoops: 0.4, ghosts: 0.5,  syncopation: 0.4,  earCandy: 0.25, stab: 0, rubato: 0, ornaments: 0, swell: 1 },
+    funky:      { swing: 0,   dim7: 0.1,  scoops: 0.2, ghosts: 0.9,  syncopation: 0.7,  earCandy: 0.3,  stab: 0.125, rubato: 0, ornaments: 0, swell: 1 },
+    gentle:     { swing: 0,   dim7: 0.15, scoops: 0.3, ghosts: 0,    syncopation: 0.1,  earCandy: 0.2,  stab: 0, rubato: 0, ornaments: 0, swell: 1 },
+    cinematic:  { swing: 0,   dim7: 0.15, scoops: 0.2, ghosts: 0.1,  syncopation: 0.1,  earCandy: 0.45, stab: 0, rubato: 0, ornaments: 0, swell: 1 },
+    electronic: { swing: 0,   dim7: 0,    scoops: 0.1, ghosts: 0.2,  syncopation: 0.45, earCandy: 0.6,  stab: 0.25, rubato: 0, ornaments: 0, swell: 1 },
+    // the piano of Mozart (classical) and Chopin (romantic): the tempo breathes with each phrase (TEMPO.rubato), the
+    // melody is ornamented (ORNAMENTS), and nothing a band adds: no ghosts, slides or risers
+    classical:  { swing: 0,   dim7: 0.1,  scoops: 0,   ghosts: 0,    syncopation: 0.05, earCandy: 0,    stab: 0, rubato: 0.35, ornaments: 0.35, swell: 2 },
+    romantic:   { swing: 0,   dim7: 0.15, scoops: 0,   ghosts: 0,    syncopation: 0.05, earCandy: 0,    stab: 0, rubato: 1,    ornaments: 0.6, swell: 3 },
 };
 
 // ---- Repetition with variation ------------------------------------------------------------------------
@@ -44,9 +51,18 @@ export const CURVE = { window: [0.5, 0.9], margin: 0.04, dip: 0.15 };
 
 // ---- Tempo moves ---------------------------------------------------------------------------------------------
 // push: bpm added from the climax on, felt more than noticed. ritardando: an ending slows over its last `bars` to `to` × tempo.
-export const TEMPO = { push: 2, ritardando: { bars: 2, to: 0.85 } };
+// rubato (a style's 0–1): each 4-bar phrase speeds up by `up` toward the point `peak` of the way through, then slows by
+// `down` into its cadence; the next phrase starts back at the tempo, as a pianist breathes before going on
+export const TEMPO = { push: 2, ritardando: { bars: 2, to: 0.85 }, rubato: { up: 0.07, down: 0.14, peak: 0.6, bars: 4 } };
 
 // After a change of meter the drums play a plain, accented pattern for this many bars, so the new meter is clear.
+// Ornaments (ornaments.js), for a style with `ornaments` above 0. Steps are `fast` beats at a tempo above
+// `slowAbove` bpm, else `slow` (a 60 bpm nocturne trills in eighths of a beat). The other figures are the shortest
+// note, in beats, each ornament goes on: a trill on the note before a phrase's last (`cadence` times the style's
+// chance, taking `trillShare` of the note), a turn on a long note, a mordent on a phrase's first, a grace note before a
+// leap up of `leap` semitones. `gap` seconds keep them apart; the notes after an ornament's first are `soften` quieter.
+export const ORNAMENTS = { fast: 0.25, slow: 0.125, slowAbove: 90, trill: 1, trillShare: 0.6, cadence: 2, turn: 2, mordent: 1,
+    grace: 1, leap: 5, gap: 3, soften: 10 };
 export const METER_CHANGE = { simpleBars: 2 };
 
 // ---- The motif -------------------------------------------------------------------------------------------

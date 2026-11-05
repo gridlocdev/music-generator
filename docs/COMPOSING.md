@@ -115,6 +115,8 @@ A form names its sections by role. The letter forms are the classic ones:
 | `ballad` | intro, V, C, V, C, bridge, C, outro | no pre-chorus |
 | `edm` | intro, build, drop, breakdown, build, drop, outro | the electronic equivalent of verse and chorus |
 | `blues` | intro, three 12-bar choruses, outro | a fixed I–IV–V cycle repeated with variations |
+| `ternary` | intro, A, B, A, outro | a nocturne, minuet or song without words: theme, contrast, theme (the Classical genre's) |
+| `rondo` | intro, A, B, A, C, A, outro | a refrain between two episodes, the last movement of a sonata |
 
 A form is a grammar of sections, and every section type carries parameters that later passes read (`SECTIONS`). **Phrases come in 4s and 8s**, and sections in 8 or 16 bars. A `link` section (one bar of 2/4) breaks that on purpose: a phrase one bar longer than the ear expects, the large-scale version of syncopation.
 
@@ -235,7 +237,7 @@ Cadences are punctuation, and each section ends with the one its job needs (`end
 
 Major, minor, harmonic and melodic minor keep V. A progression written with a major V in a modal song plays as written: borrowing it is the author's choice.
 
-The planner makes the section's last bar the cadence chord. If the bar before doesn't already lead in (IV, V or bVII before I), the approach chord takes its second half. A progression that already ends right is left alone, including `Imaj7` for I and a Picardy major I for i. A hand-written melody keeps its own ending: if its last note isn't in the cadence chord, there's no cadence. The melody's last phrase lands on the matching degrees: 2 or 5 on a half cadence, 1 on a full one, 1 or 3 on a deceptive one.
+The planner makes the section's last bar the cadence chord. If the bar before doesn't already lead in (IV, V or bVII before I), the approach chord takes its second half. A progression that already ends right is left alone, including `Imaj7` for I and a Picardy major I for i. A cadence of three chords or more always plays in full: the Classical genre's **cadential 6/4**, `I/5 V7 I`, gives I/5 and V7 half of the bar before the last each, or a bar each in an odd meter like 3/4, where halves would fall off the beat. A hand-written melody keeps its own ending: if its last note isn't in the cadence chord, there's no cadence. The melody's last phrase lands on the matching degrees: 2 or 5 on a half cadence, 1 on a full one, 1 or 3 on a deceptive one.
 
 **Harmonic rhythm** follows the section: a pre-chorus or build changes chords twice as fast as written (urgency), and an intro or breakdown half as fast (space). It applies to the emotion's default progressions; a progression written in a spec keeps its timing unless the section sets `harmonicRhythm`.
 
@@ -283,6 +285,7 @@ The composer scores each scale degree in the lead's range against `MELODY_RULES`
 | non-chord tone on a beat that isn't strong (2 and 4 in 4/4) | 2.5 | "land, pass, land": passing notes go between the beats, where they're heard least |
 | non-chord tone held beyond half a beat | 3 per beat | a dissonance should be short; a long one is a suspension, and the line doesn't prepare those |
 | non-chord tone followed by a rest | 6 | it never resolves, so the phrase hangs on a wrong note |
+| a strong-beat non-chord tone that falls a step to a chord tone | −`appoggiatura` (0; 3 in Classical) | the *appoggiatura*, the classical sigh: a dissonance leaned on the beat that resolves down. Without it a Classical melody resolves 12 of its 27 strong-beat dissonances that way; with it, 84 of 99 |
 | a third | 1 | fine, but a line that mostly steps sounds sung, not arpeggiated |
 | leap beyond a third | 1.2 per degree | singable lines mostly move by step |
 | a fourth to a sixth from one chord tone to another | 0.4 per degree beyond a third, instead | a leap through the chord outlines the harmony; Undertale's themes leap a 4th or more about a third of the time |
@@ -352,11 +355,14 @@ The rules make a good, singable line; a hook you write yourself will usually be 
 - a number is a scale degree: 1 = tonic, 8 = tonic an octave up, 0 = the 7th below
 - `b`/`#` before it bends it a semitone (`b3`, `#4`)
 - `'` after it raises it an octave and `,` lowers it (`5'`, `7,`)
+- `~` after that marks vibrato on that note (`5~:2`). In a section with any `~`, only the marked notes vibrate, on any melodic instrument and at any length; the automatic late vibrato on held notes is off there. The rate and depth come from the style's `vibrato` (`style: { vibrato: { rate: 5.9, cents: 39 } }`), which `just whistle` measures from your take
 - `:n` is the length in beats (default 1); `r` is a rest
 - `|` is ignored; use it to mark bars
 - the line repeats if it is shorter than the section
 
 A hand-written chorus also becomes the song's motif, so the verses and bridge grow out of the hook.
+
+To whistle a hook instead of typing it, record it anywhere and run `just whistle <file> --tempo <bpm>` (see the [Developer Guide](Developer-Guide.md#transcribing-a-whistled-melody)).
 
 When writing one, put chord tones on strong beats. Check the progression: in `IV I V vi` the first bar's chord is IV, whose tones are degrees 4, 6 and 1. Step between them on weak beats, peak once per phrase, and end the last phrase on 1 (or 3 or 5 for an open ending). Read it back with `just compose <song> --melody`.
 
@@ -432,6 +438,7 @@ Orchestration rules:
 5. **Bass patterns** (`BASS`): roots on strong beats, fifths and octaves for motion, and an **approach note** (A) one step from the next chord's root at the end of the bar, to pull the ear into the change.
 6. **Comping patterns** (`COMPING`): sustain (calm), push (anticipating beat 3, pop), pulse (quarters, tension), eighths (rock), offbeat (2 and 4 stabs, bounce or swing), march, waltz (beats 2 and 3), skank (reggae chops on 2 and 4), bubble (reggae organ on every offbeat), bossa (syncopated guitar), funk (sixteenth clav stabs), habanera. Below .5 energy the busy styles (push, pulse, eighths, march) sustain and funk drops to a skank (`COMP_QUIET`). The others keep their rhythm, because in reggae or bossa the rhythm *is* the genre.
 7. **Arpeggio patterns** (`ARPS`): up, up-down, Alberti (low–high–mid–high, classical), broken, ostinato (a repeated low note against the others, for tension), sixteenths (synth arpeggiator over two octaves), roll (banjo forward roll), chip (an 8-bit chord spelled out in sixteenths), and tracker (an 8-bit chord faked by one voice stepping through its notes every frame; see Chip songs).
+   **A piano's left hand** is an arpeggio with a `hand`: a list of tokens per bar, played every `step` sixteenths from the chord's bass note (its slash note when it has one), placed in `HAND.range` (A1–A2) nearest the last. `R` is the bass, `O` its octave, `F` its fifth, `C` the chord's three upper tones together an octave up, and a number the nth chord tone, close above the bass, or with `wide` the fifth and then up to `HAND.reach` (31) semitones, two octaves and more. `pedal` holds each note to the end of its chord, as the sustain pedal would; the bass note is `HAND.accent` louder. `nocturne` (R 1 3 4 5 4 3 1, wide, pedalled: Chopin), `oompah` (R C C in 3/4, R C F C in 4/4: a waltz's bass, chord, chord), `albertiLow` (R 2 1 2, close: Mozart) and `octaves` (R O, wide: Beethoven's broken octaves). A left hand plays to the last chord of the song, where an arpeggio leaves the ending to the others.
 
 ### Harmony voices and call and response
 
@@ -484,7 +491,7 @@ The score stays on the grid. That's what the falling-notes view draws and what t
 - **Phrases breathe.** The lead and countermelody swell across each 4-bar phrase, and the last note of each phrase tapers off.
 - **Timing drifts a little.** Melodic parts move by up to 5–15 ms either way, and drums and bass stay exactly on the grid to hold the groove.
 - **Slides.** Fretless and synth bass, bowed strings, trombone and synth leads sometimes slide into a note a step or small leap from the last one, if it follows closely and isn't on a downbeat. The held voice bends to the new pitch rather than re-attacking, which is what makes a slide sound real.
-- **Vibrato arrives late.** Notes of 0.6 s or more on singing instruments (bowed strings, voices, brass, reeds, pipes, synth leads) start straight, and the vibrato fades in from 0.25 s.
+- **Vibrato arrives late.** Notes of 0.6 s or more on singing instruments (bowed strings, voices, brass, reeds, pipes, synth leads) start straight, and the vibrato fades in from 0.25 s. A section whose melody marks notes with `~` plays only those with vibrato instead (see Writing a melody by hand).
 - **Channel strips** (`MIX`): each part has a fader in dB, a pan, a low cut (100–150 Hz on everything but bass and drums, to clear the mud) and sends to one shared reverb and one tempo-synced dotted-eighth delay. Lead, bass and drums sit in the centre, and the others spread from −0.45 to +0.4. Drums and bass stay nearly dry, and pads get the most reverb.
 - **Ducking** (`DUCK`): on each kick the bass dips 4 dB and the pad 3 dB for 100 ms, which gives a sidechain's clean low end without a compressor.
 - **Movement** (`MOVEMENT`): the pad, arpeggio and chords close a low-pass at the start of a build (a pre-chorus, or the last two bars of a section rising into a chorus) and open it across the build. Reverb sends grow in the bridge, in quiet sections and most of all in the outro.
@@ -536,6 +543,8 @@ Similar effects without a meter change, as a section's drum `feel`:
 
 A score has a **tempo map** (`lib/tempo-map.js`): segments that hold a tempo or ramp evenly to another, converted between beats and seconds for playback, the view and the MIDI file. The planner pushes the tempo up `TEMPO.push` (2 bpm) from the climax on, felt more than noticed, and slows an ending by 15% over its last two bars (a ritardando; `ritardando: false` turns it off). A section's `tempo` sets its own. Loops never slow down.
 
+**Rubato.** A style's `rubato` (0–1) makes the tempo breathe with each phrase of up to `TEMPO.rubato.bars` (4) bars: it ramps up by 7% × rubato to 60% of the way through, toward the phrase's high point, then broadens by 14% × rubato into its cadence, and the next phrase starts back at tempo. The romantic style's rubato of 1 takes a 60 bpm nocturne from 60 up to 64 and down to 52 in every phrase; the classical style's 0.35 is a gentle push and pull. A one-bar section keeps a steady tempo.
+
 ## 10. Detail passes and styles
 
 Most of what makes a performance feel alive are passes over the score, run in a fixed order so they don't fight. The rhythm pass is part of the score; the rest happen at playback, so the score stays on the grid for the view and the MIDI file.
@@ -548,16 +557,29 @@ Most of what makes a performance feel alive are passes over the score, run in a 
 
 A **style** (`STYLES` in `song-craft-data.js`) sets every pass's intensity with one name. Each emotion has one, and a spec's `style` names another or overrides values:
 
-| Style | swing | dim7 | scoops | ghosts | syncopation | earCandy | stab |
-|---|---|---|---|---|---|---|---|
-| plain | 0 | 0 | .1 | .25 | .15 | .25 | — |
-| jazzy | .7 | .3 | .4 | .5 | .4 | .25 | — |
-| funky | 0 | .1 | .2 | .9 | .7 | .3 | 1/32 |
-| gentle | 0 | .15 | .3 | 0 | .1 | .2 | — |
-| cinematic | 0 | .15 | .2 | .1 | .1 | .45 | — |
-| electronic | 0 | 0 | .1 | .2 | .45 | .6 | 1/16 |
+| Style | swing | dim7 | scoops | ghosts | syncopation | earCandy | stab | rubato | ornaments | swell |
+|---|---|---|---|---|---|---|---|---|---|---|
+| plain | 0 | 0 | .1 | .25 | .15 | .25 | — | 0 | 0 | 1 |
+| jazzy | .7 | .3 | .4 | .5 | .4 | .25 | — | 0 | 0 | 1 |
+| funky | 0 | .1 | .2 | .9 | .7 | .3 | 1/32 | 0 | 0 | 1 |
+| gentle | 0 | .15 | .3 | 0 | .1 | .2 | — | 0 | 0 | 1 |
+| cinematic | 0 | .15 | .2 | .1 | .1 | .45 | — | 0 | 0 | 1 |
+| electronic | 0 | 0 | .1 | .2 | .45 | .6 | 1/16 | 0 | 0 | 1 |
+| classical | 0 | .1 | 0 | 0 | .05 | 0 | — | .35 | .35 | 2 |
+| romantic | 0 | .15 | 0 | 0 | .05 | 0 | — | 1 | .6 | 3 |
 
 `stab` is the longest a comped chord sounds, in beats, so chord stabs groove like percussion. A style's swing applies only when neither the spec, the emotion nor the groove sets one. Comping patterns can mark a hit as a ghost (`chop`: a quiet downstroke on the beat, then the offbeat), and `upbeats` puts stabs on every offbeat eighth. An intro of offbeat chords alone, with the drums muted, makes the ear hear them as the beat until the kick lands on the true one (*Neon Drop*).
+
+`swell` multiplies the phrase shaping's crescendo (`EXPRESSION.phrase.swell`); above 1, the parts in `EXPRESSION.phrase.follow` (the arpeggio, at half) swell by that share of the extra, so a piano's left hand rises and falls with the tune.
+
+**Ornaments** (`ornaments.js`, `ORNAMENTS` in `song-craft-data.js`) are written into the lead, so the view and the MIDI file show them. With the style's `ornaments` chance, hashed per note, and at least 3 seconds apart:
+
+- a **trill** on the note before a phrase's last, if it lasts a beat or more, from the note above, for 60% of the note, at twice the chance;
+- a **turn** (above, the note, below) on a note of two beats or more that doesn't end a phrase;
+- a **mordent** (the note, below) on a phrase's first note of a beat or more;
+- a **grace note** a step below a note reached by a leap up of a fourth or more.
+
+Their notes take an eighth of a beat at 90 bpm and under, a quarter above, each `soften` (10) quieter than the first, and carry `ornament: true`; the decorated note keeps what's left of its length. A note outside the scale (a borrowed b6) is left plain, since its neighbours aren't the scale's. Harmony voices and a left hand kept under the tune follow the plain melody.
 
 Field recordings and other samples aren't part of this synth.
 
@@ -644,6 +666,7 @@ A song is a plain object. Only `title` (or `id`) and `emotion` are needed; every
             answer: true,                           // call and response with the countermelody
             texture: 'solo', fullness: 0.3,         // solo or polyphonic; parts as if at this energy
             develop: ['invert', 'augment'],         // how its motif bars develop the motif
+            arp: 'octaves',                         // an arpeggio (or left hand) of its own
             breath: false, entries: false,          // turn the defaults off
         },
     },
@@ -652,16 +675,16 @@ A song is a plain object. Only `title` (or `id`) and `emotion` are needed; every
 
 **Where specs go.**
 
-- In the game: add it to `GENRE_SONGS` in `src/features/composer/genre-songs-data.js`, `GAME_SONGS` in `game-songs-data.js`, `CHIP_SONGS` in `chip-songs-data.js` (chiptune, `sound: 'chip'`) or `SONGS` in `songs-data.js`, and it appears in the Composer menu. The tests check that a hand-written hook puts chord tones on at least 85% of its strong beats, and that every scene names a real section.
+- In the game: add it to `GENRE_SONGS` in `src/features/composer/genre-songs-data.js`, `GAME_SONGS` in `game-songs-data.js`, `CHIP_SONGS` in `chip-songs-data.js` (chiptune, `sound: 'chip'`), `CLASSICAL_SONGS` in `classical-songs-data.js` (solo piano, `genre: 'Classical'`) or `SONGS` in `songs-data.js`, and it appears in the Composer menu. The tests check that a hand-written hook puts chord tones on at least 85% of its strong beats, and that every scene names a real section.
 - In the browser console, or from a page that embeds the game: `composer.play({ title: 'Test', emotion: 'tender', key: 'A' })`, `composer.play('first-light')`, `composer.stop()`, and `composer.compose(spec)` to get the score without playing it.
 - In a link: `index.html#song=first-light`, `#feel=heroic`, or `#spec=` followed by the URI-encoded JSON. Browsers need a click before sound, so the song starts on the first click or key press.
 - On the command line: `just compose first-light --melody --midi out.mid` prints the plan (sections, energy, chords, parts) and the melody bar by bar, and writes a Standard MIDI File any DAW can open. Run `just compose path/to/spec.json` for a spec saved as a file.
 
-**What comes out.** `compose(spec)` returns a score: tempo, its `tempoMap` and the `loop`; `sections` with labels, start beats, energy, meter, key and mode, and which is the climax; the `motif`; `chords` with names; and one track per part, each `{ role, name, program, bank, notes: [{ key, beat, beats, vel }] }`. The player schedules those notes on the Web Audio clock through the SoundFont instruments. The view draws each track as its own piano in a grid, with notes falling onto the keys that play them.
+**What comes out.** `compose(spec)` returns a score: tempo, its `tempoMap` and the `loop`; `sections` with labels, start beats, energy, meter, key and mode, and which is the climax; the `motif`; `chords` with names; and one track per part, each `{ role, name, program, bank, notes: [{ key, beat, beats, vel }] }` (an ornament's quick notes also carry `ornament: true`). The player schedules those notes on the Web Audio clock through the SoundFont instruments. The view draws each track as its own piano in a grid, with notes falling onto the keys that play them.
 
 ## 13. Genre recipes
 
-A genre is mostly a groove, a comping rhythm, a bass pattern and a band. Harmony and melody habits come second. Each recipe below is a full song in `src/features/composer/genre-songs-data.js`; the table gives the settings, and the notes explain the moves that make the genre recognisable.
+A genre is mostly a groove, a comping rhythm, a bass pattern and a band. Harmony and melody habits come second. Each recipe below is a full song in `src/features/composer/genre-songs-data.js` (the Classical ones in `classical-songs-data.js`); the table gives the settings, and the notes explain the moves that make the genre recognisable.
 
 | Genre | Song | Key / mode | Tempo | Groove · comp · arp | Band (lead / counter / chords / bass) | Harmony |
 |---|---|---|---|---|---|---|
@@ -677,6 +700,7 @@ A genre is mostly a groove, a comping rhythm, a bass pattern and a band. Harmony
 | Gospel | Sunday Kitchen Choir | Bb major | 84 | ballad + swing 0.67 · pulse | voice oohs / tenor sax / organ / fingered bass, choir pad | I–iii7–IV–iv; a long 8-chord chorus; the gospel key change |
 | Cinematic | The Lighthouse Keeper's Last Night | D minor | 88 | halftime · pulse · ostinato | horns / cello / strings / contrabass, choir, pizzicato ostinato, orchestral kit | i–VI–III–VII; Neapolitan bII–V storm bridge; Picardy dawn ending |
 | Blues | Pawnshop Watch Blues | E major | 92 | swing + swing 0.67 · offbeat | jazz guitar / harmonica / honky-tonk piano / walking bass, jazz kit | the twelve-bar I7–IV7–V7 form; b3 and b7 blue notes in the melody |
+| Classical | Rain Nocturne (and three more, see Classical piano) | Db major | 58 | none · — · nocturne | piano / — / — / — : the left hand is the arpeggio | the cadential 6/4 (I/5–V7–I); appoggiaturas; a minor middle section |
 
 Moves that carry each genre:
 
@@ -699,7 +723,9 @@ The recipes above are songs: the genre lives in what was written for them. A **p
 
 | Field | Does | Used by |
 |---|---|---|
-| `mode`, `groove`, `comp`, `arp`, `style`, `swing`, `legato`, `form`, `power` | defaults in place of the emotion's | every profile |
+| `mode`, `groove`, `comp`, `arp`, `style`, `swing`, `legato`, `form`, `power`, `tempo` | defaults in place of the emotion's | every profile |
+| `band` | programs per part over the emotion's band, as a spec's `band`; null leaves a part out (the spec's own band wins) | classical: piano melody and left hand, nothing else |
+| `arrange` | `ARRANGEMENT` thresholds of its own: `{ arp: 0 }` has the arpeggio play in every section, whatever its fullness | classical: the left hand never stops |
 | `progressions` | per section type, in place of the emotion's whole set; a profile that sets its mode brings them, so the chords are written for that mode | blues, funk, celtic, tango, synthwave |
 | `extend` | plain triads played as `sevenths` (the key's own: Cmaj7, Dm7, G7, Bm7b5), `ninths` (no b9 on iii), `dominant` (every major chord a dominant 7th) or `add9`; written chords stay as written | jazz, bossa, lo-fi, gospel: ninths · blues, funk: dominant · synthwave, EDM: add9 |
 | `voicing` | the chord part: `shell` (3rd and 7th, the root left to the bass), `drop2` (the second voice from the top an octave down, where the range allows) | jazz, bossa: shell · gospel, cinematic: drop2 |
@@ -707,11 +733,24 @@ The recipes above are songs: the genre lives in what was written for them. A **p
 | `avoid` | scale steps the melody leaves out except in passing (`MELODY_RULES.avoid`), by brightness: `{ bright: [4, 7], dark: [2, 6] }` is pentatonic | country, rock, reggae, funk: pentatonic · celtic: the gapped hexatonic · blues: no major 7th |
 | `blue` | steps the melody may flatten (`MELODY_RULES.blue`), outside cadences; a step the chord already flattens (the b7 of I7) is just a chord tone | blues: 3 and 7 |
 | `phrases` | which 4-bar phrases of a composed section repeat an earlier one: `'aab'` repeats line one over IV, then answers it. A repeated note the old chord altered takes the new chord's accidental, so the G# of E7 becomes the G of A7: the blue third, for free. A blue step the old chord flattened stays flat where the new chord leaves it alone: E7's D is A7's blue 7th, not D#. The copy moves an octave where that joins it more closely to the note before | blues |
-| `rules` | `MELODY_RULES` weights of its own: jazz and bossa charge less for a non-chord tone on the beat, since a 9th there is colour; disco charges less for thirds, leaps and turns, and more for straying from the contour | blues, jazz, bossa, disco |
+| `rules` | `MELODY_RULES` weights of its own: jazz and bossa charge less for a non-chord tone on the beat, since a 9th there is colour; disco charges less for thirds, leaps and turns, and more for straying from the contour; classical turns on the appoggiatura | blues, jazz, bossa, disco, classical |
 | `span` | how far the contours reach, as a multiple of `CONTOURS`' heights: 1.75 takes an arch up an octave, so a hook climbs to a held high note instead of circling a fifth | disco |
 | `offbeat` | how many notes nearer the section's density a rhythm cell with an offbeat entry counts, so syncopated cells (`[0.5, 1, 0.5, 2]`, `[1.5, 0.5, 1, 1]`) win over straight ones | disco |
 
 A profile changes every song in its genre, hand-written hooks excepted. The genre songs above keep their own grooves, progressions and hooks, and gain the profile's harmony and melody: the funk song's triads become dominant sevenths, the gospel organ opens into drop-2 ninths, the bossa guitar plays shells.
+
+### Classical piano
+
+The Classical profile is a solo piano: the melody and a left hand (an arpeggio with a `hand`, `nocturne` by default) in program 0, every other part left out, the `romantic` style (rubato, ornaments, a wider swell), the `ternary` form, legato 1, the cadential 6/4 (`I/5 V7 I`, `i/5 V7 i`) for every full close and V7 for every half close, and the appoggiatura rule. `{ genre: 'Classical', emotion }` alone is a nocturne-like piece in the emotion's key; the four songs in the Classical menu group (`classical-songs-data.js`) are each in a composer's manner without quoting any of their pieces:
+
+| Song | Manner | Key, tempo | Left hand | What it shows |
+|---|---|---|---|---|
+| Rain Nocturne | Chopin | Db major, 58, 4/4 | nocturne | heavy rubato and ornaments; a composed B in Bb harmonic minor full of appoggiaturas; a plagal amen with the borrowed iv |
+| Sonatina in C | Mozart | C major, 126, 4/4 | albertiLow; octaves in the minor episode | a rondo (A B A C A coda) with the light classical style; an episode in G, which closes on V of C, and one in C minor |
+| Candlelight Waltz | Chopin's waltzes | A harmonic minor, 150, 3/4 | oompah | the 6/4 taking a bar each in 3/4; a trilled leading tone; C major middle |
+| Storm Sonata | Beethoven | C harmonic minor, 132, 4/4 | octaves; nocturne in the second theme | a rocket up the triad, a written appoggiatura (C to B over G7), a lyrical E flat second theme, one bar of G7 before the return |
+
+A section's own `arp` changes the left hand's figure for that section, as a sonata's second theme does.
 
 To add a genre, start from the recipe: its groove and comping become defaults, and the harmony column says which of `extend`, `cadences` and `voicing` it needs. Then listen to `{ genre, emotion }` with nothing else, and pin in the profile whatever came out wrong.
 

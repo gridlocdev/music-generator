@@ -225,4 +225,14 @@ export const ARPS = {
     tracker:  { order: [0], step: 2, cycle: true },               // an 8-bit chord faked by one voice cycling its notes
     threes:   { order: [0, 1, 2], step: 2 },                      // polymeter: a 3-note cycle over eighths lines up with 4/4 every 3 bars
     triplets: { order: [0, 1, 2, 3, 2, 1], step: 4 / 3 },         // polyrhythm: triplet eighths, three against two
+    // a pianist's left hand (HAND): played over the chord's bass note in the bass register, restarting every bar, to the end
+    nocturne: { step: 2, hand: ['R', 1, 3, 4, 5, 4, 3, 1], wide: true, pedal: true },  // Chopin: root, fifth, tenth, up two octaves and back
+    oompah:   { step: 4, hand: { 3: ['R', 'C', 'C'], 4: ['R', 'C', 'F', 'C'] } },      // a waltz: bass, chord, chord (stride in 4)
+    albertiLow: { step: 2, hand: ['R', 2, 1, 2] },                                       // Mozart: bottom, top, middle, top, close and low
+    octaves:  { step: 2, hand: ['R', 'O'], wide: true },                                 // Beethoven: the bass in broken octaves
 };
+// the left hand's tokens: R the bass note (a slash chord's, so I/5 stands on the fifth), O its octave, F the fifth beside it
+// in the bass, C the chord as a block an octave up; a number is the nth chord tone above the bass: close, within the octave
+// above it, or `wide`, the fifth and then two octaves of chord tones from the octave up (root, fifth, tenth…).
+// `pedal` holds each note to the end of its chord, as the sustain pedal would.
+export const HAND = { range: [33, 45], closeRange: [41, 53], reach: 31, accent: 6 };

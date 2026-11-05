@@ -60,6 +60,23 @@ just compose first-light --midi first-light.mid        # and a Standard MIDI Fil
 just compose feel:tender
 ```
 
+### Transcribing a whistled melody
+
+`just whistle <file or folder> --tempo <bpm>` (`tools/whistle.mjs`, needs ffmpeg for anything but
+`.wav`) turns a whistled recording into a section's `melody:` line. `--tempo` is the speed you
+whistled at, roughly: the tool fits the beat grid within ±10% of it, and since the notation counts
+beats you can whistle slower than the song plays. It snaps notes to 8ths, guesses the key (or takes
+`--key Eb --mode major`), writes `~` on notes with vibrato, and flags notes more than 30 cents off.
+`--meter 3/4` places the bar lines; `--json out.json` keeps the notes. Keep takes in `ideas/`: git
+ignores the audio there but keeps anything else.
+
+```bash
+just whistle ideas/lantern-hook.m4a --tempo 60 --meter 3/4
+```
+
+Tips: start each note with your tongue (a soft "t") when repeating a pitch, so it is heard as a new
+note, and leave a second of silence before the first note.
+
 ### Studying NES soundtracks
 
 `just nsf <file.nsf> [songs…]` (`tools/nsf-report.mjs`) plays an NSF file's music driver in a

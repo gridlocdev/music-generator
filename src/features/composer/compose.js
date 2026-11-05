@@ -9,7 +9,7 @@
 //   4. arrangement and rhythm passes (arrange.js, syncopation.js), and a chip song's echo (chip.js)
 // Detail and feel that a player adds (ghost notes, scoops, swing, ear candy) come later, in perform.js.
 import { degreeToKey, chordName, chordPitchClasses, pitchName } from '../../lib/music-theory.js';
-import { beatToSeconds } from '../../lib/tempo-map.js';
+import { beatToSeconds, bpmAt } from '../../lib/tempo-map.js';
 import { ARRANGEMENT, ROLES, ROLE_NAMES, MELODY_OCTAVE } from './composer-data.js';
 import { velocity, mod } from './meter.js';
 import { planSong, energyShape } from './plan.js';
@@ -20,15 +20,18 @@ import { notatedMelody } from './notation.js';
 import { writeChords, writePad, writeArp, writeCounter, writeBass, writeDrums } from './parts.js';
 import { arrangeSection } from './arrange.js';
 import { syncopate } from './syncopation.js';
+import { ornament } from './ornaments.js';
 import { echoTrack } from './chip.js';
 import { CHIP_BANK, CHIP_KIT_BANK, CHIP_ROLES, CHIP_INSTRUMENTS, CHIP_KITS } from '../../audio/chip-instruments-data.js';
 
 export { parseMelody } from './notation.js';
 
 /**
- * @typedef {{ key: number, beat: number, beats: number, vel: number, anticipates?: number, cycle?: number[] }} Note
+ * @typedef {{ key: number, beat: number, beats: number, vel: number, anticipates?: number, cycle?: number[], ornament?: boolean, vibrato?: true }} Note
  *   anticipates: the beat a note pulled a sixteenth early belongs on; cycle: a tracker arpeggio's semitones over the
- *   key, stepped through while the note sounds (the view and the MIDI file show the key alone)
+ *   key, stepped through while the note sounds (the view and the MIDI file show the key alone); ornament: one of
+ *   the quick notes of a trill, turn, mordent or grace note (ornaments.js), before the note it decorates
+ *   vibrato: marked `~` in a hand-written melody; the performance gives it vibrato (perform.js)
  * @typedef {{ role: string, name: string, program: number, bank: number, notes: Note[] }} Track
  * @typedef {{ type: string, label: string, beat: number, beats: number, energy: number, scene: string,
  *   beatsPerBar: number, meter: string, tonic: number, mode: string, climax: boolean }} Section
@@ -103,24 +106,29 @@ export function compose(spec)
                 key: degreeToKey(sec.tonic, sec.mode, m.degree, MELODY_OCTAVE, m.accidental),
                 beat: sec.beat + m.beat, beats: m.beats * (m.last ? 1 : song.legato),
                 vel: velocity(sec, 'lead', sec.energy, m.beat),
+                ...(m.vibrato && { vibrato: /** @type {true} */ (true) }),
             }));
         }
         let answers = null;
         if (lead.length && sec.answer && track.counter && !sec.mute.includes('counter'))
             ({ lead, counter: answers } = callAndResponse(lead, sec, timeline));
-        track.lead?.notes.push(...lead);
+        // the lead is played ornamented; the parts that follow it (a harmony line, a left hand kept under it) follow the plain tune
+        track.lead?.notes.push(...ornament(lead, sec, bpmAt(plan.tempoMap, sec.beat)));
 
         // which parts play: by fullness, unless muted; a solo is the melody alone (or the pad, with no melody);
         // polyphony brings the countermelody in whatever the fullness
+        // a genre may set its own thresholds: a piano's left hand (the arp) plays whatever the fullness
+        const at = { ...ARRANGEMENT, ...sec.genre.arrange };
         const on = (role)=> !!track[role] && !sec.mute.includes(role)
             && (sec.texture === 'solo' ? role === 'pad' && !lead.length
-                : role === 'drums' ? sec.fullness >= ARRANGEMENT.drums || sec.ending
-                : sec.fullness >= ARRANGEMENT[role] || (role === 'counter' && sec.texture === 'polyphonic'));
+                : role === 'drums' ? sec.fullness >= at.drums || sec.ending
+                : sec.fullness >= at[role] || (role === 'counter' && sec.texture === 'polyphonic'));
         if (answers) track.counter.notes.push(...answers);
         else if (on('counter') && !sec.ending) writeCounter(sec, track.counter, memory, lead);
         // a part that shares the lead's instrument family keeps under it, or the tune is lost in it
         const under = (role)=> track.lead && Math.floor(track[role].program / 8) === Math.floor(track.lead.program / 8) ? lead : [];
-        if (on('arp') && !sec.ending) writeArp(sec, track.arp, memory, under('arp'));
+        // a left hand plays to the last chord; an arpeggio leaves the ending to the others
+        if (on('arp') && (!sec.ending || sec.arp.hand)) writeArp(sec, track.arp, memory, under('arp'));
         if (on('chords')) writeChords(sec, track.chords, memory, under('chords'));
         if (on('pad')) writePad(sec, track.pad, memory);
         if (on('bass')) writeBass(sec, track.bass, memory, plan.sections[index + 1] ? null : sec.tonic);

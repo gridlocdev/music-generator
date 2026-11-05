@@ -3,8 +3,10 @@
 // A spec's `genre` names one (case and spaces don't matter: 'Bossa nova' is bossa-nova); a genre with no profile
 // changes nothing. Every field is optional, and anything the spec sets itself wins.
 //
-// Defaults, in place of the emotion's: mode, groove, comp, arp, style, swing, legato, form, power, sound ('chip': the
-//              chip instruments of audio/chip-instruments-data.js in place of General MIDI ones)
+// Defaults, in place of the emotion's: mode, groove, comp, arp, style, swing, legato, form, power, tempo, sound ('chip':
+//              the chip instruments of audio/chip-instruments-data.js in place of General MIDI ones)
+//   band       instruments over the emotion's, as a spec's band: a program per part, null leaves the part out
+//   arrange    ARRANGEMENT thresholds of its own: { arp: 0 } has the arpeggio (a piano's left hand) play throughout
 // Harmony:
 //   progressions  per section type, in place of the emotion's; a genre that sets its mode brings them, so the chords
 //              are written for that mode
@@ -115,6 +117,15 @@ export const GENRES = {
         span: 1.75, offbeat: 1,
         motif: { repeat: 0.3, skip: 0, leap: 0.4, recover: 0.8, narrow: 1.5, peakFirst: 1.5 },
         rules: { contour: 1.5, skip: 0.3, leap: 0.6, recover: 4, turn: 0.6 },
+    },
+    // solo piano, Mozart to Chopin: the left hand (a HAND pattern of ARPS) under the tune in every section, the
+    // tempo breathing (rubato), ornaments, appoggiaturas that sigh onto the chord, and the cadential 6/4 (I/5 V7 I)
+    'classical': {
+        groove: 'none', comp: 'sustain', arp: 'nocturne', style: 'romantic', legato: 1, form: 'ternary',
+        band: { lead: 0, arp: 0, counter: null, chords: null, pad: null, bass: null, drums: null },
+        arrange: { arp: 0 },
+        cadences: { tonic: { bright: ['I/5', 'V7', 'I'], dark: ['i/5', 'V7', 'i'] }, dominant: { bright: ['V7'], dark: ['V7'] } },
+        rules: { strongNonChord: 4, appoggiatura: 3 },
     },
     'edm': {
         groove: 'dance', comp: 'upbeats', arp: 'sixteenths', style: 'electronic', form: 'edm',

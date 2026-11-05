@@ -52,17 +52,27 @@ export const cadenceChord = (sec)=> parseChord(cadenceSymbols(sec).at(-1), sec.t
 
 // The last bar becomes the cadence's chord, unless the progression already ends on it (Imaj7 counts as I, and a
 // major I in a minor song, the Picardy third, as i). The chord leading in takes the bar before's second half,
-// unless what's there already leads in.
+// unless what's there already leads in. A longer cadence (the cadential 6/4, I/5 V7 I) always plays in full: its
+// lead-ins share the bar before, or take a bar each in an odd meter (3/4), where halves would fall off the beat.
 function withCadence(timeline, sec)
 {
     const chords = cadenceSymbols(sec).map(sym => parseChord(sym, sec.tonic, sec.mode));
-    const final = chords.at(-1);
+    const final = chords.at(-1), leads = chords.slice(0, -1);
+    const end = sec.beat + sec.beats, bar = sec.beatsPerBar, lastBar = end - bar;
+    if (leads.length > 1)
+    {
+        const each = bar % 2 === 0 ? bar / leads.length : bar;
+        const from = lastBar - each * leads.length;
+        if (from < sec.beat - 1e-9) return overlay(timeline, lastBar, end, final);
+        let out = overlay(timeline, lastBar, end, final);
+        leads.forEach((c, i)=> { out = overlay(out, from + i * each, from + (i + 1) * each, c); });
+        return out;
+    }
     if (timeline.at(-1).chord.root === final.root) return timeline;
-    const end = sec.beat + sec.beats, lastBar = end - sec.beatsPerBar;
     let out = overlay(timeline, lastBar, end, final);
     const before = chordAt(timeline, lastBar - 1e-3);
-    if (chords.length > 1 && lastBar > sec.beat && !LEADS_IN[sec.endOn].includes(before.degree) && before.root !== chords[0].root)
-        out = overlay(out, lastBar - sec.beatsPerBar / 2, lastBar, chords[0]);
+    if (leads.length && lastBar > sec.beat && !LEADS_IN[sec.endOn].includes(before.degree) && before.root !== leads[0].root)
+        out = overlay(out, lastBar - bar / 2, lastBar, leads[0]);
     return out;
 }
 

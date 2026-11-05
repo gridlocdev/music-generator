@@ -135,6 +135,8 @@ export const FORMS = {
     verseChorus: ['intro', 'verse', 'pre', 'chorus', 'verse', 'pre', 'chorus', 'bridge', 'chorus', 'chorus', 'outro'],
     edm:     ['intro', 'build', 'drop', 'breakdown', 'build', 'drop', 'outro'],
     blues:   ['intro', 'blues', 'blues', 'blues', 'outro'],
+    ternary: ['intro', 'A', 'B', 'A', 'outro'],                     // a nocturne or minuet: theme, contrast, theme
+    rondo:   ['intro', 'A', 'B', 'A', 'C', 'A', 'outro'],           // a refrain between two episodes
 };
 
 // ---- Section roles -----------------------------------------------------------------------------
@@ -281,6 +283,8 @@ export const MELODY_RULES = {
                             // the passing notes between the beats, where they're heard least
     heldNonChord: 3,        // per beat a non-chord tone lasts beyond half a beat: a dissonance should be short
     hangingNonChord: 6,     // a non-chord tone followed by a rest: it never resolves
+    appoggiatura: 0,        // taken back off a strong-beat non-chord tone that resolves down a step to a chord tone:
+                            // the classical sigh. 0 leaves it to the genre (Classical)
     skip: 1,                // a third: fine, but a line that mostly steps sounds sung, not arpeggiated
     leap: 1.2,              // per degree of a leap beyond a third
     bigLeap: 6,             // per degree beyond a sixth
@@ -310,8 +314,8 @@ export const CADENCE_DEGREES = { half: [2, 5], full: [1], final: [1], deceptive:
 export const PEAK_RULE = { times: 2, cost: 4 };
 
 // ---- Harmony at the scale of a section --------------------------------------------------------------
-// The cadences a section's chords can end on. The last symbol is the last bar's chord; any before it take the second
-// half of the bar before, unless the chord there already leads in. bright: modes with a major third, dark: minor.
+// The cadences a section's chords can end on. The last symbol is the last bar's chord; one before it takes the second
+// half of the bar before, unless the chord there already leads in; two or more (a genre's I/5 V7 I) share that bar. bright: modes with a major third, dark: minor.
 // modal: a mode whose own chords make the cadence, instead of a major V with a leading tone the mode doesn't have.
 // Plain numerals count in the mode: VII is bVII in mixolydian and dorian, II is bII in phrygian, #IV's II in lydian.
 export const CADENCES = {

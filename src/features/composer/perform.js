@@ -46,19 +46,14 @@ export function perform(score, pass = 0, candy = planEarCandy(score, pass))
         if (t.role === 'bass') addBassGhosts(notes, unit, sectionAt, style.ghosts ?? 0);
         notes.sort((a, b)=> a.beat - b.beat || a.key - b.key);
         if (EXPRESSION.run.roles.includes(t.role)) shapeRuns(notes);
-        const ends = EXPRESSION.phrase.roles.includes(t.role) ? shapePhrases(notes, sectionAt) : [];
+        const { roles, follow, swell } = EXPRESSION.phrase, more = (style.swell ?? 1) - 1;
+        const ends = roles.includes(t.role) ? shapePhrases(notes, sectionAt, swell * (style.swell ?? 1)) : [];
+        if (follow[t.role] && more > 0) shapePhrases(notes, sectionAt, swell * more * follow[t.role], 0);
         if (melodic && EXPRESSION.scoop.roles.includes(t.role) && bends(t.program)) addScoops(notes, t.role, ends, score, unit, style.scoops ?? 0);
         if (score.swing) swing(notes, score, sectionAt);
         if (EXPRESSION.glide.roles.includes(t.role) && EXPRESSION.glide.programs.includes(t.program) && melodic) addGlides(notes, sectionAt, unit, t.role);
         if (score.sound === 'chip' && CHIP.timbre.roles.includes(t.role) && melodic) changeTimbre(notes, t.program, sectionAt);
-        const vib = score.sound === 'chip' ? { ...EXPRESSION.vibrato, ...CHIP.vibrato } : EXPRESSION.vibrato;
-        if (vib.roles.includes(t.role) && vib.programs.includes(t.program) && melodic)
-        {
-            const v = vib;
-            for (const n of notes)
-                if (n.beats * spbAt(n.beat) >= v.minSeconds)
-                    n.vibrato = { rate: v.rate + (unit(t.role, 'vib', n.beat) * 2 - 1) * v.rateSpread, cents: v.cents, delay: v.delay, ramp: v.ramp };
-        }
+        addVibrato(notes, t, score, sectionAt, spbAt, unit, melodic);
         const jitter = (EXPRESSION.jitterMs[t.role] ?? 0) / 1000;      // in seconds
         if (jitter)
             for (const n of notes)
@@ -74,6 +69,27 @@ export function perform(score, pass = 0, candy = planEarCandy(score, pass))
         for (const n of notes) if (n.cycle) n.arp = { steps: n.cycle, seconds: CHIP.arp.frames / 60, until: n.beats * spbAt(n.beat) + 0.5 };
         return endBeforeRepeats(notes);
     });
+}
+
+// late vibrato on held notes of the voices that sing. A section with notes marked `~` (a hand-written or whistled
+// melody) is played as marked instead: those notes vibrate, on any melodic instrument and whatever their length, at
+// the style's vibrato (a whistled take's rate and depth, from `just whistle`), and the rest of that section's notes don't
+function addVibrato(notes, t, score, sectionAt, spbAt, unit, melodic)
+{
+    const vib = score.sound === 'chip' ? { ...EXPRESSION.vibrato, ...CHIP.vibrato } : EXPRESSION.vibrato;
+    const marked = new Set(notes.filter(n => n.vibrato === true).map(n => sectionAt(n.beat)));
+    const own = { ...vib, ...score.style?.vibrato };
+    const auto = vib.roles.includes(t.role) && vib.programs.includes(t.program) && melodic;
+    for (const n of notes)
+    {
+        if (marked.has(sectionAt(n.beat)))
+        {
+            if (n.vibrato === true && melodic) n.vibrato = { rate: own.rate, cents: own.cents, delay: own.delay, ramp: own.ramp };
+            else delete n.vibrato;
+        }
+        else if (auto && n.beats * spbAt(n.beat) >= vib.minSeconds)
+            n.vibrato = { rate: vib.rate + (unit(t.role, 'vib', n.beat) * 2 - 1) * vib.rateSpread, cents: vib.cents, delay: vib.delay, ramp: vib.ramp };
+    }
 }
 
 const bends = (program)=> EXPRESSION.scoop.programs.some(([lo, hi])=> program >= lo && program <= hi);
@@ -154,9 +170,9 @@ function shapeRuns(notes)
 
 // a crescendo across each phrase of a section, and a softer last note, so the line breathes like a sung one.
 // Returns each phrase's last note.
-function shapePhrases(notes, sectionAt)
+function shapePhrases(notes, sectionAt, swell, taper = EXPRESSION.phrase.taper)
 {
-    const { bars, swell, taper } = EXPRESSION.phrase;
+    const { bars } = EXPRESSION.phrase;
     const last = new Map();
     for (const n of notes)
     {

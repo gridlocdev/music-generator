@@ -7,8 +7,9 @@
 export const EXPRESSION = {
     // timing drift in milliseconds either way, per part; kick and bass stay tight to hold the groove
     jitterMs: { lead: 12, counter: 10, arp: 5, chords: 8, pad: 15, bass: 0, drums: 0 },
-    // each 4-bar phrase of these parts swells by `swell` velocity from start to end, and its last note tapers by `taper`
-    phrase: { roles: ['lead', 'counter'], bars: 4, swell: 10, taper: 12 },
+    // each 4-bar phrase of these parts swells by `swell` velocity (times the style's) from start to end, and its last
+    // note tapers by `taper`; with a style's swell above 1, the `follow` parts swell by that share of the extra
+    phrase: { roles: ['lead', 'counter'], bars: 4, swell: 10, taper: 12, follow: { arp: 0.5 } },
     // legato slides on instruments that bend (fretless and synth bass, bowed strings, trombone, synth leads),
     // into a note that follows the last one closely, by a step or small leap, off the downbeat; `chance` of those
     glide: {

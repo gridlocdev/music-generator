@@ -3,7 +3,7 @@
 import { chordPitchClasses, degreeToKey, keyToDegree, bassOf } from '../../lib/music-theory.js';
 import { voiceChord, shellClasses, dropTwo } from '../../lib/voicing.js';
 import { RANGES } from './composer-data.js';
-import { DRUM_KEYS, COMP_QUIET } from './patterns-data.js';
+import { DRUM_KEYS, COMP_QUIET, HAND } from './patterns-data.js';
 import { STEP, mod, clamp, chordAt, velocity } from './meter.js';
 import { compBar, bassBar, drumBar, withFeel, withRoll } from './meter-patterns.js';
 import { harmonyVoice } from './harmony.js';
@@ -75,6 +75,7 @@ export function writePad(sec, track, memory)
 
 export function writeArp(sec, track, memory, under = [])
 {
+    if (sec.arp.hand) return writeHand(sec, track, memory, under);
     const { order, step } = sec.arp;
     const len = step * STEP;
     const total = sec.bars * sec.beatsPerBar;
@@ -99,6 +100,50 @@ export function writeArp(sec, track, memory, under = [])
         const note = { key: notes[order[(i + rotate) % order.length] % notes.length], beat: t, beats: len * sec.legato, vel: velocity(sec, 'arp', sec.energy, t - sec.beat) };
         // a tracker arpeggio strikes the chord's lowest note and cycles through the rest every few frames
         track.notes.push(sec.arp.cycle ? { ...note, key: chord[0], cycle: chord.map(k => k - chord[0]) } : note);
+    }
+}
+
+// A pianist's left hand (ARPS with a `hand`): each bar plays the pattern's tokens over the chord's bass (HAND), kept
+// under the melody; with `pedal`, each note rings to the end of its chord.
+function writeHand(sec, track, memory, under)
+{
+    const { step, hand, wide, pedal = false } = sec.arp;
+    const tokens = Array.isArray(hand) ? hand : hand[sec.beatsPerBar] ?? hand[4];
+    const len = step * STEP;
+    const [lo, hi] = wide || tokens.includes('C') ? HAND.range : HAND.closeRange;
+    let current = null, ladder = [], bass = 0, block = [];
+    for (let bar = 0; bar < sec.bars; bar++)
+    {
+        const barStart = sec.beat + bar * sec.beatsPerBar;
+        for (let i = 0; i * len < sec.beatsPerBar - 1e-9; i++)
+        {
+            const t = barStart + i * len;
+            const span = sec.timeline.findLast(s => s.beat <= t + 1e-9) ?? sec.timeline[0];
+            const end = Math.min(span.beat + span.beats, sec.beat + sec.beats);
+            if (span !== current)
+            {
+                current = span;
+                const pcs = chordPitchClasses(span.chord);
+                // the bass nearest the last one, inside the range
+                const pc = bassOf(span.chord);
+                const options = [];
+                for (let k = lo; k <= hi; k++) if (mod(k, 12) === pc) options.push(k);
+                bass = memory.hand === undefined ? options[0] : options.reduce((a, b)=> Math.abs(b - memory.hand) < Math.abs(a - memory.hand) ? b : a);
+                memory.hand = bass;
+                const top = rangeUnder(under, t, end, [bass + 12, bass + HAND.reach])[1];
+                const tones = (from, to)=> { const out = []; for (let k = from; k <= Math.min(to, top); k++) if (pcs.includes(mod(k, 12))) out.push(k); return out; };
+                ladder = wide ? [...tones(bass + 7, bass + 11).slice(0, 1), ...tones(bass + 12, bass + HAND.reach)] : tones(bass + 1, bass + 12);
+                block = tones(bass + 12, bass + 23).slice(0, 3);
+                if (!ladder.length) ladder = [bass + 12];
+                if (!block.length) block = [bass + 12];
+            }
+            const token = tokens[i % tokens.length];
+            const keys = token === 'R' ? [bass] : token === 'O' ? [bass + 12] : token === 'F' ? [bass + 7]
+                : token === 'C' ? block : [ladder[Math.min(token - 1, ladder.length - 1)]];
+            const beats = (pedal ? end - t : len) * (pedal ? 1 : sec.legato);
+            const vel = velocity(sec, 'arp', sec.energy, t - sec.beat) + (token === 'R' ? HAND.accent : 0);
+            for (const key of keys) track.notes.push({ key, beat: t, beats: Math.max(beats, len * sec.legato), vel });
+        }
     }
 }
 

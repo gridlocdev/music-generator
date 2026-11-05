@@ -10,6 +10,7 @@ import { SONGS as WRITTEN } from '../src/features/composer/songs-data.js';
 import { GENRE_SONGS } from '../src/features/composer/genre-songs-data.js';
 import { GAME_SONGS } from '../src/features/composer/game-songs-data.js';
 import { CHIP_SONGS } from '../src/features/composer/chip-songs-data.js';
+import { CLASSICAL_SONGS } from '../src/features/composer/classical-songs-data.js';
 import { EMOTIONS } from '../src/features/composer/composer-data.js';
 import { barAt } from '../src/features/composer/meter.js';
 import { swungTracks } from '../src/features/composer/perform.js';
@@ -18,7 +19,7 @@ import { writeMidi } from '../src/lib/midi-file.js';
 import { tempoSteps } from '../src/lib/tempo-map.js';
 import { noteName } from '../src/lib/notes.js';
 
-const SONGS = [...GAME_SONGS, ...CHIP_SONGS, ...GENRE_SONGS, ...WRITTEN];
+const SONGS = [...GAME_SONGS, ...CHIP_SONGS, ...CLASSICAL_SONGS, ...GENRE_SONGS, ...WRITTEN];
 
 const args = process.argv.slice(2);
 const opt = (f)=> { const i = args.indexOf(f); return i >= 0 ? args[i + 1] : undefined; };

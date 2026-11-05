@@ -276,10 +276,10 @@ export function writeMelody(sec, cfg, variant, motif, timeline, before = null)
     // the cheapest of those go on. A line can take a slightly dearer note now to step into its cadence later.
     // Each path carries what the rules look back at: the last two notes, the last move, the peak, the motif's base.
     /** @typedef {{ cost: number, notes: { d: number, key: number, blue?: boolean }[], prev: number | null, prev2: number | null,
-     *    prevKey: number | null, prevBass: number | null, lastMove: number, prevChordTone: boolean, chordLeap: boolean, peak: number, peakTimes: number, base: number }} Path */
+     *    prevKey: number | null, prevBass: number | null, lastMove: number, prevChordTone: boolean, chordLeap: boolean, peak: number, peakTimes: number, base: number, leaning: boolean }} Path */
     /** @type {Path[]} */
     const start = before === null ? null : keyToDegree(tonic, mode, before, MELODY_OCTAVE);
-    let beam = [{ cost: 0, notes: [], prev: start, prev2: null, prevKey: null, prevBass: null, lastMove: 0, prevChordTone: true, chordLeap: false, peak: -Infinity, peakTimes: 0, base: 0 }];
+    let beam = [{ cost: 0, notes: [], prev: start, prev2: null, prevKey: null, prevBass: null, lastMove: 0, prevChordTone: true, chordLeap: false, peak: -Infinity, peakTimes: 0, base: 0, leaning: false }];
     events.forEach((e, i)=>
     {
         const beatInPhrase = e.beat - e.phrase * 4 * bpb;
@@ -304,7 +304,7 @@ export function writeMelody(sec, cfg, variant, motif, timeline, before = null)
         const next = [];
         for (const path of beam)
         {
-            const { prev, prev2, prevKey, prevBass, lastMove, prevChordTone, chordLeap, peak, peakTimes } = path;
+            const { prev, prev2, prevKey, prevBass, lastMove, prevChordTone, chordLeap, peak, peakTimes, leaning } = path;
             let base = path.base;
             if (e.role === 'motif' && e.first)
             {
@@ -344,6 +344,8 @@ export function writeMelody(sec, cfg, variant, motif, timeline, before = null)
                         ? R.chordLeap * (Math.abs(move) - 2) : motion(prev, d);
                     if (move && lastMove && Math.sign(move) !== Math.sign(lastMove) && Math.abs(lastMove) < 3) c += R.turn;
                     if (!prevChordTone && Math.abs(move) !== 1) c += R.resolve;
+                    // an appoggiatura: a dissonance on the beat that sighs down a step onto the chord earns back some of its cost
+                    if (leaning && chordTone && move === -1) c -= R.appoggiatura;
                     // a leap needs a step back, unless it was through the chord and the line stays on the chord
                     if (prev2 !== null && Math.abs(prev - prev2) >= 3 && !(chordLeap && chordTone))
                     {
@@ -361,13 +363,13 @@ export function writeMelody(sec, cfg, variant, motif, timeline, before = null)
                 if (d === peak && peakTimes >= PEAK_RULE.times) c += PEAK_RULE.cost;
                 if (e.cadence && !CADENCE_DEGREES[e.cadence].includes(stepOf(d))) c += R.cadence;
                 c += (hash(seed, type, variant, i, d, flat ? 'blue' : '') % 1000) / 1000 * R.tieBreak;
-                next.push({ path, d, key: k, blue: !!flat, cost: path.cost + c, base });
+                next.push({ path, d, key: k, blue: !!flat, cost: path.cost + c, base, leaning: strong && !chordTone });
             }
             // a copied blue note whose new chord leaves no room to flatten it is played plain
             if (source && next.length === pushed)
             {
                 const plain = options.find(o => o.d === source.d && !o.blue);
-                next.push({ path, d: plain.d, key: plain.key, blue: false, cost: path.cost, base });
+                next.push({ path, d: plain.d, key: plain.key, blue: false, cost: path.cost, base, leaning: false });
             }
         }
         next.sort((a, b)=> a.cost - b.cost);
@@ -381,12 +383,12 @@ export function writeMelody(sec, cfg, variant, motif, timeline, before = null)
             const peak = Math.max(path.peak, n.d), peakTimes = n.d > path.peak ? 1 : n.d === path.peak ? path.peakTimes + 1 : path.peakTimes;
             const prevChordTone = pcs.includes(mod(n.key, 12)), jump = Math.abs(n.d - (path.prev ?? n.d));
             const chordLeap = path.prevChordTone && prevChordTone && jump >= 3 && jump <= 5;
-            const id = `${path.notes.slice(-3).map(x => x.d)},${n.d},${n.key},${Math.sign(lastMove)},${peak},${peakTimes},${n.base},${chordLeap}`;
+            const id = `${path.notes.slice(-3).map(x => x.d)},${n.d},${n.key},${Math.sign(lastMove)},${peak},${peakTimes},${n.base},${chordLeap},${n.leaning}`;
             if (seen.has(id)) continue;
             seen.add(id);
             beam.push({
                 cost: n.cost, notes: [...path.notes, { d: n.d, key: n.key, blue: n.blue }], prev: n.d, prev2: path.prev,
-                prevKey: n.key, prevBass: bass, lastMove, prevChordTone, chordLeap, peak, peakTimes, base: n.base,
+                prevKey: n.key, prevBass: bass, lastMove, prevChordTone, chordLeap, peak, peakTimes, base: n.base, leaning: n.leaning,
             });
             if (beam.length === MELODY_SEARCH.beam) break;
         }

@@ -9,15 +9,16 @@ import { SONGS as WRITTEN } from '../../src/features/composer/songs-data.js';
 import { GENRE_SONGS } from '../../src/features/composer/genre-songs-data.js';
 import { GAME_SONGS } from '../../src/features/composer/game-songs-data.js';
 import { CHIP_SONGS } from '../../src/features/composer/chip-songs-data.js';
+import { CLASSICAL_SONGS } from '../../src/features/composer/classical-songs-data.js';
 import { parseProgression, parseChord, pitchClass, MODES } from '../../src/lib/music-theory.js';
 import { bpmAt } from '../../src/lib/tempo-map.js';
 import { energyShape } from '../../src/features/composer/plan.js';
 import { passingDim7 } from '../../src/features/composer/harmony.js';
 import { drumBar, withFeel } from '../../src/features/composer/meter-patterns.js';
 import { barAt } from '../../src/features/composer/meter.js';
-import { STYLES, TEMPO } from '../../src/features/composer/song-craft-data.js';
+import { STYLES, TEMPO, ORNAMENTS } from '../../src/features/composer/song-craft-data.js';
 
-const SONGS = [...WRITTEN, ...GENRE_SONGS, ...GAME_SONGS, ...CHIP_SONGS];
+const SONGS = [...WRITTEN, ...GENRE_SONGS, ...GAME_SONGS, ...CHIP_SONGS, ...CLASSICAL_SONGS];
 
 test('every emotion names a known mode, key, groove, form and parts, and its progressions parse', ()=>
 {
@@ -82,7 +83,8 @@ test('every written song and every feeling composes into in-range, in-time parts
     for (const spec of specs)
     {
         const s = compose(spec);
-        assert.ok(s.tracks.length >= 4, `${spec.title}: ${s.tracks.length} parts`);
+        // a solo piano is a melody and a left hand
+        assert.ok(s.tracks.length >= (spec.genre === 'Classical' ? 2 : 4), `${spec.title}: ${s.tracks.length} parts`);
         assert.ok(s.tracks.some(t => t.role === 'lead'), `${spec.title} has a melody`);
         const lead = s.tracks.find(t => t.role === 'lead');
         for (const t of s.tracks)
@@ -104,7 +106,7 @@ const sameFamily = (a, b)=> Math.floor(a.program / 8) === Math.floor(b.program /
 
 test('chords and arpeggio in the lead\'s instrument family stay under it, so the tune is heard', ()=>
 {
-    const specs = [...WRITTEN, ...GENRE_SONGS, ...GAME_SONGS, ...CHIP_SONGS, ...Object.keys(EMOTIONS).map(e => ({ title: e, emotion: e }))];
+    const specs = [...WRITTEN, ...GENRE_SONGS, ...GAME_SONGS, ...CHIP_SONGS, ...CLASSICAL_SONGS, ...Object.keys(EMOTIONS).map(e => ({ title: e, emotion: e }))];
     let checked = 0;
     for (const spec of specs)
     {
@@ -174,14 +176,17 @@ test('handwritten melodies: degrees, accidentals, octaves, rests and lengths', (
     assert.equal(m.beats, 6);
     assert.deepEqual(m.notes.map(n => [n.degree, n.accidental, n.beat, n.beats]), [[1, 0, 0, 1], [3, -1, 1, 0.5], [12, 0, 1.5, 1], [0, 0, 4.5, 1.5]]);
     assert.throws(()=> parseMelody('x'));
-    // written melodies in the song book fill whole bars
+    // written melodies in the song book fill whole bars of their section's meter
     for (const spec of SONGS)
+    {
+        const score = compose(spec);
         for (const [type, sec] of Object.entries(spec.sections ?? {}))
             if (typeof sec.melody === 'string')
             {
-                const beats = (GROOVES[spec.groove ?? EMOTIONS[spec.emotion].groove]).beats;
+                const beats = score.sections.find(s => s.type === type).beatsPerBar;
                 assert.equal(parseMelody(sec.melody).beats % beats, 0, `${spec.id} ${type}`);
             }
+    }
 });
 
 test('every song has a unique id; genre songs have a genre, a story, and scenes that name real sections', ()=>
@@ -209,7 +214,8 @@ test('handwritten hooks put chord tones on strong beats', ()=>
             for (const n of lead)
             {
                 const inBar = (n.beat - sec.beat) % score.beatsPerBar;
-                if (n.beat < sec.beat || n.beat >= sec.beat + sec.beats || !(inBar === 0 || (score.beatsPerBar === 4 && inBar === 2))) continue;
+                // an ornament's first note (a trill or turn from the note above) leans on the beat by design
+                if (n.ornament || n.beat < sec.beat || n.beat >= sec.beat + sec.beats || !(inBar === 0 || (score.beatsPerBar === 4 && inBar === 2))) continue;
                 strong++;
                 if (score.chords.findLast(c => c.beat <= n.beat).tones.includes(n.key % 12)) fit++;
             }
@@ -387,6 +393,84 @@ test('a pentatonic genre keeps its melody off the scale\'s gaps', ()=>
     assert.ok(country.length < plain.length, `country ${country.length} vs plain ${plain.length} F or B`);
     // what's left lands on a beat, where IV's root or V's third is the chord, or passes quickly: never a held clash
     for (const n of country) assert.ok(Math.abs(n.beat - Math.round(n.beat)) < 1e-9 || n.beats <= 0.5, `gap note held at ${n.beat}`);
+});
+
+test('the Classical genre is a solo piano: a melody and a left hand that plays in every section; a spec\'s band still wins', ()=>
+{
+    const s = compose({ title: 'Solo', genre: 'Classical', emotion: 'tender' });
+    assert.deepEqual(s.tracks.map(t => [t.role, t.program]), [['lead', 0], ['arp', 0]]);
+    const hand = s.tracks.find(t => t.role === 'arp').notes;
+    for (const sec of s.sections) assert.ok(hand.some(n => n.beat >= sec.beat && n.beat < sec.beat + sec.beats), `left hand in ${sec.label}`);
+    assert.ok(hand.at(-1).beat + hand.at(-1).beats >= s.beats - 1e-9, 'the left hand plays to the last chord');
+    const strings = compose({ title: 'Solo', genre: 'Classical', emotion: 'tender', band: { lead: 40 } });
+    assert.equal(strings.tracks.find(t => t.role === 'lead').program, 40);
+});
+
+test('rubato: inside a phrase the tempo pushes on toward its high point and broadens into its cadence', ()=>
+{
+    const spec = { title: 'Breath', genre: 'Classical', emotion: 'tender', tempo: 60, form: ['A'] };
+    const s = compose(spec), a = s.sections[0];
+    const start = bpmAt(s.tempoMap, a.beat), peak = bpmAt(s.tempoMap, a.beat + 16 * TEMPO.rubato.peak), end = bpmAt(s.tempoMap, a.beat + 15.9);
+    assert.ok(peak > start && end < start, `${start} → ${peak} → ${end}`);
+    assert.equal(bpmAt(s.tempoMap, a.beat + 16), start, 'the next phrase starts at tempo');
+    const plain = compose({ ...spec, genre: undefined, style: 'plain' });
+    assert.equal(new Set(plain.tempoMap.map(t => t.bpm)).size, 1, 'no rubato without the style');
+});
+
+test('a classical cadence is the cadential 6/4: I/5 and V7 share the bar before I, or take a bar each in 3/4', ()=>
+{
+    const lastChords = (spec, n)=>
+    {
+        const s = compose(spec), a = s.sections.find(x => x.type === 'A'), end = a.beat + a.beats;
+        return s.chords.filter(c => c.beat >= a.beat && c.beat < end).slice(-n).map(c => [c.name, c.beats]);
+    };
+    const four = { title: 'Six-four', genre: 'Classical', emotion: 'joyful', key: 'C', mode: 'major', form: ['A'], sections: { A: { progression: 'I IV V I vi ii V vi' } } };
+    assert.deepEqual(lastChords(four, 3), [['C/G', 2], ['G7', 2], ['C', 4]]);
+    const three = { ...four, meter: '3/4' };
+    assert.deepEqual(lastChords(three, 3), [['C/G', 3], ['G7', 3], ['C', 3]]);
+});
+
+test('a classical melody leans on the beat with appoggiaturas that sigh down a step onto the chord', ()=>
+{
+    let lean = 0, sigh = 0;
+    for (const emotion of ['tender', 'melancholy', 'joyful', 'tense', 'serene', 'hopeful'])
+    {
+        const s = compose({ title: 'Sigh', genre: 'Classical', emotion, style: { ornaments: 0 } });
+        const lead = s.tracks.find(t => t.role === 'lead').notes;
+        const tones = (beat)=> s.chords.findLast(c => c.beat <= beat + 1e-9).tones;
+        for (let i = 0; i + 1 < lead.length; i++)
+        {
+            const n = lead[i], next = lead[i + 1], sec = s.sections.findLast(x => x.beat <= n.beat);
+            const inBar = n.beat - sec.beat - Math.floor((n.beat - sec.beat) / sec.beatsPerBar) * sec.beatsPerBar;
+            const strong = Math.abs(inBar) < 1e-9 || (sec.beatsPerBar === 4 && Math.abs(inBar - 2) < 1e-9);
+            // a section's last note is its cadence's, which has its own rule
+            if (!strong || n.beat + n.beats >= sec.beat + sec.beats - 1e-9 || tones(n.beat).includes(n.key % 12)) continue;
+            lean++;
+            if (n.key - next.key >= 1 && n.key - next.key <= 2 && tones(next.beat).includes(next.key % 12)) sigh++;
+        }
+    }
+    assert.ok(lean >= 8, `${lean} strong-beat dissonances`);
+    assert.ok(sigh / lean >= 0.75, `${sigh}/${lean} resolve down a step to a chord tone`);
+});
+
+test('ornaments decorate long notes with quick neighbours, the same every time, and only in a style that has them', ()=>
+{
+    for (const spec of CLASSICAL_SONGS)
+    {
+        const lead = compose(spec).tracks.find(t => t.role === 'lead').notes;
+        assert.deepEqual(lead, compose(spec).tracks.find(t => t.role === 'lead').notes, `${spec.id} deterministic`);
+        const marked = lead.filter(n => n.ornament);
+        assert.ok(marked.length > 0, `${spec.id} has ornaments`);
+        lead.forEach((n, i)=>
+        {
+            if (!n.ornament) return;
+            const main = lead.slice(i + 1).find(m => !m.ornament);
+            assert.ok(n.beats <= ORNAMENTS.slow * 2 + 1e-9, `${spec.id}: an ornament note is quick`);
+            assert.ok(main && Math.abs(main.key - n.key) <= 2 && main.beat - n.beat < 2, `${spec.id}: an ornament at ${n.beat} leads to its note`);
+        });
+    }
+    const plain = compose({ ...CLASSICAL_SONGS[0], genre: undefined, style: 'plain' });
+    assert.ok(!plain.tracks.some(t => t.notes.some(n => n.ornament)), 'no ornaments in a plain style');
 });
 
 test('the bars between motif statements take its rhythm: the answer rhymes with it, the continuation fragments it', ()=>
