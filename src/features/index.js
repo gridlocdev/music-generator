@@ -2,9 +2,11 @@
 import keyboard from './keyboard/index.js';
 import composer from './composer/index.js';
 import adventure from './adventure/index.js';
+import sketchpad from './sketchpad/index.js';
 
 export const features = [
     keyboard,
     composer,
     adventure,
+    sketchpad,
 ];

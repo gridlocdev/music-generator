@@ -22,6 +22,10 @@ play: _deps
     python3 -m webbrowser http://localhost:{{port}}/
     wait $server
 
+# serve the game with saving to ideas/ for the sketchpad's whistled takes
+sketch: _deps
+    node tools/sketch-server.mjs --port {{port}}
+
 # syntax-check every module and check the layer rules
 check:
     @for f in $(find src -name '*.js'); do node --check "$f" || exit 1; done

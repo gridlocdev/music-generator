@@ -38,6 +38,33 @@ export function smoothPitch(frames, span = 1 / 6)
 }
 
 /**
+ * Notes whistled freely, with no beat: each run of frames on one semitone, split where a note starts again, with its
+ * start and length in seconds. Glides between notes, shorter than `shortest`, are dropped. For a chord whistled as
+ * an arpeggio, where only which notes were heard matters.
+ * @returns {{ time: number, seconds: number, key: number }[]}
+ */
+export function freeNotes(frames, { shortest = 0.08 } = {})
+{
+    if (!frames.length) return [];
+    const offset = tuningOffset(frames), smooth = smoothPitch(frames);
+    const starts = noteStarts(frames, { offset, smooth });
+    const notes = [];
+    let cur = null, next = 0;
+    const close = (t)=> { if (cur) { cur.seconds = t - cur.time; notes.push(cur); cur = null; } };
+    for (let i = 0; i < frames.length; i++)
+    {
+        const t = frames[i].time;
+        let restart = false;
+        while (next < starts.length && starts[next] <= t + 1e-9) { next++; restart = true; }
+        const key = smooth[i] === null ? null : Math.round(smooth[i] - offset);
+        if (cur && (key !== cur.key || restart)) close(t);
+        if (key !== null && !cur) cur = { time: t, key };
+    }
+    close(frames.at(-1).time + (frames.length > 1 ? frames[1].time - frames[0].time : 0.01));
+    return notes.filter(n => n.seconds >= shortest);
+}
+
+/**
  * Times (seconds) where a note starts: after a silence, at a dip in level between two louder stretches (a note
  * tongued again), or where the smoothed pitch settles on a new semitone for at least `hold` seconds (legato).
  */
@@ -80,8 +107,9 @@ export function fitGrid(starts, tempo, { tempoRange = 0.1, steps = 40 } = {})
 {
     if (!starts.length) return { tempo, slot: 30 / tempo, origin: 0 };
     let best = { cost: Infinity, tempo, slot: 30 / tempo, phase: 0 };
-    for (let tr = -tempoRange; tr <= tempoRange + 1e-9; tr += tempoRange / 20)
+    for (let i = tempoRange > 0 ? -20 : 0; i <= (tempoRange > 0 ? 20 : 0); i++)
     {
+        const tr = tempoRange * i / 20;
         const t = tempo * (1 + tr), slot = 30 / t;
         for (let p = 0; p < steps; p++)
         {
@@ -93,6 +121,22 @@ export function fitGrid(starts, tempo, { tempoRange = 0.1, steps = 40 } = {})
     }
     const origin = best.phase + Math.floor((starts[0] - best.phase) / best.slot + 0.5) * best.slot;
     return { tempo: best.tempo, slot: best.slot, origin };
+}
+
+/**
+ * The grid of a take recorded against a click: the click's tempo exactly, its bar lines as beat 0, and the phase of
+ * the notes themselves within half an 8th of the click, so the take's latency (the click reaching the ear, the whistle
+ * reaching the recording) and a player who sits behind the beat don't push notes into the next 8th.
+ * @param {number[]} starts  note starts, seconds (noteStarts)
+ * @param {number} tempo  the click's bpm
+ * @param {number} downbeat  seconds into the take of the click's bar line that becomes beat 0
+ * @returns {{ tempo: number, slot: number, origin: number }}
+ */
+export function clickGrid(starts, tempo, downbeat)
+{
+    const slot = 30 / tempo;
+    const x = (fitGrid(starts, tempo, { tempoRange: 0 }).origin - downbeat) / slot;
+    return { tempo, slot, origin: downbeat + (x - Math.round(x)) * slot };
 }
 
 /**
@@ -132,14 +176,14 @@ export function measureVibrato(pitches, fps, { minCorr = 0.4, minDepth = 0.1 } =
  *   tempo: number, offset: number, origin: number }} key in the whistle's own register; beats from the first grid line;
  *   cents how far the note's centre sat from the key once the tuning offset is taken out
  */
-export function transcribe(frames, { tempo, voiced = 0.4, starts = null } = {})
+export function transcribe(frames, { tempo, voiced = 0.4, starts = null, grid = null } = {})
 {
     if (!(tempo > 0)) throw new Error('transcribe needs the tempo you whistled at');
     const fps = frames.length > 1 ? 1 / (frames[1].time - frames[0].time) : 100;
     const offset = tuningOffset(frames);
     const smooth = smoothPitch(frames);
     starts ??= noteStarts(frames, { offset, smooth });
-    const grid = fitGrid(starts, tempo);
+    grid ??= fitGrid(starts, tempo);
     const last = frames.findLast(f => f.midi !== null);
     if (!last || !starts.length) return { notes: [], tempo: grid.tempo, offset, origin: grid.origin };
     const slots = Math.max(1, Math.round((last.time - grid.origin) / grid.slot + 0.5));

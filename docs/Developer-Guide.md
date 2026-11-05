@@ -62,6 +62,30 @@ just compose feel:tender
 
 ### Transcribing a whistled melody
 
+**The sketchpad.** `just sketch` serves the game like `just serve`, through `tools/sketch-server.mjs`,
+which also saves into `ideas/`. Open **🎙 Whistle sketchpad**, set the tempo you'll whistle at and
+the meter, and press **● Record** (or `R`). After a bar of count-in, whistle the melody. The click is
+a low tick under the pitch tracker's range, but use headphones anyway. A playhead sweeps across the
+bars, your pitch is drawn as you go, the note you're on shows faintly at the playhead, and notes are
+written out about a beat behind it. When you stop, the whole take is read again on the click's grid.
+
+Then the chords: drag over bars (it snaps to half bars, or to beats with Alt held), press `R` and
+whistle the chord's notes as an arpeggio, in any order and octave, in your own time. Nothing plays
+while you do, so the band can't leak into the take. Press `R` again and the chord is named from the
+notes you held longest; starting on its lowest note, a third or seventh, makes an inversion. Bars with
+no chord whistled get chords guessed from the melody, drawn faint. Click any chord to step through
+its runners-up; `Delete` on a dragged stretch forgets the chords whistled there. Fix a note by
+dragging it or with `↑` `↓` (`←` `→` select, `V` vibrato, `Delete` removes). The key is guessed from
+the melody and the chords' notes; the key menu overrides it.
+
+**▶ Play sketch** plays the sketch at the song tempo, **Copy** puts the section's lines on the
+clipboard, and **Save to ideas/** writes the melody take and every chord take (`take-n.wav`,
+`take-n.json`) and `section.js.txt` to `ideas/<name>/`. Under any other server, the files download
+instead. Audio files dropped on the page become melody takes, read at the tempo set, or the chord for
+a dragged stretch.
+
+**From the command line.**
+
 `just whistle <file or folder> --tempo <bpm>` (`tools/whistle.mjs`, needs ffmpeg for anything but
 `.wav`) turns a whistled recording into a section's `melody:` line. `--tempo` is the speed you
 whistled at, roughly: the tool fits the beat grid within ±10% of it, and since the notation counts

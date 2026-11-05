@@ -26,8 +26,17 @@
   #song-intensity { accent-color: #ffc766; width: 120px; }
   #song-story { color: #a9a3bd; font-style: italic; font-size: 13px; flex-basis: 100%; }
   #song-story:empty { display: none; }
-  body.song #help, body.adventure #help { display: none; }
+  body.song #help, body.adventure #help, body.sketchpad #help { display: none; }
   #adventure-bar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 0 16px 8px; color: #a9a3bd; }
+  #sketch-bar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 0 16px 8px; color: #a9a3bd; }
+  #sketch-bar .controls { display: contents; }
+  #sketch-bar select { min-width: 0; }
+  #sketch-bar input[type=number] { width: 4em; }
+  #sketch-bar input, #sketch-bar label { font: inherit; color: inherit; }
+  #sketch-bar input[type=number], #sketch-bar input[type=text] { background: #2a2638; border: 1px solid #4a4560; border-radius: 6px; padding: 3px 6px; }
+  #sketch-bar [role=status] { color: #ffc766; }
+  #sketch-bar pre { flex-basis: 100%; margin: 0; color: #eee; font: 13px ui-monospace, monospace; white-space: pre-wrap; }
+  #sketch-bar pre:empty { display: none; }
   #help { position: fixed; z-index: 10; bottom: 12px; left: 16px; right: 16px; text-align: center; font-size: 13px; color: #a9a3bd; }
   [hidden] { display: none !important; }
 </style>

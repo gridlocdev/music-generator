@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { guessChords, toProgression, chordVocabulary, chordKey } from '../../src/lib/chord-guess.js';
+import { guessChords, toProgression, chordVocabulary, chordKey, nameChord } from '../../src/lib/chord-guess.js';
 import { trackPitch } from '../../src/lib/pitch-track.js';
-import { transcribe, guessKeys } from '../../src/lib/transcribe.js';
+import { transcribe, guessKeys, freeNotes } from '../../src/lib/transcribe.js';
 import { parseChord, pitchClass } from '../../src/lib/music-theory.js';
 import { RATE, whistle, fromNotation } from './whistle-synth.js';
 
@@ -70,4 +70,30 @@ test('chords: the chords settle the key when the notes alone could be either of 
     const notes = fromNotation(`${e('1 3 5 8 5 3 1 3')} | ${e('6, 1 3 6 3 1 6, 1')} | ${e('4 6 8 6 4 6 8 6')} | ${e('5, 7, 2 5 2 7, 5, 7,')}`, 'G', 'major');
     const { key, chords } = chordKey(notes, guessKeys(notes));
     assert.deepEqual([key.key, key.mode, toProgression(chords)], ['G', 'major', 'I vi IV V']);
+});
+
+test('chords: a tune is harmonised a chord a bar or half bar, with no slash basses from its first note', ()=>
+{
+    const harmonise = (text, key, mode, beatsPerBar = 4)=>
+        toProgression(guessChords(fromNotation(text, key, mode), { tonic: pitchClass(key), mode, beatsPerBar, melody: true }), beatsPerBar);
+    assert.equal(harmonise('1 2 3 5 | 3:2 1:2', 'C', 'major'), 'I:2');
+    // passing notes (the 2s of bar 1) don't pull a chord in, and a bar of one repeated note takes the chord that leads home
+    assert.equal(harmonise('3 2 1 2 | 3 3 3:2 | 2 2 2:2 | 3 5 5:2 | 3 2 1 2 | 3 3 3 3 | 2 2 3 2 | 1:4', 'C', 'major'), 'I:2 V I:3 V I');
+});
+
+test('chords: a chord whistled freely for a stretch is named from how long each note was held', ()=>
+{
+    // no beat to it: a loose arpeggio at an unrelated tempo, notes of uneven length
+    const whistled = (text, key, mode, tempo = 133)=> freeNotes(trackPitch(whistle(fromNotation(text, key, mode), { tempo, cents: 15 }), RATE));
+    const name = (text, key = 'C', mode = 'major')=> nameChord(whistled(text, key, mode), { tonic: pitchClass(key), mode }).symbol;
+    assert.equal(name('1 3:1.5 5:0.5 8 5'), 'I');
+    assert.equal(name('6, 1 3:2 6'), 'vi');
+    assert.equal(name('3 5 8:2'), 'I/3');               // the lowest note first, on the third: an inversion
+    assert.equal(name('5, 1:2 3 5'), 'I');              // on the fifth: just the chord
+    assert.equal(name('5, 7, 2 4:2'), 'V7');
+    assert.equal(name('1 3 5 8', 'A', 'minor'), 'i');
+    const read = nameChord(whistled('4 6 8 6', 'C', 'major'), { tonic: 0, mode: 'major' });
+    assert.equal(read.symbol, 'IV');
+    assert.equal(read.others.length, 3);
+    assert.equal(nameChord([], { tonic: 0, mode: 'major' }), null);
 });

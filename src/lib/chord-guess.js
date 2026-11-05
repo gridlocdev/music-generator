@@ -23,6 +23,10 @@ export const CHORD_GUESS = {
     move: { fifthDown: 0.3, toTonic: 0.15 },        // common moves cost less
     endOnTonic: 0.6,                    // a take ends at home: a held last note is the tonic chord, not one it also fits
     startOnTonic: 0.4,                  // and usually starts there: between relative keys, the one whose I comes first
+    // harmonising a tune: triads only (a tune's passing notes would make every chord a 7th), passing notes are normal,
+    // a chord's tones needn't all be heard and its root least of all (G and Bb under a tune are I as often as iii),
+    // and a change between bar lines must earn its place
+    melody: { outside: 0.6, missing: 0.1, rootHeard: 0, half: 2 },
     keysTried: 4,                       // chordKey reads the take in the likeliest few keys
     maxBars: 4,                         // the longest one chord is searched for
 };
@@ -60,9 +64,9 @@ function bassDegree(pc, tonic, mode)
  * @param {{ beat: number, beats: number, key: number }[]} notes
  * @returns {{ score: number, bass: string|null }} bass: the slash degree the arpeggio starts on, when it should be
  */
-export function scoreChord(chord, notes, from, to, { tonic, mode, beatsPerBar = 4, kind = 'triad' })
+export function scoreChord(chord, notes, from, to, { tonic, mode, beatsPerBar = 4, kind = 'triad', melody = false })
 {
-    const C = CHORD_GUESS;
+    const C = CHORD_GUESS, outside = melody ? C.melody.outside : C.outside, missing = melody ? C.melody.missing : C.missing;
     const pcs = chordPitchClasses(chord);
     const heard = new Set();
     let score = -C.prior[kind], first = null, lowest = Infinity;
@@ -75,14 +79,14 @@ export function scoreChord(chord, notes, from, to, { tonic, mode, beatsPerBar = 
         const w = (b - a) * (n.beat >= from ? (onBar ? C.weight.bar : onBeat ? C.weight.beat : C.weight.off) : C.weight.off);
         const pc = mod(n.key, 12);
         if (pcs.includes(pc)) { score += C.inside * w; heard.add(pc); }
-        else score -= C.outside * w;
+        else score -= outside * w;
         if (n.beat >= from && first === null) first = n;
         lowest = Math.min(lowest, n.key);
     }
     // unheard tones count fully once the stretch has three different notes; a held note alone can't sound a chord
     const distinct = new Set(notes.filter(n => Math.min(n.beat + n.beats, to) > Math.max(n.beat, from)).map(n => mod(n.key, 12))).size;
-    score -= C.missing * pcs.filter(pc => !heard.has(pc)).length * Math.min(1, distinct / 3);
-    if (heard.has(chord.root)) score += C.rootHeard;
+    score -= missing * pcs.filter(pc => !heard.has(pc)).length * Math.min(1, distinct / 3);
+    if (heard.has(chord.root)) score += melody ? C.melody.rootHeard : C.rootHeard;
     let bass = null;
     const above = first ? mod(first.key - chord.root, 12) : -1;
     if (first && first.key === lowest && [3, 4, 10, 11].includes(above) && pcs.includes(mod(first.key, 12)))
@@ -103,24 +107,26 @@ function moveCost(a, b, tonic)
 /**
  * The chords of an arpeggio take and where they change.
  * @param {{ beat: number, beats: number, key: number }[]} notes  from transcribe(), beat 0 on a bar line
- * @param {{ tonic: number, mode: string, beatsPerBar?: number }} key
+ * @param {{ tonic: number, mode: string, beatsPerBar?: number, melody?: boolean }} key  melody: harmonise a tune
+ *   instead: no slash basses (its first note isn't a bass), and chords change only on bar lines and half bars
  * @returns {{ beat: number, beats: number, symbol: string, score: number,
  *   others: { symbol: string, score: number }[] }[] & { total?: number }} others: the runners-up for the same
  *   stretch, best first; total: the whole reading's score, to compare keys
  */
-export function guessChords(notes, { tonic, mode, beatsPerBar = 4 })
+export function guessChords(notes, { tonic, mode, beatsPerBar = 4, melody = false })
 {
     if (!notes.length) return [];
     const C = CHORD_GUESS;
     const end = Math.ceil(Math.max(...notes.map(n => n.beat + n.beats)) / beatsPerBar - 1e-6) * beatsPerBar;
-    const vocab = chordVocabulary(mode).map(([symbol, kind])=> ({ symbol, kind, chord: parseChord(symbol, tonic, mode) }));
+    const vocab = chordVocabulary(mode).filter(([symbol, kind])=> !melody || (kind === 'triad' || kind === 'borrowed') && !/\d/.test(symbol))
+        .map(([symbol, kind])=> ({ symbol, kind, chord: parseChord(symbol, tonic, mode) }));
     const maxLen = C.maxBars * beatsPerBar;
     // a restart: a note starting on this beat that jumps down a 4th or more from the note before it
     const restart = new Set();
     for (let i = 1; i < notes.length; i++) if (notes[i].key <= notes[i - 1].key - 5) restart.add(Math.round(notes[i].beat * 2) / 2);
     const changeCost = (b)=>
     {
-        const base = b % beatsPerBar === 0 ? C.change.bar : (2 * b) % beatsPerBar === 0 ? C.change.half : C.change.beat;
+        const base = b % beatsPerBar === 0 ? C.change.bar : (2 * b) % beatsPerBar === 0 ? (melody ? C.melody.half : C.change.half) : C.change.beat;
         return Math.max(C.change.bar, base - (restart.has(b) ? C.change.restart : 0));
     };
     // best[b][v]: the best total score of beats 0..b with chord v ending at b
@@ -130,12 +136,16 @@ export function guessChords(notes, { tonic, mode, beatsPerBar = 4 })
     const scoreOf = (v, a, b)=>
     {
         const id = `${v},${a},${b}`;
-        if (!scores.has(id)) scores.set(id, scoreChord(vocab[v].chord, notes, a, b, { tonic, mode, beatsPerBar, kind: vocab[v].kind }));
+        if (!scores.has(id)) scores.set(id, scoreChord(vocab[v].chord, notes, a, b, { tonic, mode, beatsPerBar, kind: vocab[v].kind, melody }));
         return scores.get(id);
     };
+    // where a chord may change: any beat in an arpeggio take, the bar lines and half bars (of an even meter) under a tune
+    const every = melody ? (beatsPerBar % 2 ? beatsPerBar : beatsPerBar / 2) : 1;
+    const may = (b)=> b === end || b % every === 0;
     for (let b = 1; b <= end; b++)
         for (let a = Math.max(0, b - maxLen); a < b; a++)
         {
+            if (!may(a) || !may(b)) continue;
             for (let v = 0; v < vocab.length; v++)
             {
                 const s = scoreOf(v, a, b).score;
@@ -163,7 +173,7 @@ export function guessChords(notes, { tonic, mode, beatsPerBar = 4 })
         const { a, u } = from[b][v];
         const { bass } = scoreOf(v, a, b);
         const ranked = vocab.map((c, i)=> ({ symbol: c.symbol, score: scoreOf(i, a, b).score })).sort((x, y)=> y.score - x.score);
-        const symbol = vocab[v].symbol + (bass && !vocab[v].symbol.includes('/') ? `/${bass}` : '');
+        const symbol = vocab[v].symbol + (bass && !melody && !vocab[v].symbol.includes('/') ? `/${bass}` : '');
         out.unshift({ beat: a, beats: b - a, symbol, score: scoreOf(v, a, b).score, others: ranked.filter(r => r.symbol !== vocab[v].symbol).slice(0, 3) });
         b = a; v = u;
     }
@@ -186,6 +196,31 @@ export function chordKey(notes, keys, beatsPerBar = 4)
         if (!best || chords.total > best.chords.total) best = { key, chords };
     }
     return best;
+}
+
+/**
+ * The chord of an arpeggio whistled freely over a stretch of a tune chosen beforehand: no beat, so the notes count
+ * by how long each was held, the stretch is one chord, and its first note sets a slash bass by scoreChord's rule.
+ * @param {{ time: number, seconds: number, key: number }[]} notes  from freeNotes()
+ * @returns {{ symbol: string, score: number, others: { symbol: string, score: number }[] }|null} others: runners-up
+ */
+export function nameChord(notes, { tonic, mode })
+{
+    if (!notes.length) return null;
+    // laid out by seconds; an endless bar weighs every note the same, since none falls on a beat
+    const laid = notes.map(n => ({ beat: n.time, beats: n.seconds, key: n.key }));
+    const from = Math.min(...laid.map(n => n.beat)), to = Math.max(...laid.map(n => n.beat + n.beats));
+    const ranked = chordVocabulary(mode).map(([symbol, kind])=>
+    {
+        const { score, bass } = scoreChord(parseChord(symbol, tonic, mode), laid, from, to, { tonic, mode, beatsPerBar: Infinity, kind });
+        return { symbol, score, bass };
+    }).sort((a, b)=> b.score - a.score);
+    const [best, ...rest] = ranked;
+    return {
+        symbol: best.symbol + (best.bass && !best.symbol.includes('/') ? `/${best.bass}` : ''),
+        score: best.score,
+        others: rest.slice(0, 3).map(({ symbol, score })=> ({ symbol, score })),
+    };
 }
 
 const barsText = (bars)=> String(Math.round(bars * 1000) / 1000);

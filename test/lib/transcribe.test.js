@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { trackPitch } from '../../src/lib/pitch-track.js';
-import { transcribe, tuningOffset, measureVibrato, guessKeys, spellDegree, toNotation, vibratoSummary } from '../../src/lib/transcribe.js';
+import { transcribe, tuningOffset, measureVibrato, guessKeys, spellDegree, toNotation, vibratoSummary, noteStarts, clickGrid, freeNotes } from '../../src/lib/transcribe.js';
 import { parseMelody } from '../../src/features/composer/notation.js';
 import { pitchClass } from '../../src/lib/music-theory.js';
 import { RATE, whistle, fromNotation } from './whistle-synth.js';
@@ -99,4 +99,26 @@ test('transcribe: a legato line with no breaks between notes is split by its pit
     const s = whistle(notes, { tempo: 90, cents: 12 });
     const t = transcribe(trackPitch(s, RATE), { tempo: 88 });
     assert.equal(toNotation(t.notes, { tonic: pitchClass('D'), mode: 'minor' }), text);
+});
+
+test('click grid: a take recorded against a click keeps its bar lines, through latency and a player behind the beat', ()=>
+{
+    // a bar of count-in at 90 bpm, then the tune, whistled 70 ms late (the click reaching the ear, the whistle the mic)
+    const text = '5 3 2 1 | 3:2 1:0.5 6,:0.5 1 | 4 6 8 6 | 7:2 5:2';
+    const count = 4 * 60 / 90;
+    const notes = fromNotation(text, 'G', 'major').map(n => ({ ...n, beat: n.beat + 4 + 0.07 * 90 / 60 }));
+    const frames = trackPitch(whistle(notes, { tempo: 90, lead: 0 }), RATE);
+    const grid = clickGrid(noteStarts(frames), 90, count);
+    near(grid.origin, count + 0.07, 0.03);
+    const t = transcribe(frames, { tempo: 90, grid });
+    assert.equal(toNotation(t.notes, { tonic: pitchClass('G'), mode: 'major' }), text);
+});
+
+test('free notes: notes whistled with no beat come back in order, glides dropped, repeats split where tongued', ()=>
+{
+    const s = whistle(fromNotation('1 3:2 5:0.5 5:0.5 8:3', 'D', 'major'), { tempo: 110, cents: -20 });
+    const notes = freeNotes(trackPitch(s, RATE));
+    assert.deepEqual(notes.map(n => n.key), [74, 78, 81, 81, 86]);
+    near(notes[1].seconds, 2 * 60 / 110, 0.12);
+    assert.ok(notes.every((n, i)=> i === 0 || n.time >= notes[i - 1].time + notes[i - 1].seconds - 1e-9));
 });

@@ -23,6 +23,9 @@ every instrument in three openly licensed General MIDI SoundFont libraries.
 - **Puts it in a game.** **▶ Adaptive music test level** is a dungeon corridor where the music
   follows you, from pad and bass at the gate to everything in the arena, with stingers for coins,
   guards and a hidden alcove.
+- **Turns whistling into songs.** **🎙 Whistle sketchpad** writes out a melody as you whistle it over
+  a click, at whatever tempo suits you, vibrato included. Drag over bars and whistle a chord's notes to
+  set the chord there. It gives you lines to paste into a song.
 - **Plays like an instrument.** Every key responds to how hard you play, from the mouse or a
   hardware keyboard with velocity and a sustain pedal.
 - **Compares sound libraries.** Switch library and the keyboard keeps the same instrument, and
@@ -52,6 +55,9 @@ Each library's file downloads to the browser the first time you pick one of its 
 | Jump through a song | `←` `→` step between sections | click the timeline |
 | Stop a song | `Esc` | **■ Stop** |
 | Walk the test level | arrows or `W A S D` | |
+| Record a melody in the sketchpad | `R` starts and stops | **● Record** |
+| Set a chord in the sketchpad | drag over bars, then `R` and whistle its notes | |
+| Edit a sketch's note | `↑` `↓` move it, `←` `→` select, `V` vibrato, `Delete` | drag it; click a chord for its next guess |
 
 **Connect MIDI** in the control bar turns on a hardware keyboard.
 
