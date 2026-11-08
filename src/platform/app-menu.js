@@ -46,6 +46,8 @@ export const appMenu = {
     /** opens a file of the checkout (a doc) in its app, or shows one in projects/ in the Finder */
     open: (rel)=> backend?.open(rel),
     reveal: (rel)=> backend?.reveal(rel),
+    /** asks for a file with one of `extensions` and reads it; resolves to { name, bytes }, or null when cancelled */
+    openFile: (title, extensions)=> backend?.openFile(title, extensions) ?? Promise.resolve(null),
     /** asks where to save a file, and saves it; resolves to the path, or '' when cancelled */
     saveFile: (name, bytes)=> backend?.saveFile(name, bytes) ?? Promise.resolve(''),
     /** asks for a new folder to save several files in; resolves to its path, or '' when cancelled */

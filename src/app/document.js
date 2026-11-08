@@ -80,6 +80,14 @@ export async function newProject({ title = 'Untitled', spec = null, bpm = 120, s
     show(p, '');
 }
 
+/** a project made elsewhere (an imported file), opened as a new one, not saved yet */
+export async function openNew(p)
+{
+    if (!await discardOk()) return false;
+    show(p, '');
+    return true;
+}
+
 /** saves to the project's folder, or asks for a name when it has none */
 export async function save()
 {

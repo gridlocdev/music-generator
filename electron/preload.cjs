@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('appMenu', {
     onPick: (fn)=> { ipcRenderer.on('menu:pick', (e, id)=> fn(id)); },
     open: (rel)=> ipcRenderer.invoke('shell:open', rel),
     reveal: (rel)=> ipcRenderer.invoke('shell:reveal', rel),
+    openFile: (title, extensions)=> ipcRenderer.invoke('file:open', title, extensions),
     saveFile: (name, bytes)=> ipcRenderer.invoke('file:save', name, bytes),
     chooseFolder: (name)=> ipcRenderer.invoke('file:chooseFolder', name),
     writeInFolder: (name, bytes)=> ipcRenderer.invoke('file:writeInFolder', name, bytes),

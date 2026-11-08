@@ -64,6 +64,15 @@ ipcMain.handle('file:save', async (e, name, bytes)=>
     await fs.writeFile(filePath, Buffer.from(bytes));
     return filePath;
 });
+// a file to import: picked by the user, read here, handed to the page as its name and bytes
+ipcMain.handle('file:open', async (e, title, extensions)=>
+{
+    const win = BrowserWindow.fromWebContents(e.sender);
+    const { canceled, filePaths } = await dialog.showOpenDialog(win, { title: String(title), properties: ['openFile'],
+        filters: [{ name: String(title), extensions: [...extensions].map(String) }] });
+    if (canceled || !filePaths[0]) return null;
+    return { name: path.basename(filePaths[0]), bytes: new Uint8Array(await fs.readFile(filePaths[0])) };
+});
 // stems go in a new folder the user names; the page then writes its files into that folder and nowhere else
 let chosenFolder = '';
 ipcMain.handle('file:chooseFolder', async (e, name)=>

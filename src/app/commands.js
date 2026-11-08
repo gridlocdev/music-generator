@@ -23,6 +23,7 @@ import { addNewTrack, renameTrack, deleteTrack, duplicateTheTrack, moveTrackBy, 
     deleteClip, splitClipsAt, joinWithNext, nextClip, quantizeClip, loopOver, clipRange, arrangeZoom, arrangePpb, toggleClipMute, nudgeClip,
     humanizeClip, scaleClip, reverseClip } from './tracks.js';
 import { exportDialog } from './bounce.js';
+import { importMidi } from './midi-import.js';
 import { audioEngine } from '../platform/audio-engine.js';
 import { askTempo, askMeter } from './timeline.js';
 import { dialog } from './components/NewProject.jsx';
@@ -141,6 +142,7 @@ export const COMMANDS = {
     save: { label: 'Save', accelerator: 'CmdOrCtrl+S', run: save },
     saveAs: { label: 'Save As…', accelerator: 'Shift+CmdOrCtrl+S', run: saveAs },
     revert: { label: 'Revert to Saved', run: ()=> openProject(projectName.value), enabled: ()=> !!projectName.value && dirty.value },
+    importMidi: { label: 'Import MIDI File…', run: importMidi },
     exportMidi: { label: 'Export as MIDI File…', accelerator: 'CmdOrCtrl+E', run: exportMidi },
     exportAudio: { label: 'Export as Audio File…', accelerator: 'CmdOrCtrl+B', run: ()=> { exportDialog.value = true; }, enabled: ()=> project.value.tracks.some(t => t.clips.length) },
     reveal: { label: 'Show in Finder', run: ()=> appMenu.reveal(`${projectName.value}/project.json`), enabled: ()=> !!projectName.value },

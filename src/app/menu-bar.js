@@ -12,7 +12,7 @@ function menuBar()
     const open = projectList.value.map(x => ({ label: x.title, radio: true, checked: x.name === projectName.value, run: ()=> openProject(x.name) }));
     return [
         { label: 'File', submenu: [item('new'), item('open'), { label: 'Open Project', submenu: open.length ? open : [{ label: 'No projects', enabled: false }] }, '-',
-            item('save'), item('saveAs'), item('revert'), '-', item('exportAudio'), item('exportMidi'), item('reveal')] },
+            item('save'), item('saveAs'), item('revert'), '-', item('importMidi'), item('exportAudio'), item('exportMidi'), item('reveal')] },
         { label: 'Edit', submenu: [item('undo'), item('redo'), '-', item('cut'), item('copy'), item('paste'), item('duplicate'), item('delete'), '-',
             item('selectAll'), item('deselect'), '-', item('split'), item('join'), item('muteClip'), '-',
             item('quantize'), item('humanize'), { label: 'Snap', submenu: snapItems() }, '-',

@@ -17,7 +17,7 @@ The window has a transport bar at the top, a browser on the left (projects, inst
 | `src/lib/voicing.js` | chord voicings: least-motion voice leading, shells, drop 2 |
 | `src/lib/chip-synth.js` | chip instruments made in code: band-limited pulse, PWM, triangle, saw and sine cycles per key zone, drum hits from LFSR noise and falling tones, and the NES sample channel's delta coding for both, as an in-memory font in `parseSf2`'s shape |
 | `src/lib/impulse.js` | a seeded synthetic reverb impulse response |
-| `src/lib/midi-file.js` | writes a Standard MIDI File from a score, with tempo and meter changes (`just compose … --midi`) |
+| `src/lib/midi-file.js` | Standard MIDI Files: writes one from a score, with tempo and meter changes (`just compose … --midi`), and reads one (format 0 or 1) back into tracks of notes |
 | `src/lib/tempo-map.js` | a song's tempo over time (steady or ramping segments) and conversion between beats and seconds |
 | `src/lib/pitch-track.js` | a whistled or sung line's pitch and level, 100 frames a second (YIN), vibrato kept in the frames |
 | `src/lib/transcribe.js` | pitch frames → notes in 8ths and triplets, chosen beat by beat: tuning offset, note starts (silences, dips, pitch changes, glides left out), the beat grid near a rough tempo (or on a click's, `clickGrid`), vibrato per note, key guess, and the composer's degree notation with `~` for vibrato; `freeNotes` reads notes whistled with no beat |
@@ -41,7 +41,7 @@ The window has a transport bar at the top, a browser on the left (projects, inst
 | `src/audio/soundfont-library.js` | the library in use, switched in the browser's Instruments tab; projects load their instruments from it |
 | `src/daw/project.js` | the project model (see [the format](#project-files)), every edit as a pure function returning a new project (notes, clips, tracks, tempo, meter, mixer, inserting and deleting time), and the undo history: a list of earlier projects, with consecutive edits of the same kind (a fader drag) merged into one step |
 | `src/daw/project-format.js` | `project.json`: writing it with one compact line per note, reading it with a format and version check |
-| `src/daw/project-midi.js` | a project as a Standard MIDI File: a track each, drums on channel 10 |
+| `src/daw/project-midi.js` | a project as a Standard MIDI File: a track each, drums on channel 10; and a MIDI file as a new project, or as tracks added to one |
 | `src/daw/meter.js` | bars from meter changes: bar lines, the bar a beat is in, beats per bar |
 | `src/daw/automation.js` | automation lanes: the value at a beat from keyframes |
 | `src/daw/fx.js` | MIDI FX: a registry of types (the app registers them) and `performProject(project, pass)`, which runs each track's notes through its FX for one pass round the loop, returning the notes and any events (a tape stop, a send swell) |
@@ -52,6 +52,7 @@ The window has a transport bar at the top, a browser on the left (projects, inst
 | `src/app/store.js` | the app's state as signals: settings (saved), the open project, its name, history and whether it's saved, the selection (track, clip, notes, a stretch of the chord track), the transport |
 | `src/app/document.js` | the open project as a document: open, save, save as, New (empty, or from the composer), and `edit(fn, mergeKey)`, through which every edit goes so undo can take it back |
 | `src/app/player.js` | plays the open project from the playhead, follows it (and the mixer's meters), stops, seeks, keeps the mixer's settings on the playing channels, and restarts after an edit that changes what's heard |
+| `src/app/midi-import.js` | File → Import MIDI File (a new project) and MIDI files dropped on a track (tracks added at that bar) |
 | `src/app/bounce.js` | Export as Audio File: the project, or a range of it, played once through an offline render and saved as a stereo WAV, or one WAV per track (stems) into a folder, optionally normalized |
 | `src/app/components/ExportDialog.jsx` | the Export dialog: range, mix or stems, normalize, tail |
 | `src/app/recording.js` | whistle → MIDI: recording a take into a new clip on the selected track (or a chord onto the chord track), dropped audio files and kept takes read the same way, keeping takes beside the project, and New from melody |

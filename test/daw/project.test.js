@@ -4,7 +4,7 @@ import { insertTime, deleteTime, humanizeNotes, scaleNotes, reverseNotes, update
     history, commit, undo, redo, newId, setLoop, addMarker, renameMarker, removeMarker, markerRange, moveTrack, duplicateTrack,
     joinClips, quantizeNotes } from '../../src/daw/project.js';
 import { writeProject, readProject } from '../../src/daw/project-format.js';
-import { projectMidi } from '../../src/daw/project-midi.js';
+import { projectMidi, midiProject, addMidiTracks } from '../../src/daw/project-midi.js';
 import { barAt, barLines, beatsPerBar, snap } from '../../src/daw/meter.js';
 import { performProject, registerFx } from '../../src/daw/fx.js';
 
@@ -235,4 +235,32 @@ test('meter changes are added, edited and removed', ()=>
     assert.deepEqual(p.meters[1], { beat: 16, sig: '7/8' });
     assert.equal(removeMeterChange(p, 0), p);
     assert.deepEqual(removeMeterChange(p, 1).meters, [{ beat: 0, sig: '4/4' }]);
+});
+
+test('a MIDI export opens as a project with the same notes, tempo map and meters', ()=>
+{
+    let p = emptyProject({ title: 'Trip', bpm: 90, sig: '3/4', bars: 4 });
+    p = setTempoAt(p, 6, 120);
+    const lead = makeTrack(p, { name: 'Lead', instrument: { bank: 0, program: 73 } });
+    p = addClip(addTrack(p, lead), lead.id, { id: 'c1', start: 3, beats: 6, notes: [{ key: 72, beat: 0, beats: 1, vel: 90 }, { key: 74, beat: 4.5, beats: 1.5, vel: 80 }] });
+    const kit = makeTrack(p, { name: 'Kit', instrument: { bank: 128, program: 0 } });
+    p = addClip(addTrack(p, kit), kit.id, { id: 'c2', start: 0, beats: 3, notes: [{ key: 36, beat: 0, beats: 0.5, vel: 100 }] });
+    const q = midiProject(projectMidi(p), 'file');
+    assert.equal(q.title, 'Trip');
+    assert.deepEqual(q.tempoMap, [{ beat: 0, bpm: 90 }, { beat: 6, bpm: 120 }]);
+    assert.deepEqual(q.meters, [{ beat: 0, sig: '3/4' }]);
+    assert.deepEqual(q.tracks.map(t => [t.name, t.instrument]), [['Lead', { bank: 0, program: 73 }], ['Kit', { bank: 128, program: 0 }]]);
+    assert.deepEqual(trackNotes(q.tracks[0]), trackNotes(p.tracks[0]));
+    assert.deepEqual(trackNotes(q.tracks[1]), trackNotes(p.tracks[1]));
+    assert.equal(q.length, 9);
+    assert.deepEqual(q.tracks[0].clips.map(c => [c.start, c.beats]), [[0, 9]]);
+});
+
+test('MIDI tracks dropped into a project start at the bar of the drop', ()=>
+{
+    const bytes = projectMidi({ ...emptyProject(), tracks: [{ ...makeTrack(emptyProject(), { name: 'A' }), clips: [{ id: 'c1', start: 0, beats: 4, notes: [{ key: 60, beat: 1, beats: 5, vel: 100 }] }] }] });
+    const p = addMidiTracks(emptyProject({ bars: 2 }), bytes, 5.5);
+    assert.equal(p.tracks.length, 1);
+    assert.deepEqual(p.tracks[0].clips.map(c => [c.start, c.beats, c.notes[0].beat]), [[4, 8, 1]]);
+    assert.equal(p.length, 12);
 });

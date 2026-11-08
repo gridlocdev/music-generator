@@ -11,6 +11,7 @@ import { updateClip, moveClip, newId } from '../../daw/project.js';
 import { project, selected, selectedClip, beat, settings, setSettings } from '../store.js';
 import { edit } from '../document.js';
 import { recording, dropAudio, dropTake } from '../recording.js';
+import { isMidi, dropMidi } from '../midi-import.js';
 import { focus } from '../focus.js';
 import { assignPreset, renameTrack, deleteTrack, toggleMute, toggleSolo, newClipAt } from '../tracks.js';
 import { clipMenu, laneMenu, trackMenu } from '../context-menus.js';
@@ -143,7 +144,10 @@ function Lane({ track, beats, ppb })
             onDragLeave={()=> setDropping(false)}
             onDrop={(e)=> { setDropping(false); if (!isFiles(e)) return; e.preventDefault();
                 const take = e.dataTransfer.getData('application/x-take');
-                take ? dropTake(track.id, take, beatAt(e)) : dropAudio(track.id, [...e.dataTransfer.files], beatAt(e)); }}>
+                const files = [...e.dataTransfer.files], midi = files.filter(isMidi), audio = files.filter(f => !isMidi(f));
+                if (take) dropTake(track.id, take, beatAt(e));
+                if (midi.length) dropMidi(midi, beatAt(e));
+                if (audio.length) dropAudio(track.id, audio, beatAt(e)); }}>
             <canvas ref={ref} />
         </div>
     );
