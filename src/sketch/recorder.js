@@ -4,7 +4,7 @@
 import { mic } from '../platform/mic.js';
 import { audioEngine } from '../platform/audio-engine.js';
 import { trackPitch, gateFrames } from '../lib/pitch-track.js';
-import { transcribe, tuningOffset, smoothPitch, noteStarts, clickGrid } from '../lib/transcribe.js';
+import { readLive } from '../lib/transcribe.js';
 import { RECORD, CLICK, LIVE } from './sketchpad-data.js';
 import { beatsPerBar } from '../daw/meter.js';
 
@@ -22,8 +22,8 @@ export function startRecording({ kind, tempo, meter, click })
         // beat 0 is the first bar line after the count-in, as heard: the click reaches the ear late, the whistle the take
         origin: countBeats * beatSec + mic.latency,
         buffer: new Float32Array(rate * RECORD.maxSeconds), length: 0,
-        frames: [], raw: [], nextFrame: 0, peak: 0, offset: 0, seconds: 0, playhead: 0, countIn: countBeats, nextBeat: 0,
-        notes: [], gridOrigin: null, firmedAt: 0, live: null,
+        frames: [], raw: [], nextFrame: 0, peak: 0, offset: 0, tune: { x: 0, y: 0 }, seconds: 0, playhead: 0, countIn: countBeats, nextBeat: 0,
+        notes: [], gridOrigin: null, firmedAt: 0, live: null, reading: null,
     };
 }
 
@@ -63,12 +63,13 @@ export function updateRecording(r)
             r.peak = Math.max(r.peak, f.level);
             if (f.level < Math.max(LIVE.gate, r.peak * LIVE.gateOfPeak)) f.midi = null;
             r.frames.push(f);
+            // the tuning offset as tuningOffset would give it for every frame so far, kept as a running sum
+            if (f.midi !== null) { r.tune.x += Math.cos(2 * Math.PI * f.midi); r.tune.y += Math.sin(2 * Math.PI * f.midi); }
+            r.offset = r.tune.x || r.tune.y ? Math.atan2(r.tune.y, r.tune.x) / (2 * Math.PI) : 0;
             follow(r, f);
         }
-        if (r.frames.length % 50 < frames.length) r.offset = tuningOffset(r.frames);
     }
-    // each reading reads the whole take so far, so a long take is read less often: the work grows with its length, not its square
-    if (r.kind === 'melody' && r.seconds - r.firmedAt >= Math.max(LIVE.firmEvery, r.seconds / LIVE.readings)) firm(r);
+    if (r.kind === 'melody' && r.seconds - r.firmedAt >= LIVE.firmEvery) firm(r);
     return r.length < r.buffer.length;
 }
 
@@ -96,28 +97,20 @@ function follow(r, f)
 }
 
 /**
- * The notes so far, read as they will be when the take stops but only up to a beat behind the playhead: a note
- * still sounding, or whose last 8th the smoothing hasn't passed yet, waits. A ~ comes with its note, once it's held
- * long enough to measure.
+ * The notes so far, up to a beat behind the playhead: a note still sounding, or whose last 8th the smoothing hasn't
+ * passed yet, waits. Once enough notes are in, the click grid is fixed and each reading reads on from about the last
+ * note, so the work stays the same however long the take. A ~ comes with its note, once it's held long enough to
+ * measure. The take as kept is read again, whole, when it stops.
  */
 function firm(r)
 {
     r.firmedAt = r.seconds;
     const cut = r.playhead - r.beatSec * LIVE.behindBeats;
     if (cut <= r.origin) return;
-    let n = r.frames.length;
-    while (n > 0 && r.frames[n - 1].time >= cut) n--;
-    const frames = r.frames.slice(0, n);
-    if (!frames.some(f => f.midi !== null)) return;
-    const offset = tuningOffset(frames), smooth = smoothPitch(frames);
-    const starts = noteStarts(frames, { offset, smooth });
-    if (!starts.length) return;
-    const grid = clickGrid(starts, r.tempo, r.origin);
-    const t = transcribe(frames, { tempo: r.tempo, starts, grid });
-    const last = (cut - grid.origin) / r.beatSec - 0.5;
-    r.notes = t.notes.filter(note => note.beat + note.beats <= last);
-    r.gridOrigin = grid.origin;
-    r.offset = offset;
+    r.reading = readLive(r.reading, r.frames, { tempo: r.tempo, downbeat: r.origin, upTo: cut, offset: r.offset });
+    if (!r.reading) return;
+    r.notes = r.reading.notes;
+    r.gridOrigin = r.reading.grid.origin;
 }
 
 /** ends a take: it comes back, or null when it was too short to hold a note */

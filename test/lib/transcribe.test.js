@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { trackPitch } from '../../src/lib/pitch-track.js';
-import { transcribe, tuningOffset, measureVibrato, guessKeys, spellDegree, toNotation, vibratoSummary, noteStarts, clickGrid, freeNotes } from '../../src/lib/transcribe.js';
+import { transcribe, readLive, tuningOffset, measureVibrato, guessKeys, spellDegree, toNotation, vibratoSummary, noteStarts, clickGrid, freeNotes } from '../../src/lib/transcribe.js';
 import { parseMelody } from '../../src/composer/notation.js';
 import { pitchClass } from '../../src/lib/music-theory.js';
 import { RATE, whistle, fromNotation } from './whistle-synth.js';
@@ -139,4 +139,28 @@ test('free notes: notes whistled with no beat come back in order, glides dropped
     assert.deepEqual(notes.map(n => n.key), [74, 78, 81, 81, 86]);
     near(notes[1].seconds, 2 * 60 / 110, 0.12);
     assert.ok(notes.every((n, i)=> i === 0 || n.time >= notes[i - 1].time + notes[i - 1].seconds - 1e-9));
+});
+
+test('live reading: a take read a little at a time, as it is recorded, gives the notes whistled up to a beat behind', ()=>
+{
+    const text = '5 3 2 1 | 3:2 1:0.5 6,:0.5 1 | 4 6 8 6 | 7:2 5:2 | 5 6 8 10 | 9:1.5 8:0.5 6 5 | 3 5 6 1 | 2:4';
+    const count = 4 * 60 / 90;
+    const notes = fromNotation(text, 'G', 'major').map(n => ({ ...n, beat: n.beat + 4 + 0.05 * 90 / 60 }));
+    const frames = trackPitch(whistle(notes, { tempo: 90, lead: 0, cents: 20 }), RATE);
+    const offset = tuningOffset(frames);
+    const behind = 60 / 90;
+    let live = null;
+    const seen = [];
+    for (let now = count + 0.25; now <= frames.at(-1).time; now += 0.25)
+    {
+        const upTo = now - behind;
+        live = readLive(live, frames.filter(f => f.time < now), { tempo: 90, downbeat: count, upTo, offset });
+        seen.push(live?.notes.length ?? 0);
+    }
+    assert.ok(live.fixed);
+    near(live.grid.origin, count + 0.05, 0.03);
+    // every note but the last, still held when the take ends
+    assert.equal(toNotation(live.notes, { tonic: pitchClass('G'), mode: 'major' }), text.replace(/ \| 2:4$/, ''));
+    // notes once given stay given: the count never goes down
+    assert.ok(seen.every((n, i)=> i === 0 || n >= seen[i - 1] - 1));
 });

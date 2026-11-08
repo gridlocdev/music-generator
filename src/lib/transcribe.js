@@ -225,15 +225,16 @@ export function beatDivisions(pos, beats, divisions = [2, 3])
  * Notes on the grid, each beat split in 8ths or triplets (or 16ths, with 4 in `divisions`) as its note starts need. Each slot takes
  * the median of the smoothed pitch over its voiced frames, and holds a note when `voiced` of it is pitched or a note
  * starts in it (a short staccato note); neighbouring slots on the same key join unless a note start lands between them.
+ * The frames may be a stretch of a take, with the take's `grid` and `offset`: only the beats they cover are read.
  * @returns {{ notes: { beat: number, beats: number, key: number, cents: number, vibrato: { rate: number, depth: number }|null }[],
  *   tempo: number, offset: number, origin: number }} key in the whistle's own register; beats from the first grid line;
  *   cents how far the note's centre sat from the key once the tuning offset is taken out
  */
-export function transcribe(frames, { tempo, voiced = 0.4, starts = null, grid = null, divisions = [2, 3] } = {})
+export function transcribe(frames, { tempo, voiced = 0.4, starts = null, grid = null, offset = null, divisions = [2, 3] } = {})
 {
     if (!(tempo > 0)) throw new Error('transcribe needs the tempo you whistled at');
     const fps = frames.length > 1 ? 1 / (frames[1].time - frames[0].time) : 100;
-    const offset = tuningOffset(frames);
+    offset ??= tuningOffset(frames);
     const smooth = smoothPitch(frames);
     starts ??= noteStarts(frames, { offset, smooth });
     grid ??= fitGrid(starts, tempo);
@@ -245,15 +246,16 @@ export function transcribe(frames, { tempo, voiced = 0.4, starts = null, grid = 
     const split = beatDivisions(pos, beats, divisions);
     const at = (t)=> Math.min(frames.length - 1, Math.max(0, Math.round((t - frames[0].time) * fps)));
     const atBeat = (b)=> at(grid.origin + b * beatSec);
-    // the slots, in beats, and the one each note start lands on
+    // the slots, in beats, from the first beat the frames reach, and the one each note start lands on
+    const first = Math.max(0, Math.floor((frames[0].time - grid.origin) / beatSec));
     const slots = [];
-    split.forEach((d, b)=> { for (let k = 0; k < d; k++) slots.push({ beat: b + k / d, beats: 1 / d }); });
+    split.forEach((d, b)=> { if (b >= first) for (let k = 0; k < d; k++) slots.push({ beat: b + k / d, beats: 1 / d }); });
     const slotOf = (x)=>
     {
         const b = Math.floor(x + 0.125);
-        if (b < 0 || b >= beats) return -1;
+        if (b < first || b >= beats) return -1;
         let i = 0;
-        for (let j = 0; j < b; j++) i += split[j];
+        for (let j = first; j < b; j++) i += split[j];
         return i + Math.min(split[b] - 1, Math.max(0, Math.round((x - b) * split[b])));
     };
     const breaks = new Set(pos.map(slotOf));
@@ -287,6 +289,50 @@ export function transcribe(frames, { tempo, voiced = 0.4, starts = null, grid = 
         n.cents = raw.length ? Math.round(100 * (raw.reduce((s, x)=> s + x, 0) / raw.length - n.key)) : 0;
     }
     return { notes, tempo: grid.tempo, offset, origin: grid.origin };
+}
+
+/**
+ * A take read as it is recorded against a click, a little more each time: `frames` are its frames so far (those from
+ * `upTo` seconds on are left for later), and `live` what the last reading gave (null at first). Until `gridStarts` notes have started, each reading
+ * reads the whole take and fits the click grid again; after that the grid stays, and a reading reads on from a beat
+ * before the last note it gave, so its work doesn't grow with the take. Notes come only up to half a beat before
+ * `upTo`, where the smoothing has passed them.
+ * @param {{ grid: { tempo: number, slot: number, origin: number }, fixed: boolean, notes: object[] }|null} live
+ * @param {{ tempo: number, downbeat: number, upTo: number, offset?: number, gridStarts?: number }} o
+ *   downbeat: seconds into the take of the bar line that is beat 0; offset: the take's tuning (from all its frames)
+ */
+export function readLive(live, frames, { tempo, downbeat, upTo, offset = tuningOffset(frames), gridStarts = 8 })
+{
+    let n = frames.length;
+    while (n > 0 && frames[n - 1].time >= upTo) n--;
+    if (!live?.fixed)
+    {
+        frames = n < frames.length ? frames.slice(0, n) : frames;
+        const smooth = smoothPitch(frames), starts = noteStarts(frames, { offset, smooth });
+        if (!starts.length) return live;
+        const grid = clickGrid(starts, tempo, downbeat);
+        const t = transcribe(frames, { tempo, starts, grid, offset });
+        const last = (upTo - grid.origin) / (2 * grid.slot) - 0.5;
+        return { grid, fixed: starts.length >= gridStarts, notes: t.notes.filter(n => n.beat + n.beats <= last) };
+    }
+    const { grid } = live, beatSec = 2 * grid.slot, time = (b)=> grid.origin + b * beatSec;
+    const end = live.notes.length ? live.notes.at(-1).beat + live.notes.at(-1).beats : 0;
+    // from a beat before the last note's end, or before the next sound after it
+    let i = n;
+    while (i > 0 && frames[i - 1].time >= time(end)) i--;
+    while (i < n && frames[i].midi === null) i++;
+    if (i === n) return live;
+    const from = Math.max(0, Math.floor(Math.max(end, (frames[i].time - grid.origin) / beatSec)) - 1);
+    // the stretch starts an 8th earlier still, so a note starting a little early is caught, and its start is found
+    let a = i;
+    while (a > 0 && frames[a - 1].time >= time(from) - grid.slot - 0.1) a--;
+    const stretch = frames.slice(a, n);
+    const starts = noteStarts(stretch, { offset, smooth: smoothPitch(stretch) }).filter(s => s >= time(from) - grid.slot / 2);
+    const t = transcribe(stretch, { tempo, starts, grid, offset });
+    const keep = live.notes.filter(n => n.beat < from - 1e-9);
+    const kept = keep.length ? keep.at(-1).beat + keep.at(-1).beats : 0;
+    const last = (upTo - grid.origin) / beatSec - 0.5;
+    return { ...live, notes: [...keep, ...t.notes.filter(n => n.beat >= Math.max(from, kept) - 1e-9 && n.beat + n.beats <= last)] };
 }
 
 // Krumhansl–Kessler key profiles
