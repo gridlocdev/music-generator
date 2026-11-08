@@ -48,4 +48,8 @@ export const appMenu = {
     reveal: (rel)=> backend?.reveal(rel),
     /** asks where to save a file, and saves it; resolves to the path, or '' when cancelled */
     saveFile: (name, bytes)=> backend?.saveFile(name, bytes) ?? Promise.resolve(''),
+    /** asks for a new folder to save several files in; resolves to its path, or '' when cancelled */
+    chooseFolder: (name)=> backend?.chooseFolder(name) ?? Promise.resolve(''),
+    /** saves a file in the folder chosen last */
+    writeInFolder: (name, bytes)=> backend?.writeInFolder(name, bytes),
 };

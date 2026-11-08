@@ -176,8 +176,9 @@ Two flags help while working on it:
 
   Exports in a headless run: swap the save dialog for a stub in the main process, with
   `ipcMain.removeHandler('file:save')` and a new `ipcMain.handle('file:save', …)` that keeps the
-  bytes, then run `exportAudio` and read the WAV it was given. The audio export renders offline, so
-  it works with the audio muted.
+  bytes, then run `exportAudio`, press Export in the dialog and read the WAV it was given. Stems go
+  through `file:chooseFolder` and `file:writeInFolder`; stub those the same way. The audio export
+  renders offline, so it works with the audio muted.
 
 ## Adding a command
 

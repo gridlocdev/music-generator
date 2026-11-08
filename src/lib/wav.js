@@ -1,4 +1,4 @@
-// 16-bit PCM WAV files: mono for whistled takes, stereo for a bounced project. Pure.
+// 16-bit PCM WAV files: mono for whistled takes, stereo for a bounced project, and their peak level. Pure.
 
 /** @param {Float32Array} samples -1..1  @returns {Uint8Array} */
 export const encodeWav = (samples, rate)=> encodeWavChannels([samples], rate);
@@ -16,4 +16,20 @@ export function encodeWavChannels(channels, rate)
     for (let i = 0, at = 44; i < n; i++)
         for (let c = 0; c < k; c++, at += 2) v.setInt16(at, Math.round(Math.max(-1, Math.min(1, channels[c][i])) * 0x7fff), true);
     return out;
+}
+
+/** the loudest sample across channels, 0..1  @param {Float32Array[]} channels */
+export function peakOf(channels)
+{
+    let peak = 0;
+    for (const c of channels) for (let i = 0; i < c.length; i++) peak = Math.max(peak, Math.abs(c[i]));
+    return peak;
+}
+
+/** channels scaled so their peak is `dB` (−1: just under full scale); silence stays silent  @param {Float32Array[]} channels */
+export function normalize(channels, dB = -1, peak = peakOf(channels))
+{
+    if (!peak) return channels;
+    const k = 10 ** (dB / 20) / peak;
+    return channels.map(c => c.map(x => x * k));
 }

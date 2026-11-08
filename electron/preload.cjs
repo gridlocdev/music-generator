@@ -15,4 +15,6 @@ contextBridge.exposeInMainWorld('appMenu', {
     open: (rel)=> ipcRenderer.invoke('shell:open', rel),
     reveal: (rel)=> ipcRenderer.invoke('shell:reveal', rel),
     saveFile: (name, bytes)=> ipcRenderer.invoke('file:save', name, bytes),
+    chooseFolder: (name)=> ipcRenderer.invoke('file:chooseFolder', name),
+    writeInFolder: (name, bytes)=> ipcRenderer.invoke('file:writeInFolder', name, bytes),
 });

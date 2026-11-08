@@ -57,7 +57,7 @@ macOS asks whether it may use the microphone.
 | Metronome | Transport ▸ Metronome | **♩** |
 | Zoom the arrangement or piano roll | `Cmd =`, `Cmd -`, `Cmd 0` to fit | `Cmd` + scroll |
 | New, save, save as | `Cmd N`, `Cmd S`, `Shift Cmd S` | **New…**, **Save**, **Save as** |
-| Export as audio (a stereo WAV of the whole project) or MIDI | `Cmd B`, `Cmd E` | |
+| Export as audio (the whole project, the loop or the selection; the mix or each track as its own WAV; normalized if you like) or MIDI | `Cmd B`, `Cmd E` | |
 | Undo, redo | `Cmd Z`, `Shift Cmd Z` | |
 | Cut, copy, paste, duplicate (notes or a clip) | `Cmd X`, `Cmd C`, `Cmd V` (at the playhead), `Cmd D` | right-click, **Paste Here** |
 | Loop | `C` loops the selection (or the section at the playhead), `Cmd U` moves the loop to it | drag along the ruler; right-click a clip, a marker or the ruler |

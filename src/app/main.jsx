@@ -18,6 +18,7 @@ import { Browser } from './components/Browser.jsx';
 import { Arrange } from './components/Arrange.jsx';
 import { Editor } from './components/Editor.jsx';
 import { NewProject } from './components/NewProject.jsx';
+import { ExportDialog } from './components/ExportDialog.jsx';
 import { Ask } from './components/Ask.jsx';
 
 const EDITOR_H = [140, 0.8];        // px, and at most this much of the window
@@ -47,6 +48,7 @@ function App()
             <Split />
             <Editor />
             <NewProject />
+            <ExportDialog />
             <Ask />
         </div>
     );

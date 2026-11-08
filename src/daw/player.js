@@ -28,11 +28,12 @@ const CLICK = { bar: 1760, beat: 1320, seconds: 0.05, gain: 0.3 };  // the metro
  * Starts playing. Returns a handle: the position in beats, seek(beat), setMix(channels), levels() and stop().
  * @param {import('./project.js').Project} project
  * @param {{ font: any, preset: any }[]} instrumentsOf  from loadInstruments, one per track
- * @param {{ from?: number, mix?: { gain: number, pan: number }[], click?: boolean, ticker?: typeof startTicker }} [opts]
- *   from: the beat to start at; mix: each track's gain and pan to start with (see setMix); click: a metronome on
- *   every beat; ticker: what calls the scheduler (an offline render drives it itself)
+ * @param {{ from?: number, until?: number, mix?: { gain: number, pan: number }[], click?: boolean, ticker?: typeof startTicker }} [opts]
+ *   from: the beat to start at; until: the beat to stop at, in a project with no loop (else its end); mix: each
+ *   track's gain and pan to start with (see setMix); click: a metronome on every beat; ticker: what calls the
+ *   scheduler (an offline render drives it itself)
  */
-export function playProject(project, instrumentsOf, { from = 0, mix = null, click = false, ticker = startTicker } = {})
+export function playProject(project, instrumentsOf, { from = 0, until = null, mix = null, click = false, ticker = startTicker } = {})
 {
     const ctx = audioEngine.context;
     const map = project.tempoMap;
@@ -80,7 +81,7 @@ export function playProject(project, instrumentsOf, { from = 0, mix = null, clic
 
     // A segment plays from beat `from`, starting at audio time `at`, until beat `until`: the notes whose grid (where
     // they belong, before anticipation and drift) is in [from, until), even those that sound just before `from`.
-    const end = project.loop?.to ?? projectEnd(project);
+    const end = project.loop?.to ?? until ?? projectEnd(project);
     let seg = { at: ctx.currentTime + LEAD_IN, from: Math.max(0, Math.min(end, from)), until: end, pass: 0 };
     const segments = [seg];
     const timeOf = (s, beat)=> s.at + secs(beat) - secs(s.from);

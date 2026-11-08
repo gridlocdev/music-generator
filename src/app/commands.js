@@ -22,13 +22,13 @@ import { cut, copy, paste, duplicate, canCopy, clipboard } from './clipboard.js'
 import { addNewTrack, renameTrack, deleteTrack, duplicateTheTrack, moveTrackBy, toggleMute, toggleSolo, chooseInstrument,
     deleteClip, splitClipsAt, joinWithNext, nextClip, quantizeClip, loopOver, clipRange, arrangeZoom, arrangePpb, toggleClipMute, nudgeClip,
     humanizeClip, scaleClip, reverseClip } from './tracks.js';
-import { bounce } from './bounce.js';
+import { exportDialog } from './bounce.js';
 import { audioEngine } from '../platform/audio-engine.js';
 import { askTempo, askMeter } from './timeline.js';
 import { dialog } from './components/NewProject.jsx';
 
 /** a dialog is open: commands wait */
-export const busy = ()=> !!(dialog.value || asking.value || audioEngine.rendering);
+export const busy = ()=> !!(dialog.value || exportDialog.value || asking.value || audioEngine.rendering);
 
 // ── what the commands act on ─────────────────────────────────────────────────────────────────────────────────────────
 
@@ -142,7 +142,7 @@ export const COMMANDS = {
     saveAs: { label: 'Save As…', accelerator: 'Shift+CmdOrCtrl+S', run: saveAs },
     revert: { label: 'Revert to Saved', run: ()=> openProject(projectName.value), enabled: ()=> !!projectName.value && dirty.value },
     exportMidi: { label: 'Export as MIDI File…', accelerator: 'CmdOrCtrl+E', run: exportMidi },
-    exportAudio: { label: 'Export as Audio File…', accelerator: 'CmdOrCtrl+B', run: bounce, enabled: ()=> project.value.tracks.some(t => t.clips.length) },
+    exportAudio: { label: 'Export as Audio File…', accelerator: 'CmdOrCtrl+B', run: ()=> { exportDialog.value = true; }, enabled: ()=> project.value.tracks.some(t => t.clips.length) },
     reveal: { label: 'Show in Finder', run: ()=> appMenu.reveal(`${projectName.value}/project.json`), enabled: ()=> !!projectName.value },
     // Edit
     undo: { label: 'Undo', accelerator: 'CmdOrCtrl+Z', text: 'undo', run: undo, enabled: ()=> hist.value.past.length > 0 },

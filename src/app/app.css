@@ -169,4 +169,8 @@ input[type=range] { accent-color: var(--accent); }
 .dialog .actions { display: flex; justify-content: flex-end; gap: 8px; }
 .dialog button.primary { background: var(--accent); color: #1a1a1a; border-color: var(--accent); }
 .dialog.ask { width: min(380px, 92vw); }
+.dialog fieldset { margin: 0; padding: 6px 10px 8px; border: 1px solid var(--line-soft); border-radius: var(--radius); display: grid; gap: 4px; }
+.dialog fieldset legend { color: var(--muted); font-size: 12px; padding: 0 4px; }
+.dialog fieldset label.off { color: var(--muted); }
+.dialog .form input[type=number] { width: 64px; }
 .dialog.ask p { margin: 0; }

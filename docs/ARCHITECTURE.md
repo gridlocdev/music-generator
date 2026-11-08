@@ -52,7 +52,8 @@ The window has a transport bar at the top, a browser on the left (projects, inst
 | `src/app/store.js` | the app's state as signals: settings (saved), the open project, its name, history and whether it's saved, the selection (track, clip, notes, a stretch of the chord track), the transport |
 | `src/app/document.js` | the open project as a document: open, save, save as, New (empty, or from the composer), and `edit(fn, mergeKey)`, through which every edit goes so undo can take it back |
 | `src/app/player.js` | plays the open project from the playhead, follows it (and the mixer's meters), stops, seeks, keeps the mixer's settings on the playing channels, and restarts after an edit that changes what's heard |
-| `src/app/bounce.js` | Export as Audio File: the project played once through an offline render and saved as a stereo WAV |
+| `src/app/bounce.js` | Export as Audio File: the project, or a range of it, played once through an offline render and saved as a stereo WAV, or one WAV per track (stems) into a folder, optionally normalized |
+| `src/app/components/ExportDialog.jsx` | the Export dialog: range, mix or stems, normalize, tail |
 | `src/app/recording.js` | whistle → MIDI: recording a take into a new clip on the selected track (or a chord onto the chord track), dropped audio files and kept takes read the same way, keeping takes beside the project, and New from melody |
 | `src/app/live.js` | musical typing and MIDI input playing the selected track's instrument |
 | `src/app/commands.js` | every command (label, shortcut, action, when it can be used); `menu-bar.js` builds the menu bar from them and keeps it current, `keys.js` answers the plain-key shortcuts (Cmd shortcuts are the menu bar's) |

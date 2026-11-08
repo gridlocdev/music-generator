@@ -64,6 +64,25 @@ ipcMain.handle('file:save', async (e, name, bytes)=>
     await fs.writeFile(filePath, Buffer.from(bytes));
     return filePath;
 });
+// stems go in a new folder the user names; the page then writes its files into that folder and nowhere else
+let chosenFolder = '';
+ipcMain.handle('file:chooseFolder', async (e, name)=>
+{
+    const win = BrowserWindow.fromWebContents(e.sender);
+    const { canceled, filePath } = await dialog.showSaveDialog(win, { title: 'Export each track into a new folder', buttonLabel: 'Export',
+        defaultPath: path.join(app.getPath('documents'), path.basename(String(name))) });
+    if (canceled || !filePath) return '';
+    await fs.mkdir(filePath, { recursive: true });
+    chosenFolder = filePath;
+    return filePath;
+});
+ipcMain.handle('file:writeInFolder', async (e, name, bytes)=>
+{
+    if (!chosenFolder) throw new Error('no folder chosen');
+    const file = path.join(chosenFolder, path.basename(String(name)));
+    await fs.writeFile(file, Buffer.from(bytes));
+    return file;
+});
 
 // ---------------------------------------------------------------- the microphone
 // The app's own page may record audio, and nothing else: no camera, no screen, no other origin.
