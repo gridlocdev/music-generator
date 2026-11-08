@@ -8,6 +8,7 @@ import { projectFiles } from '../platform/project-files.js';
 import { registerFx } from '../daw/fx.js';
 import { HUMANIZE, humanizeFx } from '../composer/humanize-fx.js';
 import { settings, setSettings, loadSettings, project, dirty } from './store.js';
+import { checkLibraries } from './libraries.js';
 import { openProject, newProject } from './document.js';
 import { startLive, connectMidi } from './live.js';
 import { startMenus } from './menu-bar.js';
@@ -70,6 +71,7 @@ addEventListener('beforeunload', (e)=> { if (dirty.value) { e.preventDefault(); 
 
 registerFx(HUMANIZE, humanizeFx);
 await loadSettings();
+await checkLibraries();
 audioEngine.volume = settings.value.volume;
 startLive();
 connectMidi();

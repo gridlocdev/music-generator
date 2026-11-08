@@ -23,3 +23,6 @@ dist/
 
 # icon renders on the way to assets/icon/; `just icons` makes them
 build/
+
+# release builds; `just package` makes them
+release/

@@ -32,6 +32,7 @@ The window has a transport bar at the top, a browser on the left (projects, inst
 | `src/platform/storage.js` | the settings, through the desktop app's `window.appStorage` hook |
 | `src/platform/app-menu.js` | the native menu bar and right-click menus, built by the desktop app from plain items; each item's action stays in the page, which gets back the id of the item picked; also opening a doc, showing a file in the Finder and saving a file where the user picks |
 | `src/platform/project-files.js` | the project files in `projects/`, through the desktop app: listing them, reading and writing one, and its takes |
+| `src/platform/soundfonts.js` | which SoundFont libraries are installed, and downloading one, through the desktop app |
 | `src/audio/soundfont.js` | downloads and caches `.sf2` files; `createInstrument(font, preset, destination)` plays notes as Web Audio voices, with optional delayed vibrato and legato glides |
 | `src/audio/pitch-moves.js` | a voice's pitch moves on its detune: delayed vibrato, scoops, tracker arpeggios, falls |
 | `src/audio/mixer.js` | a project's mixer: channel strips (layer gain, the user's gain, low cut, tone filter, fader, pan with optional auto-pan) and shared reverb and tempo-synced, slowly modulated delay buses |
@@ -57,6 +58,7 @@ The window has a transport bar at the top, a browser on the left (projects, inst
 | `src/app/components/ExportDialog.jsx` | the Export dialog: range, mix or stems, normalize, tail |
 | `src/app/recording.js` | whistle → MIDI: recording a take into a new clip on the selected track (or a chord onto the chord track), dropped audio files and kept takes read the same way, keeping takes beside the project, and New from melody |
 | `src/app/live.js` | musical typing and MIDI input playing the selected track's instrument |
+| `src/app/libraries.js` | the SoundFont library in use (an installed one while the picked one isn't) and downloading the others from the Instruments tab |
 | `src/app/commands.js` | every command (label, shortcut, action, when it can be used); `menu-bar.js` builds the menu bar from them and keeps it current, `keys.js` answers the plain-key shortcuts (Cmd shortcuts are the menu bar's) |
 | `src/app/timeline.js` | tempo and meter: the whole song's, changes from a bar on, and the flags the ruler shows for them with their menu |
 | `src/app/context-menus.js` | the right-click menus, one per thing clicked, which select it first and are built from the commands and the actions below |
@@ -70,7 +72,7 @@ The window has a transport bar at the top, a browser on the left (projects, inst
 | `tools/install-app.sh` | installs the desktop app that runs this checkout (`just install`): a renamed Electron in `~/Applications` on macOS, with the icon from `assets/icon/`; a launcher on Linux |
 | `assets/icon.svg`, `tools/make-icons.sh` | the app icon's source, and the script (`just icons`) that renders it into `assets/icon/` |
 | `tools/project-files.mjs` | the desktop app's `projects/` requests: `GET /projects/` lists the projects, `PUT /projects/<name>/project.json` saves one (to a temporary file, then swapped in), `GET` and `PUT /projects/<name>/takes/…` list and keep its takes |
-| `electron/main.js`, `electron/preload.cjs` | the desktop app (`just app`): serves the checkout on `app://game/`, allows the microphone for that origin only, answers `projects/` requests, and keeps the settings in a file through the `window.appStorage` hook. `--dev` reloads the window when `dist/` changes; `--headless` runs it hidden and muted, with its own settings, for automated tests |
+| `electron/main.js`, `electron/preload.cjs`, `tools/soundfont-download.mjs` | the desktop app (`just app`): serves the checkout on `app://game/`, allows the microphone for that origin only, answers `projects/` requests, checks and downloads SoundFont libraries, and keeps the settings in a file through the `window.appStorage` hook. A release build (`just package`) keeps projects in `Documents/Music Generator/` and downloaded libraries in its user data folder. `--dev` reloads the window when `dist/` changes; `--headless` runs it hidden and muted, with its own settings, for automated tests |
 | `electron/menus.js` | the native menus from the page's items: the menu bar with macOS's app and Window menus round it, and right-click menus; Edit items act on a text field while one has focus. Headless, a right-click menu is kept as `globalThis.contextMenu` for a test to click |
 | `tools/whistle.mjs` | transcribes a whistled recording into a section's `melody:` line, or with `--chords` an arpeggio take into its `progression:` (`just whistle`) |
 | `tools/nsf-report.mjs`, `tools/nsf/` | studies NES music: plays an NSF's 6502 driver (`cpu6502.js`, `nsf.js`), turns its 2A03/VRC6 register writes into notes, drum hits and loops (`decode.js`), and reports how each song's lead moves, its rows, echoes, vibrato and drums (`just nsf`) |
@@ -81,11 +83,11 @@ The synth covers the parts of SF2 that matter for these files: key/velocity spli
 
 ### SoundFont libraries
 
-The libraries live in `soundfonts/<folder>/`, ignored by git and downloaded by `just soundfonts`; `src/audio/soundfont-libraries-data.js` lists them. The instrument menu is built from `soundfont-catalog-data.js`, generated from the files by `just catalog`, so no `.sf2` (32–216 MB each) is fetched until one of its instruments is picked. `soundfont.js` then downloads it once and keeps it in memory. `soundfont-library.js` holds the library in use: switching it reloads the instrument musical typing plays, and the project (restarted if it's playing) loads its instruments from the new library. How to add one is in [Developer-Guide.md](Developer-Guide.md#soundfont-libraries).
+The libraries live in `soundfonts/<folder>/`, ignored by git and downloaded by `just soundfonts`; `src/audio/soundfont-libraries-data.js` lists them. The instrument menu is built from `soundfont-catalog-data.js`, generated from the files by `just catalog`, so no `.sf2` (32–216 MB each) is fetched until one of its instruments is picked. `soundfont.js` then downloads it once and keeps it in memory. Run from the checkout, the app serves `soundfonts/` as it is; a release build serves its bundled GeneralUser GS and the libraries downloaded into its user data folder under the same urls, and `app/libraries.js` falls back to an installed library while the picked one isn't (`platform/soundfonts.js` asks the desktop app which are there and downloads the others). `soundfont-library.js` holds the library in use: switching it reloads the instrument musical typing plays, and the project (restarted if it's playing) loads its instruments from the new library. How to add one is in [Developer-Guide.md](Developer-Guide.md#soundfont-libraries).
 
 ### Project files
 
-A project is a folder, `projects/<name>/`, holding `project.json` and, once whistled into, `takes/` (the takes' WAVs are ignored by git). The file:
+A project is a folder, `projects/<name>/` (in the checkout, or `Documents/Music Generator/projects/` for a release build), holding `project.json` and, once whistled into, `takes/` (the takes' WAVs are ignored by git). The file:
 
 ```
 { format: 'music-generator-project', version: 1, title, length (beats),

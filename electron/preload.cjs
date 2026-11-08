@@ -7,6 +7,14 @@ contextBridge.exposeInMainWorld('appStorage', {
     write: (all)=> ipcRenderer.invoke('save:write', all),
 });
 
+// the SoundFont libraries: which are installed, and downloading one
+const progress = new Set();
+ipcRenderer.on('soundfonts:progress', (e, id, loaded, total)=> progress.forEach(fn => fn(id, loaded, total)));
+contextBridge.exposeInMainWorld('soundfonts', {
+    installed: ()=> ipcRenderer.invoke('soundfonts:installed'),
+    download: (id)=> ipcRenderer.invoke('soundfonts:download', id),
+    onProgress: (fn)=> { progress.add(fn); },
+});
 contextBridge.exposeInMainWorld('appMenu', {
     setBar: (menus)=> ipcRenderer.send('menu:bar', menus),
     popup: (items)=> ipcRenderer.send('menu:popup', items),

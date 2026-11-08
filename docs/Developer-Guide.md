@@ -146,8 +146,8 @@ length, peak and loudness, has a blind mode, and saves the WAVs in `.ab/out/`, w
 open from the Dock: on macOS a copy of the Electron in `node_modules`, renamed to Music Generator with its own
 bundle id, whose only code is a stub that loads `electron/main.js` from the checkout, so it always runs
 what's checked out (as last built), with its `soundfonts/` and `projects/`. On Linux it adds a launcher to
-`~/.local/share/applications`. Run it again after moving the checkout or updating Electron. There is no
-packaged build to share.
+`~/.local/share/applications`. Run it again after moving the checkout or updating Electron. To share
+it, make a release build (below).
 
 `electron/main.js` serves the repository on a private `app://game/` origin, lets that origin (and
 nothing else) use the microphone, and answers the `projects/` requests (`tools/project-files.mjs`: list the projects, save one, keep and list its takes). The
@@ -180,6 +180,34 @@ Two flags help while working on it:
   through `file:chooseFolder` and `file:writeInFolder`; stub those the same way. The audio export
   renders offline, so it works with the audio muted.
 
+### Release builds
+
+`just package` builds the installable app for this OS into `release/` with electron-builder (its
+config is `build` in `package.json`): on macOS a `.dmg` and a `.zip` for Apple silicon and for Intel,
+ad-hoc signed and not notarized; on Windows an NSIS installer; on Linux an AppImage and a `.deb`. It
+carries `dist/`, `src/`, `electron/`, the docs and the two tools the main process uses, unpacked (no
+asar), plus, as resources, every `projects/*/project.json` and `soundfonts/GeneralUser-GS/`
+(downloaded first if it's missing).
+
+A release build keeps its files in other places than the checkout (`app.isPackaged` in
+`electron/main.js`):
+
+- projects are in `Documents/Music Generator/projects`, copied from the bundled ones the first
+  time it opens (if that folder isn't there);
+- SoundFonts come from the app's resources, then from `soundfonts/` in Electron's user data folder,
+  where the Instruments tab's **Download** puts FluidR3_GM and MuseScore_General
+  (`tools/soundfont-download.mjs`: the same sources as `tools/fetch-soundfonts.sh`, read as they
+  stream in, into a temporary folder renamed when done).
+
+A headless run uses a temporary Documents folder, so a test of a release build can launch
+`release/mac-arm64/Music Generator.app/Contents/MacOS/Music Generator --headless` with Playwright's
+`_electron.launch({ executablePath })` and find the projects copied into
+`$TMPDIR/music-generator-headless-documents`.
+
+To publish a release, set `version` in `package.json`, commit, and push a tag `v<version>`.
+`.github/workflows/release.yml` tests and builds on macOS, Windows and Linux and attaches the builds
+to a draft release on GitHub; check it and publish it there.
+
 ## Adding a command
 
 Add it to `COMMANDS` in `src/app/commands.js` with a label, an `accelerator` (a Cmd shortcut the
@@ -197,14 +225,17 @@ right-click menu in `src/app/context-menus.js` it belongs in.
 | MuseScore_General 0.2 | `soundfonts/MuseScore_General/` | 216 MB | MIT; keep its credits in any derivative |
 
 `soundfonts/` is ignored by git; `just soundfonts` runs `tools/fetch-soundfonts.sh`, which
-downloads every library that isn't on disk yet, with its license file next to its `.sf2`. The
-deploy runs the same script. The libraries and their folders are listed in
+downloads every library (or the ones named, like `just soundfonts generaluser`) that isn't on disk
+yet, with its license file next to its `.sf2`. The deploy runs the same script, and so does
+`just package`, for GeneralUser GS only. A release build downloads the other two itself
+(`tools/soundfont-download.mjs`). The libraries and their folders are listed in
 `src/audio/soundfont-libraries-data.js`.
 
 ### Adding or replacing a library
 
 1. Put the `.sf2` and its license file in `soundfonts/<folder>/`, and add the download to
-   `tools/fetch-soundfonts.sh`, so `just soundfonts` and the deploy fetch it too.
+   `tools/fetch-soundfonts.sh`, so `just soundfonts` and the deploy fetch it too, and to `DOWNLOADS`
+   in `tools/soundfont-download.mjs`, so a release build can download it.
 2. Add the library to `LIBRARY_SOURCES` in `src/audio/soundfont-libraries-data.js`.
 3. Run `just catalog` to regenerate `src/audio/soundfont-catalog-data.js`, the list of every
    file and preset that lets the instrument menu load without the files.

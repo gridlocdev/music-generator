@@ -34,9 +34,26 @@ It's laid out like a DAW: a transport, a browser, an arrangement, a piano roll a
 - **Plays like an instrument.** Your computer keys or a MIDI keyboard, with velocity and a sustain
   pedal, play the selected track's instrument.
 
-## Running it
+## Installing it
 
-Music Generator is a desktop app. You need Node.js and [just](https://github.com/casey/just):
+Download the build for your computer from the
+[releases page](https://github.com/gridlocdev/music-generator/releases):
+
+- **macOS**: the `.dmg` (`arm64` for Apple silicon, `x64` for Intel). Drag Music Generator into
+  Applications. The app isn't notarized by Apple, so the first time, right-click it and choose
+  **Open**, then **Open** again. If macOS says it's damaged, run
+  `xattr -dr com.apple.quarantine "/Applications/Music Generator.app"` in Terminal.
+- **Windows**: the `.exe` installer. Windows SmartScreen may warn about an unknown publisher:
+  choose **More info**, then **Run anyway**.
+- **Linux**: the `.AppImage` (make it executable and run it) or the `.deb`.
+
+Projects are kept in `Documents/Music Generator/projects`, where the 38 songs are put the first
+time it opens. It comes with GeneralUser GS; the other two sound libraries can be downloaded from
+the Instruments tab.
+
+## Running it from source
+
+You need Node.js and [just](https://github.com/casey/just):
 
 ```bash
 just soundfonts  # download the three libraries, about 400 MB
@@ -95,6 +112,7 @@ Everything is also in the menu bar (File, Edit, Track, Transport, View), and rig
 | FluidR3_GM | Frank Wen | MIT |
 | MuseScore_General 0.2 | Frank Wen, Michael Cowgill and S. Christian Collins | MIT |
 
+The app comes with GeneralUser GS and downloads the others when you press **Download** in the Instruments tab.
 They aren't stored in this repository: `just soundfonts` downloads them, each with its license.
 
 ## Documentation

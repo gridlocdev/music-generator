@@ -54,6 +54,10 @@ export const projectName = signal('');
 export const saved = signal(hist.value.present);
 export const dirty = computed(()=> project.value !== saved.value);
 /** the projects in projects/, as last listed */
+/** the ids of the SoundFont libraries on this machine */
+export const installedLibraries = signal(/** @type {string[]} */ ([]));
+/** the library being downloaded, and how far along */
+export const libraryDownload = signal(/** @type {{ id: string, fraction: number } | null} */ (null));
 export const projectList = signal(/** @type {{ name: string, title: string }[]} */ ([]));
 
 /** the track the editor shows and musical typing plays, by id */

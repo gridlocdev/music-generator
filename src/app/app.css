@@ -89,6 +89,8 @@ input[type=range] { accent-color: var(--accent); }
 .list .item.on { background: var(--raised); color: var(--accent); }
 .browser .foot { border-top: 1px solid var(--line); padding: 8px 12px; color: var(--muted); font-size: 12px; max-height: 30%; overflow-y: auto; }
 .browser .foot select { width: 100%; }
+.browser .foot .download { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; }
+.browser .foot .download button { font-size: 11px; padding: 2px 8px; white-space: nowrap; }
 .browser .empty { padding: 12px; color: var(--muted); }
 
 /* ── arrangement ────────────────────────────────────────────────────────────────────────────────────────────────── */

@@ -68,9 +68,16 @@ catalog:
 icons:
     bash tools/make-icons.sh assets/icon.svg assets/icon
 
-# download the openly licensed SoundFont libraries into soundfonts/; ones already there are skipped
-soundfonts:
-    bash tools/fetch-soundfonts.sh
+# build the installable app for this OS into release/ (macOS: .dmg and .zip; Windows: installer; Linux: AppImage, .deb)
+# it comes with GeneralUser GS (downloaded first if missing); the other libraries are downloaded in the app
+package: build
+    bash tools/fetch-soundfonts.sh generaluser
+    npx electron-builder --publish never
+
+# download the openly licensed SoundFont libraries into soundfonts/ (all, or those named); ones already there are skipped
+# e.g. just soundfonts   ·   just soundfonts generaluser
+soundfonts *ids:
+    bash tools/fetch-soundfonts.sh {{ids}}
 
 # compose a song without the app: print its plan, optionally its melody and a .mid file
 # e.g. just compose first-light --melody --midi first-light.mid   ·   just compose feel:tender
