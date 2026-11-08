@@ -1,13 +1,12 @@
-// A song's mixer: one channel strip per part, and a shared reverb and tempo-synced delay that every strip sends into,
+// A project's mixer: one channel strip per track, and a shared reverb and tempo-synced delay that every strip sends into,
 // so the parts sound like they're in one room. Everything sums on a mix bus with headroom, then goes through the
 // mastering chain in platform/audio-engine.js.
 //
-// strip: input → layer → user → low cut → tone (low-pass, for sweeps) → fader → pan (auto-pan LFO) → mix bus
+// strip: input → user → low cut → tone (low-pass, for sweeps) → fader → pan (auto-pan LFO) → mix bus
 //                                                                         ├→ reverb send → reverb → low cut → mix bus
 //                                                                         └→ delay send → delay ⟲ (darker each repeat) → mix bus
-// The layer gain is for adaptive music: a part fades in and out with gameplay intensity without touching its fader,
-// which ducking moves. The user gain is the mixer's fader, mute and solo, which nothing else touches. The pan is the
-// song's mix plus the mixer's pan knob. The delay time wobbles slowly (a modulated delay), so the echoes shimmer a little.
+// The user gain is the mixer's fader, mute and solo, which nothing else touches; the fader after the filters is what
+// ducking moves. The delay time wobbles slowly (a modulated delay), so the echoes shimmer a little.
 import { audioEngine } from '../platform/audio-engine.js';
 import { reverbImpulse } from '../lib/impulse.js';
 
@@ -18,7 +17,7 @@ const REVERB = { seconds: 2.2, decay: 3, lowCut: 250 };            // lowCut kee
 const DELAY = { beats: 0.75, feedback: 0.35, tone: 3500, wobble: { rate: 0.3, seconds: 0.003 } };   // a dotted eighth; tone darkens the repeats
 const OPEN_TONE = 20000;         // Hz; the tone filter's resting cutoff, until automation moves it
 
-let impulse = null;             // built once; every song's reverb shares it
+let impulse = null;             // built once; every project's reverb shares it
 
 /** @param {{ tempo: number }} opts */
 export function createMixer({ tempo })
@@ -66,7 +65,6 @@ export function createMixer({ tempo })
             // always stereo: a strip whose voices are all centred (unpanned, mono) would otherwise run mono, and its
             // panner pans mono with equal power, 3 dB quieter than the same notes beside one panned voice
             const input = node(new GainNode(ctx, { channelCount: 2, channelCountMode: 'explicit' }));
-            const layer = node(new GainNode(ctx));
             const user = node(new GainNode(ctx));
             const tone = node(new BiquadFilterNode(ctx, { type: 'lowpass', frequency: OPEN_TONE, Q: 0 }));
             const level = dbToGain(volumeDb);
@@ -74,12 +72,12 @@ export function createMixer({ tempo })
             const panner = node(new StereoPannerNode(ctx, { pan }));
             const reverbSend = node(new GainNode(ctx, { gain: reverb }));
             const delaySendGain = node(new GainNode(ctx, { gain: delaySend }));
-            input.connect(layer).connect(user).connect(node(new BiquadFilterNode(ctx, { type: 'highpass', frequency: lowCut })))
+            input.connect(user).connect(node(new BiquadFilterNode(ctx, { type: 'highpass', frequency: lowCut })))
                 .connect(tone).connect(fader).connect(panner).connect(bus);
             panner.connect(reverbSend).connect(reverbIn);
             panner.connect(delaySendGain).connect(delayIn);
             if (autoPan) lfo(panner.pan, autoPan.rate, autoPan.depth);
-            return { input, layer, user, tone, fader, panner, pan, reverbSend, delaySend: delaySendGain, level };
+            return { input, user, tone, fader, panner, pan, reverbSend, delaySend: delaySendGain, level };
         },
         // a quick fade so nothing clicks, then everything is disconnected, tails included
         dispose(fade = 0.08)

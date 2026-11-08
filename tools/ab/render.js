@@ -69,11 +69,12 @@ if (params.get('compressors') === 'off') globalThis.DynamicsCompressorNode = fun
 const dir = (await fetch(`${root}src/composer/compose.js`, { method: 'HEAD' })).ok ? `${root}src/composer/` : `${root}src/features/composer/`;
 // a song list the version may not have yet (the game songs are newer than some commits)
 const optional = async (file)=> (await fetch(dir + file, { method: 'HEAD' })).ok ? import(dir + file) : {};
+const daw = (await fetch(`${root}src/daw/player.js`, { method: 'HEAD' })).ok;
 
 try
 {
-    const [{ compose }, player, { EMOTIONS }, ...lists] = await Promise.all([
-        import(dir + 'compose.js'), import(dir + 'song-player.js'), import(dir + 'composer-data.js'),
+    const [{ compose }, { EMOTIONS }, ...lists] = await Promise.all([
+        import(dir + 'compose.js'), import(dir + 'composer-data.js'),
         optional('songs-data.js'), optional('genre-songs-data.js'), optional('game-songs-data.js'), optional('chip-songs-data.js'),
     ]);
     const groups = ['Written songs', 'Genres', 'Game music', 'Chiptune'];
@@ -103,11 +104,25 @@ try
         const length = Math.ceil((seconds + 0.25 + TAIL) * RATE);
         offline = new OfflineAudioContext({ numberOfChannels: 2, length, sampleRate: RATE });
         Object.defineProperty(offline, 'currentTime', { get: ()=> now });
-        // newer versions load instruments in a module of their own
-        const loader = await optional('band-loader.js');
-        const band = await (loader.loadBand ?? player.loadBand)(score, ()=> {});
         const started = performance.now();
-        player.playScore(score, band);
+        if (daw)
+        {
+            // newer versions play a project: the song as written notes, with the Humanize MIDI FX on each track
+            const [{ toProject }, { humanizeFx, HUMANIZE }, { registerFx }, { loadInstruments }, { playProject }] = await Promise.all([
+                import(dir + 'to-project.js'), import(dir + 'humanize-fx.js'), import(`${root}src/daw/fx.js`),
+                import(`${root}src/daw/instruments.js`), import(`${root}src/daw/player.js`)]);
+            registerFx(HUMANIZE, humanizeFx);
+            const project = toProject(score);
+            playProject(project, await loadInstruments(project.tracks));
+        }
+        else
+        {
+            const player = await import(dir + 'song-player.js');
+            // some versions load instruments in a module of their own
+            const loader = await optional('band-loader.js');
+            const band = await (loader.loadBand ?? player.loadBand)(score, ()=> {});
+            player.playScore(score, band);
+        }
         const end = length / RATE;
         now = 0;
         const advance = (until)=>

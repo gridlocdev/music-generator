@@ -1,41 +1,29 @@
-// Plays the song in the arrangement: loads its instruments, starts it from the playhead, follows it with the
-// playhead, and keeps the mixer's settings on its channels.
+// Plays the open project: loads its instruments, starts it from the playhead, follows it with the playhead, keeps the
+// mixer's faders and pans on its channels, and starts again from where it is when an edit changes what's heard.
 import { effect } from '@preact/signals';
-import { compose } from '../composer/compose.js';
-import { loadBand } from '../composer/band-loader.js';
-import { playScore } from '../composer/song-player.js';
-import { song, tracks, mix, playing, beat, status, setSettings } from './store.js';
+import { loadInstruments } from '../daw/instruments.js';
+import { playProject } from '../daw/player.js';
+import { projectEnd } from '../daw/project.js';
+import { project, mix, playing, beat, status } from './store.js';
 
 let handle = null;
-let starting = 0;           // id of the newest play request, so a slow load can't start a song that was replaced
+let heard = null;           // the project the handle plays
+let starting = 0;           // id of the newest play request, so a slow load can't start a project that was replaced
 let frame = 0;
-
-/** composes a song from the catalog (or a sketch's spec) and puts it in the arrangement, stopped at its start */
-export function openSong({ id, label, story, spec })
-{
-    stop();
-    const score = compose(spec);
-    song.value = { id, label, story, spec, score };
-    tracks.value = score.tracks.map(t => ({ name: t.name, role: t.role, bank: t.bank, program: t.program, override: null,
-        mute: false, solo: false, volumeDb: 0, pan: 0 }));
-    beat.value = 0;
-    status.value = '';
-    if (id !== 'sketch') setSettings({ songId: id });
-}
 
 export async function play()
 {
-    const s = song.value;
-    if (!s) return;
+    const p = project.value;
     const id = ++starting;
     halt();
     playing.value = true;
     try
     {
-        const band = await loadBand(s.score, text => { if (id === starting) status.value = text; }, tracks.value.map(t => t.override));
+        const instruments = await loadInstruments(p.tracks, text => { if (id === starting) status.value = text; });
         if (id !== starting) return;
-        const from = beat.value >= s.score.beats ? 0 : beat.value;
-        handle = playScore(s.score, band, { from, mix: mix.value });
+        const from = beat.value >= projectEnd(p) ? 0 : beat.value;
+        heard = p;
+        handle = playProject(p, instruments, { from, mix: mix.value });
         status.value = '';
         follow(handle);
     }
@@ -45,7 +33,7 @@ export async function play()
     }
 }
 
-// the playhead follows the song once a frame, until it ends
+// the playhead follows the project once a frame, until it ends
 function follow(h)
 {
     cancelAnimationFrame(frame);
@@ -79,17 +67,38 @@ export const toggle = ()=> playing.value ? stop() : play();
 
 export function seek(to)
 {
-    const s = song.value;
-    if (!s) return;
-    beat.value = Math.max(0, Math.min(s.score.beats, to));
+    beat.value = Math.max(0, Math.min(projectEnd(project.value), to));
     handle?.seek(beat.value);
 }
 
-/** restarts from the playhead, when playing, so a new instrument is heard */
+/** restarts from the playhead, when playing, so a change is heard */
 export function reload()
 {
     if (playing.value) play();
 }
 
-// the mixer's faders, pans, mutes and solos, as they change
+const MIX_ONLY = ['volumeDb', 'pan', 'mute', 'solo'];
+/** whether an edit changed more than the faders, pans, mutes and solos, which play on without a restart */
+function heardDifferently(a, b)
+{
+    if (a.tracks.length !== b.tracks.length || a.tempoMap !== b.tempoMap || a.loop !== b.loop || a.markers !== b.markers || a.groove !== b.groove) return true;
+    return a.tracks.some((t, i)=>
+    {
+        const u = b.tracks[i];
+        if (t === u) return false;
+        if (t.id !== u.id || t.clips !== u.clips || t.instrument !== u.instrument || t.fx !== u.fx || t.automation !== u.automation) return true;
+        return Object.keys(t.mixer).some(k => !MIX_ONLY.includes(k) && t.mixer[k] !== u.mixer[k]);
+    });
+}
+
+// an edit while playing: the faders follow at once; anything else is heard after a moment's pause in the editing
+let restart = 0;
+effect(()=>
+{
+    const p = project.value;
+    if (!handle || !heard || p === heard) return;
+    if (!heardDifferently(heard, p)) { heard = p; return; }
+    clearTimeout(restart);
+    restart = setTimeout(()=> { if (playing.value && project.value !== heard) play(); }, 250);
+});
 effect(()=> { const m = mix.value; handle?.setMix(m); });

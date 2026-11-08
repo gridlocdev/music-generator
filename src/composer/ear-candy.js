@@ -1,9 +1,9 @@
 // The ear-candy layer: small memorable details at structural points (section starts, the end of every few bars),
 // each with a low chance and a cooldown so it never overdoes anything. Pure: a hash of the song and the loop pass
 // decides, so each pass round a loop gets different details while the music stays the same.
-// perform.js plays the note events (risers, accents, flourishes); song-player.js the tape stops and send swells.
+// perform.js plays the note events (risers, accents, flourishes); the Humanize FX hands the tape stops and send swells to the player.
 import { hash } from '../lib/music-theory.js';
-import { EAR_CANDY } from './adaptive-data.js';
+import { EAR_CANDY } from './ear-candy-data.js';
 
 /**
  * @typedef {{ kind: 'riser', beat: number, roles: string[] }

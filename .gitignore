@@ -13,9 +13,10 @@ soundfonts/
 # reference music for tools/nsf (not ours to redistribute)
 reference/
 
-# whistled takes for `just whistle` and the sketchpad: the audio stays local, transcriptions are kept
+# whistled takes: the audio stays local, the notes read from it are kept in the projects
 ideas/**/*.wav
 ideas/**/*.m4a
+projects/**/*.wav
 
 # the bundled UI; `just build` makes it
 dist/

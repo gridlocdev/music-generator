@@ -2,13 +2,13 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { compose } from '../../src/composer/compose.js';
 import { perform, swungTracks } from '../../src/composer/perform.js';
-import { planMix, valueAt } from '../../src/composer/mix-plan.js';
+import { planMix } from '../../src/composer/mix-plan.js';
+import { valueAt } from '../../src/daw/automation.js';
 import { SECTIONS } from '../../src/composer/composer-data.js';
 import { EXPRESSION, MOVEMENT, DUCK, CHIP } from '../../src/composer/performance-data.js';
-import { EAR_CANDY } from '../../src/composer/adaptive-data.js';
+import { EAR_CANDY } from '../../src/composer/ear-candy-data.js';
 import { planEarCandy } from '../../src/composer/ear-candy.js';
 import { swingTime, swingAmount } from '../../src/composer/meter.js';
-import { stingNotes } from '../../src/composer/stingers.js';
 import { beatToSeconds } from '../../src/lib/tempo-map.js';
 import { SONGS } from '../../src/composer/songs-data.js';
 import { GENRE_SONGS } from '../../src/composer/genre-songs-data.js';
@@ -232,16 +232,6 @@ test('ear candy is rare, spaced by its cooldown, and the same for the same pass'
     const lifted = compose({ title: 'Lift', emotion: 'hopeful', lift: 1, style: { earCandy: 0 } });
     const chorus = lifted.sections.findLast(s => s.type === 'chorus');
     assert.ok(planEarCandy(lifted).some(c => c.kind === 'riser' && c.beat === chorus.beat), 'a key change always gets its riser');
-});
-
-test('stingers are in the key and mode of the section playing', ()=>
-{
-    const up = stingNotes('pickup', 2, 'major');                // D major: D F# A D
-    assert.deepEqual(up.map(n => n.key % 12), [2, 6, 9, 2]);
-    assert.deepEqual(stingNotes('pickup', 9, 'minor').map(n => n.key % 12), [9, 0, 4, 9]);
-    const fail = stingNotes('fail', 0, 'major');
-    for (let i = 1; i < fail.length; i++) assert.equal(fail[i - 1].key - fail[i].key, 3, 'falls in minor thirds');
-    assert.throws(()=> stingNotes('nope', 0, 'major'));
 });
 
 test('every played note knows the beat it belongs on, even when it sounds before it', ()=>

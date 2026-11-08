@@ -77,6 +77,11 @@ soundfonts:
 compose *args:
     node tools/compose.mjs {{args}}
 
+# write the catalog's songs as project files in projects/ (all of them, or the ones named); overwrites edits
+# e.g. just projects   ·   just projects first-light
+projects *songs:
+    node tools/make-projects.mjs {{songs}}
+
 # A/B listening: render each song with an older commit and with this checkout, side by side
 # e.g. just ab   ·   just ab a913205   (then open the URL it prints; port 8010 or the next free one)
 ab rev="main": deps

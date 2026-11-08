@@ -1,38 +1,46 @@
-// The mixer: a strip per track of the song (pan, fader, mute, solo) and the master volume.
+// The mixer: a strip per track (pan, fader, mute, solo) and the master volume. Every move is an edit of the project,
+// a drag one undo step.
 import { audioEngine } from '../../platform/audio-engine.js';
-import { ROLE_COLORS } from '../../composer/composer-data.js';
-import { presetFor } from '../../composer/band-loader.js';
-import { tracks, setTrack, selected, settings, setSettings, FADER_FLOOR_DB } from '../store.js';
+import { presetFor } from '../../daw/instruments.js';
+import { setMixer } from '../../daw/project.js';
+import { project, selected, settings, setSettings, FADER_FLOOR_DB } from '../store.js';
+import { edit } from '../document.js';
 import { rgba } from './canvas.js';
 
 const DB = [FADER_FLOOR_DB, 6];
 const db = (v)=> v <= DB[0] ? '-∞' : `${v > 0 ? '+' : ''}${v.toFixed(1)}`;
 const panName = (p)=> Math.abs(p) < 0.01 ? 'C' : `${p < 0 ? 'L' : 'R'}${Math.round(Math.abs(p) * 100)}`;
 
+const set = (id, field, value)=> edit(p => setMixer(p, id, { [field]: value }), `mix:${id}:${field}`);
+
 export function Mixer()
 {
     settings.value.library;
-    const list = tracks.value;
-    if (!list.length) return <div class="mixer"><div class="empty">Open a song to mix it.</div></div>;
+    const list = project.value.tracks;
+    if (!list.length) return <div class="mixer"><div class="empty">Add a track to mix it.</div></div>;
     return (
         <div class="mixer">
-            {list.map((t, i)=> (
-                <div class={`strip ${selected.value === i ? 'on' : ''}`} style={{ '--track': rgba(ROLE_COLORS[t.role] ?? ROLE_COLORS.lead) }}
-                    onPointerDown={()=> { selected.value = i; }}>
-                    <span class="name" title={t.name}>{t.name}</span>
-                    <span class="inst">{t.override?.name ?? presetFor(t.bank, t.program).name}</span>
-                    <input class="pan" type="range" min="-1" max="1" step="0.01" value={t.pan} title={`Pan ${panName(t.pan)} (double-click to centre)`}
-                        onInput={(e)=> setTrack(i, { pan: Number(e.currentTarget.value) })} onDblClick={()=> setTrack(i, { pan: 0 })} />
-                    <span class="db">{panName(t.pan)}</span>
-                    <input class="fader" type="range" min={DB[0]} max={DB[1]} step="0.5" value={t.volumeDb} title="Volume (double-click for 0 dB)"
-                        onInput={(e)=> setTrack(i, { volumeDb: Number(e.currentTarget.value) })} onDblClick={()=> setTrack(i, { volumeDb: 0 })} />
-                    <span class="db">{db(t.volumeDb)} dB</span>
-                    <div class="ms">
-                        <button class={`mute ${t.mute ? 'on' : ''}`} title="Mute" onClick={()=> setTrack(i, { mute: !t.mute })}>M</button>
-                        <button class={`solo ${t.solo ? 'on' : ''}`} title="Solo" onClick={()=> setTrack(i, { solo: !t.solo })}>S</button>
+            {list.map(t =>
+            {
+                const m = t.mixer;
+                return (
+                    <div class={`strip ${selected.value === t.id ? 'on' : ''}`} style={{ '--track': rgba(t.color) }}
+                        onPointerDown={()=> { selected.value = t.id; }}>
+                        <span class="name" title={t.name}>{t.name}</span>
+                        <span class="inst">{presetFor(t.instrument.bank, t.instrument.program).name}</span>
+                        <input class="pan" type="range" min="-1" max="1" step="0.01" value={m.pan} title={`Pan ${panName(m.pan)} (double-click to centre)`}
+                            onInput={(e)=> set(t.id, 'pan', Number(e.currentTarget.value))} onDblClick={()=> set(t.id, 'pan', 0)} />
+                        <span class="db">{panName(m.pan)}</span>
+                        <input class="fader" type="range" min={DB[0]} max={DB[1]} step="0.5" value={m.volumeDb} title="Volume (double-click for 0 dB)"
+                            onInput={(e)=> set(t.id, 'volumeDb', Number(e.currentTarget.value))} onDblClick={()=> set(t.id, 'volumeDb', 0)} />
+                        <span class="db">{db(m.volumeDb)} dB</span>
+                        <div class="ms">
+                            <button class={`mute ${m.mute ? 'on' : ''}`} title="Mute" onClick={()=> edit(p => setMixer(p, t.id, { mute: !m.mute }))}>M</button>
+                            <button class={`solo ${m.solo ? 'on' : ''}`} title="Solo" onClick={()=> edit(p => setMixer(p, t.id, { solo: !m.solo }))}>S</button>
+                        </div>
                     </div>
-                </div>
-            ))}
+                );
+            })}
             <div class="strip master">
                 <span class="name">Master</span>
                 <span class="inst">&nbsp;</span>

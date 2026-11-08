@@ -1,6 +1,6 @@
 // The desktop app: one window running the UI built into dist/ from this checkout, served over app://game/ instead of
 // file://, so modules and the mic's worklet load. It may use the microphone without asking each time (macOS asks
-// once, for the app), the whistle track saves straight into ideas/, and the settings are kept in a file in the app's
+// once, for the app), projects save straight into projects/, and the settings are kept in a file in the app's
 // data folder. Run it with `just app`; with --dev (`just dev`) the window reloads whenever dist/ is rebuilt.
 import { app, BrowserWindow, ipcMain, net, protocol, session, shell, systemPreferences } from 'electron';
 import fs from 'node:fs/promises';
@@ -8,7 +8,7 @@ import { watch } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { ideasRequest } from '../tools/ideas-files.mjs';
+import { projectRequest } from '../tools/project-files.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ORIGIN = 'app://game';
@@ -102,11 +102,11 @@ function reloadOnBuild(win)
 
 app.whenReady().then(async ()=>
 {
-    // the whistle track's saves into ideas/, then files from this checkout only
+    // saving projects and takes into projects/, then files from this checkout only
     protocol.handle('app', async (request)=>
     {
         const { pathname } = new URL(request.url);
-        const answer = await ideasRequest(ROOT, request.method, pathname, async ()=> new Uint8Array(await request.arrayBuffer()))
+        const answer = await projectRequest(ROOT, request.method, pathname, async ()=> new Uint8Array(await request.arrayBuffer()))
             .catch((e)=> ({ status: 500, body: String(e) }));
         if (answer)
         {

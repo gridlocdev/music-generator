@@ -5,7 +5,7 @@
 //   feel    swing as one time warp over every part, then timing that breathes on top (drums and bass hold the grid)
 // Pure and deterministic like compose(): a hash stands in for the dice. `pass` counts the times round a loop, so
 // every pass gets its own small details while the written music stays the same.
-// The score stays on the grid for the view and the MIDI file; only the player uses this.
+// The score stays on the grid for the view and the MIDI file; the Humanize MIDI FX (humanize-fx.js) runs this.
 import { hash } from '../lib/music-theory.js';
 import { EXPRESSION, CHIP } from './performance-data.js';
 import { DRUM_KEYS } from './patterns-data.js';
@@ -13,7 +13,7 @@ import { beatToSeconds, bpmAt } from '../lib/tempo-map.js';
 import { clamp, compound, swingTime, swingAmount, sectionAt as sectionOf } from './meter.js';
 import { meterOf } from './meter-patterns.js';
 import { planEarCandy } from './ear-candy.js';
-import { EAR_CANDY } from './adaptive-data.js';
+import { EAR_CANDY } from './ear-candy-data.js';
 
 /**
  * @typedef {import('./compose.js').Note & import('../audio/pitch-moves.js').PitchMoves & { grid: number, glideFrom?: number,
@@ -34,7 +34,8 @@ import { EAR_CANDY } from './adaptive-data.js';
 export function perform(score, pass = 0, candy = planEarCandy(score, pass))
 {
     const spbAt = (beat)=> 60 / bpmAt(score.tempoMap, beat);     // seconds per beat where a note is
-    const unit = (...parts)=> hash(score.title, pass, ...parts) / 2 ** 32;    // 0..1, the same every time
+    // 0..1, the same every time; beats are rounded first, so a note read back from a project file rolls the same
+    const unit = (...parts)=> hash(score.title, pass, ...parts.map(p => typeof p === 'number' ? Math.round(p * 1000) : p)) / 2 ** 32;
     const style = score.style ?? {};
     const sectionAt = (beat)=> sectionOf(score.sections, beat);
     return score.tracks.map(t =>

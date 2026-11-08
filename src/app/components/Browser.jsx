@@ -1,14 +1,27 @@
-// The panel at the left: songs and feelings to open, instruments to put on the selected track (or drag onto any
-// track), and the sketches saved in ideas/.
+// The panel at the left: the projects in projects/ to open, instruments to put on the selected track (or drag onto
+// any track), and the open project's whistled takes, to read again onto a track.
 import { useEffect, useMemo } from 'preact/hooks';
-import { CATALOG } from '../../composer/catalog.js';
+import { signal } from '@preact/signals';
 import { soundfontLibrary } from '../../audio/soundfont-library.js';
-import { settings, setSettings, song, selected, tracks, setTrack } from '../store.js';
-import { openSong, reload } from '../player.js';
-import { ideas, refreshIdeas, openIdea } from '../sketchpad.js';
+import { projectFiles } from '../../platform/project-files.js';
+import { settings, setSettings, selectedTrack, projectName, project, beat, status } from '../store.js';
+import { openProject } from '../document.js';
+import { reload } from '../player.js';
+import { dropTake } from '../recording.js';
 import { liveName } from '../live.js';
+import { assignPreset } from './Arrange.jsx';
+import { dialog } from './NewProject.jsx';
 
-const TABS = [['songs', 'Songs'], ['instruments', 'Instruments'], ['ideas', 'Ideas']];
+const TABS = [['projects', 'Projects'], ['instruments', 'Instruments'], ['takes', 'Takes']];
+
+/** the projects in projects/, and the open one's takes, as last listed */
+const listed = signal(/** @type {{ name: string, title: string }[]} */ ([]));
+const takes = signal(/** @type {string[]} */ ([]));
+
+export async function refreshProjects()
+{
+    listed.value = await projectFiles.list().catch(e => { status.value = e.message; return []; });
+}
 
 function groups(list, key)
 {
@@ -17,32 +30,21 @@ function groups(list, key)
     return [...out];
 }
 
-function Songs()
+function Projects()
 {
-    const open = song.value?.id;
-    const story = CATALOG.find(c => c.id === open)?.story;
+    // a save adds or renames one
+    useEffect(()=> { refreshProjects(); }, [projectName.value]);
+    const open = projectName.value;
     return (
         <>
+            <div class="foot"><button onClick={()=> { dialog.value = true; }}>New project…</button></div>
             <div class="list">
-                {groups(CATALOG, c => c.group).map(([group, list])=> (
-                    <>
-                        <div class="group">{group}</div>
-                        {list.map(c => (
-                            <div class={`item ${c.id === open ? 'on' : ''}`} title={c.story ?? c.label} onClick={()=> openSong(c)}>{c.label}</div>
-                        ))}
-                    </>
-                ))}
+                {listed.value.length ? listed.value.map(p => (
+                    <div class={`item ${p.name === open ? 'on' : ''}`} title={`projects/${p.name}`} onClick={()=> p.name !== open && openProject(p.name)}>{p.title}</div>
+                )) : <div class="empty">No projects yet. Save one, or make one with New project.</div>}
             </div>
-            {story && <div class="foot">{story}</div>}
         </>
     );
-}
-
-/** puts a preset on a score track, in place of the song's own, and restarts playback so it's heard */
-export function assignPreset(i, p)
-{
-    setTrack(i, { override: { bank: p.bank, program: p.program, name: p.name } });
-    reload();
 }
 
 function Instruments()
@@ -50,8 +52,7 @@ function Instruments()
     settings.value.library;
     const presets = useMemo(()=> soundfontLibrary.presets(), [settings.value.library]);
     const lib = soundfontLibrary.current;
-    const sel = selected.value;
-    const track = typeof sel === 'number' ? tracks.value[sel] : null;
+    const track = selectedTrack.value;
     return (
         <>
             <div class="foot">
@@ -66,8 +67,8 @@ function Instruments()
                         <div class="group">{group}</div>
                         {list.map(p => (
                             <div class={`item ${p.name === liveName.value ? 'on' : ''}`} draggable
-                                onDragStart={(e)=> e.dataTransfer?.setData('application/x-preset', JSON.stringify({ bank: p.bank, program: p.program, name: p.name }))}
-                                onClick={()=> track && assignPreset(/** @type {number} */ (sel), p)}>{p.name}</div>
+                                onDragStart={(e)=> e.dataTransfer?.setData('application/x-preset', JSON.stringify({ bank: p.bank, program: p.program }))}
+                                onClick={()=> track && assignPreset(track.id, p)}>{p.name}</div>
                         ))}
                     </>
                 ))}
@@ -76,14 +77,22 @@ function Instruments()
     );
 }
 
-function Ideas()
+function Takes()
 {
-    useEffect(()=> { refreshIdeas(); }, []);
+    const name = projectName.value;
+    useEffect(()=> { takes.value = []; if (name) projectFiles.takes(name).then(t => { takes.value = t; }); }, [name, project.value]);
+    const track = selectedTrack.value;
+    if (!name) return <div class="list"><div class="empty">Save the project to keep its whistled takes.</div></div>;
     return (
-        <div class="list">
-            {ideas.value.length ? ideas.value.map(name => <div class="item" onClick={()=> openIdea(name)}>{name}</div>)
-                : <div class="empty">Sketches you save from the whistle track show up here.</div>}
-        </div>
+        <>
+            <div class="foot">{track ? `Click to read a take onto ${track.name} at the playhead` : 'Select a track to read a take onto it'}</div>
+            <div class="list">
+                {takes.value.length ? takes.value.map(f => (
+                    <div class="item" draggable onDragStart={(e)=> e.dataTransfer?.setData('application/x-take', f)}
+                        onClick={()=> track && dropTake(track.id, f, beat.value)}>{f}</div>
+                )) : <div class="empty">Takes you record (●) are kept here.</div>}
+            </div>
+        </>
     );
 }
 
@@ -95,7 +104,7 @@ export function Browser()
             <div class="tabs">
                 {TABS.map(([id, label])=> <button class={tab === id ? 'on' : ''} onClick={()=> setSettings({ browserTab: id })}>{label}</button>)}
             </div>
-            {tab === 'songs' ? <Songs /> : tab === 'instruments' ? <Instruments /> : <Ideas />}
+            {tab === 'instruments' ? <Instruments /> : tab === 'takes' ? <Takes /> : <Projects />}
         </div>
     );
 }

@@ -1,6 +1,6 @@
 // The composer's knowledge as tables: emotions, song forms, section roles, cadences, the arrangement and the melody's
 // rules. Content only, imports nothing. Grooves and part patterns are in patterns-data.js, how a song develops in
-// song-craft-data.js, its performance and mix in performance-data.js, game music in adaptive-data.js.
+// song-craft-data.js, its performance and mix in performance-data.js, its ear candy in ear-candy-data.js.
 // docs/COMPOSING.md explains every table and why its values are what they are.
 
 // ---- Emotion → musical parameters ------------------------------------------------------------

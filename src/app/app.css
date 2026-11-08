@@ -30,7 +30,7 @@ button {
 button:hover:not(:disabled) { border-color: #55555f; }
 button:disabled { opacity: .45; cursor: default; }
 button.on { background: var(--accent); color: #1a1a1a; border-color: var(--accent); }
-select, input[type=number], input[type=text] {
+select, input[type=number], input[type=text], input:not([type]) {
     background: var(--panel-2); border: 1px solid var(--line); border-radius: var(--radius); padding: 2px 6px;
 }
 input[type=number] { width: 4.2em; }
@@ -60,6 +60,10 @@ input[type=range] { accent-color: var(--accent); }
 .transport button.play.on { background: var(--play); border-color: var(--play); }
 .transport button.rec { color: var(--rec); }
 .transport button.rec.on { background: var(--rec); color: #fff; border-color: var(--rec); }
+.transport .buttons.file button { width: auto; padding: 0 9px; font-size: 12px; }
+.lcd input.num { width: 3.6em; background: transparent; border-color: transparent; color: var(--text); font-weight: 500; padding: 0 2px; }
+.lcd input.num:hover, .lcd input.num:focus { border-color: var(--line); background: var(--panel-2); }
+.lcd input.meter { width: 3em; }
 .lcd {
     display: flex; gap: 16px; align-items: baseline; background: var(--lcd); border: 1px solid var(--line); border-radius: var(--radius);
     padding: 3px 12px; font: var(--mono); color: var(--muted); min-width: 0;
@@ -100,7 +104,9 @@ input[type=range] { accent-color: var(--accent); }
 .ruler .head button { padding: 0 6px; font-size: 12px; }
 .ruler .bars { position: relative; flex: none; cursor: text; }
 .track { height: 64px; }
-.track.whistle { height: 72px; }
+.track.chords { height: 30px; }
+.track.chords .head { display: flex; align-items: center; padding: 0 8px; color: var(--muted); font-size: 12px; cursor: default; }
+.track.chords .head::before { display: none; }
 .track .head { display: grid; grid-template-columns: 6px 1fr auto; gap: 0 8px; align-items: center; padding-right: 8px; cursor: pointer; }
 .track .head::before { content: ''; grid-row: 1 / 3; align-self: stretch; background: var(--track); }
 .track .head .name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; align-self: end; }
@@ -109,27 +115,26 @@ input[type=range] { accent-color: var(--accent); }
 .track.on .head { background: var(--raised); }
 .track.drop .head { outline: 2px dashed var(--accent); outline-offset: -2px; }
 .lane { position: relative; flex: none; border-bottom: 1px solid var(--line-soft); }
+.lane.drop { outline: 2px dashed var(--accent); outline-offset: -2px; }
+.add-track { position: sticky; left: 0; width: var(--head-w, 200px); padding: 8px; }
+.add-track button { width: 100%; }
 .lane canvas, .ruler canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .playhead { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--rec); pointer-events: none; z-index: 1; }
 .ms button { width: 22px; height: 20px; padding: 0; font-size: 11px; font-weight: 700; }
 .ms button.mute.on { background: #5aa8ff; border-color: #5aa8ff; color: #10131a; }
 .ms button.solo.on { background: var(--accent); }
+.ms button.del { color: var(--muted); }
+.ms button.del:hover { color: var(--rec); }
 .arrange .hint { padding: 40px; color: var(--muted); text-align: center; }
 
 /* ── editor ─────────────────────────────────────────────────────────────────────────────────────────────────────── */
 .editor { display: flex; flex-direction: column; min-height: 0; background: var(--panel); border-top: 1px solid var(--line); }
 .editor .tabs { align-items: center; }
-.editor .tabs .what { margin-left: auto; color: var(--muted); padding: 0 8px; }
 .toolbar { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; padding: 6px 10px; border-bottom: 1px solid var(--line-soft); color: var(--muted); }
 .toolbar label { display: flex; gap: 5px; align-items: center; }
 .toolbar .sep { width: 1px; align-self: stretch; background: var(--line); }
 .roll { position: relative; flex: 1; min-height: 0; }
 .roll canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-.roll.drop::after { content: 'Drop to read it as a take'; position: absolute; inset: 8px; border: 2px dashed var(--accent); border-radius: 8px;
-    display: grid; place-items: center; color: var(--accent); font-size: 16px; background: rgba(0, 0, 0, .4); }
-.roll-scroll { flex: 1; overflow: auto; position: relative; min-height: 0; }
-.message { padding: 4px 10px; color: var(--accent); min-height: 24px; border-top: 1px solid var(--line-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.message .help { color: var(--muted); }
 
 /* ── mixer ──────────────────────────────────────────────────────────────────────────────────────────────────────── */
 .mixer { flex: 1; display: flex; gap: 2px; padding: 8px; overflow-x: auto; min-height: 0; }
@@ -144,3 +149,19 @@ input[type=range] { accent-color: var(--accent); }
 .strip .pan { width: 64px; }
 .strip .fader { writing-mode: vertical-lr; direction: rtl; flex: 1; min-height: 60px; width: 24px; }
 .strip .db { font: var(--mono); font-size: 11px; color: var(--muted); }
+
+/* ── new project dialog ─────────────────────────────────────────────────────────────────────────────────────────── */
+.dialog-back { position: fixed; inset: 0; z-index: 10; background: rgba(0, 0, 0, .5); display: grid; place-items: center; }
+.dialog {
+    width: min(460px, 92vw); max-height: 80vh; display: flex; flex-direction: column; gap: 10px; padding: 16px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 12px 40px rgba(0, 0, 0, .5);
+}
+.dialog h2 { margin: 0; font-size: 16px; }
+.dialog .list { min-height: 160px; max-height: 45vh; overflow-y: auto; border: 1px solid var(--line-soft); border-radius: var(--radius); }
+.dialog .form { display: grid; grid-template-columns: auto 1fr; gap: 8px 12px; align-items: center; }
+.dialog .form label { display: contents; }
+.dialog .hint { margin: 0; color: var(--muted); font-size: 12px; }
+.dialog .actions { display: flex; justify-content: flex-end; gap: 8px; }
+.dialog button.primary { background: var(--accent); color: #1a1a1a; border-color: var(--accent); }
+.dialog.ask { width: min(380px, 92vw); }
+.dialog.ask p { margin: 0; }

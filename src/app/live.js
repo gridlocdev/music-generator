@@ -5,9 +5,8 @@ import { midi } from '../platform/midi.js';
 import { NOTE_KEYS, OCTAVE_KEYS, typing } from '../platform/keys.js';
 import { octaveC } from '../lib/notes.js';
 import { loadSoundFont, findPreset, createInstrument } from '../audio/soundfont.js';
-import { presetFor } from '../composer/band-loader.js';
-import { SKETCH_BAND } from '../sketch/sketchpad-data.js';
-import { settings, setSettings, selected, tracks, status } from './store.js';
+import { presetFor } from '../daw/instruments.js';
+import { settings, setSettings, selectedTrack, status } from './store.js';
 
 const KEY_VELOCITY = 100;       // computer keys have no velocity
 const SUSTAIN_CC = 64;
@@ -26,13 +25,8 @@ let pedal = false;
 const down = new Map();         // MIDI key → number of inputs holding it
 const typed = new Map();        // KeyboardEvent.code → the MIDI key it started (the octave may change meanwhile)
 
-/** the preset the selected track plays: its override, the song's own, or the sketch's flute for the whistle track */
-export function presetOf(sel, list)
-{
-    if (sel === 'whistle') return presetFor(0, SKETCH_BAND.lead);
-    const t = list[sel];
-    return t ? presetFor(t.override?.bank ?? t.bank, t.override?.program ?? t.program) : presetFor(0, 0);
-}
+/** the preset the selected track plays, or a piano with none selected */
+const presetOf = (track)=> track ? presetFor(track.instrument.bank, track.instrument.program) : presetFor(0, 0);
 
 async function load(entry)
 {
@@ -88,7 +82,7 @@ export function startLive()
     effect(()=>
     {
         settings.value.library;     // a library switch changes what presetFor finds
-        const entry = presetOf(selected.value, tracks.value);
+        const entry = presetOf(selectedTrack.value);
         const id = `${entry.url}#${entry.bank}:${entry.program}`;
         if (id !== last) { last = id; load(entry); }
     });

@@ -1,4 +1,4 @@
 {
     "src": "src",
-    "layers": [["lib"], ["platform"], ["audio"], ["composer", "sketch"], ["app"]]
+    "layers": [["lib"], ["platform"], ["audio"], ["daw"], ["composer", "sketch"], ["app"]]
 }

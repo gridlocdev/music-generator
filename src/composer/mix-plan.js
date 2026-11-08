@@ -1,15 +1,13 @@
 // How a song's mix is set up and how it moves: each part's channel strip, automation keyframes (a tone filter that
 // follows energy and sweeps into builds, reverb that grows in quiet sections and swells across phrases, delay throws
 // on the lead's phrase endings), and the kick hits the bass and pad duck under.
-// Pure, like compose(); song-player.js turns it into Web Audio automation.
+// Pure, like compose(); to-project.js bakes it into a project's channel strips and automation lanes.
 import { beatToSeconds } from '../lib/tempo-map.js';
+import { valueAt } from '../daw/automation.js';
 import { SECTIONS } from './composer-data.js';
 import { MIX, DUCK, MOVEMENT, EXPRESSION } from './performance-data.js';
 
-/**
- * A keyframe: the value is reached at `beat`. curve: 'set' jumps there, 'linear' / 'exp' ramp from the keyframe before.
- * @typedef {{ beat: number, value: number, curve: 'set' | 'linear' | 'exp' }} Keyframe
- */
+/** @typedef {import('../daw/project.js').Keyframe} Keyframe */
 
 /** @param {import('./compose.js').Score} score */
 export function planMix(score)
@@ -132,19 +130,4 @@ function throwFrames(score, track, send)
         frames.push({ beat: n.beat, value: high, curve: 'set' }, { beat: n.beat + n.beats, value: high, curve: 'set' }, { beat: n.beat + n.beats + 0.5, value: low, curve: 'linear' });
     }
     return frames;
-}
-
-/**
- * a keyframed value at a beat, interpolated the way Web Audio ramps it
- * @param {Keyframe[]} frames
- * @param {number} beat
- */
-export function valueAt(frames, beat)
-{
-    const i = frames.findLastIndex(f => f.beat <= beat);
-    if (i < 0) return frames[0].value;
-    const a = frames[i], b = frames[i + 1];
-    if (!b || b.curve === 'set' || b.beat <= a.beat) return a.value;
-    const p = (beat - a.beat) / (b.beat - a.beat);
-    return b.curve === 'exp' ? a.value * (b.value / a.value) ** p : a.value + (b.value - a.value) * p;
 }
