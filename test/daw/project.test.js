@@ -1,8 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { emptyProject, makeTrack, addTrack, addClip, moveClip, splitAt, removeTrack, setMixer, setTempo, trackNotes,
-    history, commit, undo, redo, newId } from '../../src/daw/project.js';
+    history, commit, undo, redo, newId, setLoop, addMarker, renameMarker, removeMarker, markerRange, moveTrack, duplicateTrack,
+    joinClips, quantizeNotes } from '../../src/daw/project.js';
 import { writeProject, readProject } from '../../src/daw/project-format.js';
+import { projectMidi } from '../../src/daw/project-midi.js';
 import { barAt, barLines, beatsPerBar, snap } from '../../src/daw/meter.js';
 import { performProject, registerFx } from '../../src/daw/fx.js';
 
@@ -98,4 +100,58 @@ test('MIDI FX play a track; a track without one plays as written', ()=>
     assert.deepEqual(out.tracks[1], []);
     assert.deepEqual(performProject(p, 0).tracks[0].map(n => [n.key, n.grid]), [[60, 4], [64, 6.5]]);
     assert.equal(kit.length > 0, true);
+});
+
+test('a marker splitting a section takes its meta; markers rename, go, and head a stretch', ()=>
+{
+    let p = { ...emptyProject(), markers: [{ beat: 0, name: 'Intro', meta: { type: 'intro', energy: 0.3 } }] };
+    p = addMarker(p, 16, 'Verse');
+    assert.deepEqual(p.markers[1], { beat: 16, name: 'Verse', meta: { type: 'intro', energy: 0.3 } });
+    assert.equal(addMarker(p, 16, 'Again'), p);
+    assert.deepEqual(markerRange(p, 0), { from: 0, to: 16 });
+    assert.deepEqual(markerRange(p, 1), { from: 16, to: 64 });
+    assert.equal(renameMarker(p, 1, 'Chorus').markers[1].name, 'Chorus');
+    assert.deepEqual(removeMarker(p, 0).markers.map(m => m.name), ['Verse']);
+    assert.deepEqual(setLoop(p, { from: 4, to: 8 }).loop, { from: 4, to: 8 });
+    assert.equal(setLoop(p, { from: 8, to: 8 }).loop, null);
+});
+
+test('tracks move and duplicate with new ids', ()=>
+{
+    const { p, keys, kit } = fixture();
+    assert.deepEqual(moveTrack(p, kit, -1).tracks.map(t => t.id), [kit, keys]);
+    assert.equal(moveTrack(p, keys, -1), p);
+    const d = duplicateTrack(p, keys);
+    assert.deepEqual(d.tracks.map(t => t.name), ['Keys', 'Keys copy', 'Kit']);
+    const ids = d.tracks.flatMap(t => [t.id, ...t.clips.map(c => c.id)]);
+    assert.equal(new Set(ids).size, ids.length);
+    assert.deepEqual(d.tracks[1].clips[0].notes, d.tracks[0].clips[0].notes);
+});
+
+test('clips join into one, notes kept in place', ()=>
+{
+    const { p, keys } = fixture();
+    const q = addClip(p, keys, { id: 'c2', start: 12, beats: 4, notes: [{ beat: 1, beats: 1, key: 67, vel: 70 }] });
+    const j = joinClips(q, keys, ['c1', 'c2']);
+    const t = j.tracks.find(x => x.id === keys);
+    assert.equal(t.clips.length, 1);
+    assert.deepEqual([t.clips[0].start, t.clips[0].beats], [4, 12]);
+    assert.deepEqual(trackNotes(t).map(n => n.beat), trackNotes(q.tracks.find(x => x.id === keys)).map(n => n.beat));
+});
+
+test('quantize moves starts and ends onto the grid', ()=>
+{
+    const q = quantizeNotes([{ beat: 0.9, beats: 0.4, key: 60, vel: 90 }, { beat: 2.1, beats: 0.05, key: 62, vel: 90 }], 0.5);
+    assert.deepEqual(q.map(n => [n.beat, n.beats]), [[1, 0.5], [2, 0.05]]);
+    assert.deepEqual(quantizeNotes([{ beat: 0.8, beats: 1, key: 60, vel: 90 }], 1, 0.5).map(n => n.beat), [0.9]);
+});
+
+test('a project exports as a MIDI file with a track per track', ()=>
+{
+    const { p } = fixture();
+    const bytes = projectMidi(p);
+    assert.equal(String.fromCharCode(...bytes.slice(0, 4)), 'MThd');
+    assert.equal((bytes[10] << 8) | bytes[11], 3);      // the conductor track and two tracks
+    // the kit plays on channel 10: a program change 0xC9
+    assert.ok(bytes.some((b, i)=> b === 0xc9 && bytes[i + 1] === 0));
 });

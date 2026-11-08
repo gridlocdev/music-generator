@@ -5,7 +5,7 @@ import { emptyProject, history, commit, undo as undoStep, redo as redoStep } fro
 import { readProject, writeProject } from '../daw/project-format.js';
 import { compose } from '../composer/compose.js';
 import { toProject } from '../composer/to-project.js';
-import { hist, project, projectName, saved, dirty, selected, selectedClip, chordRange, beat, status, setSettings } from './store.js';
+import { hist, project, projectName, projectList, saved, dirty, selected, selectedClip, chordRange, beat, status, setSettings } from './store.js';
 import { stop } from './player.js';
 import { askText, askYes } from './ask.js';
 
@@ -52,6 +52,12 @@ function show(p, name)
     if (name) setSettings({ project: name });
 }
 
+/** lists projects/ again */
+export async function refreshProjects()
+{
+    projectList.value = await projectFiles.list().catch(e => { status.value = e.message; return []; });
+}
+
 const discardOk = async ()=> !dirty.value || askYes(`Discard the changes to “${project.value.title}”?`, 'Discard');
 
 export async function openProject(name)
@@ -83,6 +89,7 @@ export async function save()
         await projectFiles.write(projectName.value, writeProject(p));
         saved.value = p;
         status.value = `Saved projects/${projectName.value}/`;
+        refreshProjects();
     }
     catch (e) { status.value = e.message; }
 }

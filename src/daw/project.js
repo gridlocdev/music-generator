@@ -21,7 +21,7 @@
  *   groove: settings a MIDI FX shares across tracks (swing, style); markers' meta is for MIDI FX too
  */
 
-const TRACK_COLORS = [[1, 0.78, 0.4], [0.45, 0.8, 1], [0.6, 0.85, 0.5], [0.98, 0.55, 0.62], [0.7, 0.62, 1], [1, 0.6, 0.35], [0.85, 0.85, 0.9]];
+export const TRACK_COLORS = [[1, 0.78, 0.4], [0.45, 0.8, 1], [0.6, 0.85, 0.5], [0.98, 0.55, 0.62], [0.7, 0.62, 1], [1, 0.6, 0.35], [0.85, 0.85, 0.9]];
 
 /** @returns {Mixer} */
 const defaultMixer = ()=> ({ volumeDb: -6, pan: 0, mute: false, solo: false, lowCut: 20, sends: { reverb: 0.15, delay: 0 }, autoPan: null, duck: null });
@@ -135,6 +135,78 @@ export function setTempo(p, bpm)
 
 /** the meter from the start, until the first change after it */
 export const setMeter = (p, sig)=> ({ ...p, meters: p.meters.map((m, i)=> i === 0 ? { ...m, sig } : m) });
+
+/** loops the playback between two beats, or stops looping with null */
+export const setLoop = (p, loop)=> ({ ...p, loop: loop && loop.to > loop.from ? { from: Math.max(0, loop.from), to: loop.to } : null });
+
+/** a marker at a beat; one splitting a section takes that section's meta, so a MIDI FX reads both halves alike */
+export function addMarker(p, beat, name)
+{
+    const before = p.markers.findLast(m => m.beat <= beat);
+    if (before?.beat === beat) return p;
+    const marker = { beat, name, ...(before?.meta && { meta: before.meta }) };
+    return { ...p, markers: [...p.markers, marker].sort((a, b)=> a.beat - b.beat) };
+}
+
+export const renameMarker = (p, index, name)=> ({ ...p, markers: p.markers.map((m, i)=> i === index ? { ...m, name } : m) });
+
+export const removeMarker = (p, index)=> ({ ...p, markers: p.markers.filter((_, i)=> i !== index) });
+
+/** the stretch a marker heads: to the next marker, or the project's end */
+export function markerRange(p, index)
+{
+    const m = p.markers[index];
+    return m ? { from: m.beat, to: p.markers[index + 1]?.beat ?? projectEnd(p) } : null;
+}
+
+/** moves a track up (by < 0) or down the list */
+export function moveTrack(p, id, by)
+{
+    const i = p.tracks.findIndex(t => t.id === id), j = i + by;
+    if (i < 0 || j < 0 || j >= p.tracks.length) return p;
+    const tracks = [...p.tracks];
+    tracks.splice(j, 0, ...tracks.splice(i, 1));
+    return { ...p, tracks };
+}
+
+/** a copy of a track below it, with new ids for it and its clips */
+export function duplicateTrack(p, id)
+{
+    const i = p.tracks.findIndex(t => t.id === id);
+    if (i < 0) return p;
+    const t = p.tracks[i];
+    let out = addTrack(p, { ...t, id: newId(p, 't'), name: `${t.name} copy`, clips: [], mixer: { ...t.mixer, solo: false } }, i + 1);
+    const copyId = out.tracks[i + 1].id;
+    for (const c of t.clips) out = addClip(out, copyId, { ...c, id: newId(out, 'c') });
+    return out;
+}
+
+/** joins clips of a track into one spanning them all, at the first's id */
+export function joinClips(p, trackId, clipIds)
+{
+    const t = p.tracks.find(x => x.id === trackId);
+    const clips = t ? t.clips.filter(c => clipIds.includes(c.id)) : [];
+    if (clips.length < 2) return p;
+    const start = Math.min(...clips.map(c => c.start)), end = Math.max(...clips.map(c => c.start + c.beats));
+    const notes = clips.flatMap(c => c.notes.filter(n => n.beat < c.beats).map(n => ({ ...n, beat: n.beat + c.start - start })))
+        .sort((a, b)=> a.beat - b.beat || a.key - b.key);
+    const first = clips.reduce((a, b)=> b.start < a.start ? b : a);
+    return updateTrack(p, trackId, x => ({ ...x, clips: x.clips.filter(c => c === first || !clipIds.includes(c.id))
+        .map(c => c === first ? { ...c, start, beats: end - start, notes } : c) }));
+}
+
+/** notes moved onto a grid (in beats), all the way or by a strength from 0 to 1, their ends too; none gets shorter than
+ * a grid step, or than it was */
+export function quantizeNotes(notes, grid, strength = 1)
+{
+    const on = (b)=> Math.round(b / grid) * grid;
+    return notes.map(n =>
+    {
+        const beat = Math.max(0, n.beat + (on(n.beat) - n.beat) * strength);
+        const end = n.beat + n.beats, to = end + (on(end) - end) * strength;
+        return { ...n, beat, beats: Math.max(Math.min(n.beats, grid), to - beat) };
+    });
+}
 
 // ── history ─────────────────────────────────────────────────────────────────────────────────────────────────────────
 

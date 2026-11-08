@@ -30,6 +30,7 @@ The window has a transport bar at the top, a browser on the left (projects, inst
 | `src/platform/midi.js` | Web MIDI input as note/cc messages |
 | `src/platform/keys.js` | musical typing: computer keys → semitones and octave steps, and whether focus is in a text field |
 | `src/platform/storage.js` | the settings, through the desktop app's `window.appStorage` hook |
+| `src/platform/app-menu.js` | the native menu bar and right-click menus, built by the desktop app from plain items; each item's action stays in the page, which gets back the id of the item picked; also opening a doc, showing a file in the Finder and saving a file where the user picks |
 | `src/platform/project-files.js` | the project files in `projects/`, through the desktop app: listing them, reading and writing one, and its takes |
 | `src/audio/soundfont.js` | downloads and caches `.sf2` files; `createInstrument(font, preset, destination)` plays notes as Web Audio voices, with optional delayed vibrato and legato glides |
 | `src/audio/pitch-moves.js` | a voice's pitch moves on its detune: delayed vibrato, scoops, tracker arpeggios, falls |
@@ -40,6 +41,7 @@ The window has a transport bar at the top, a browser on the left (projects, inst
 | `src/audio/soundfont-library.js` | the library in use, switched in the browser's Instruments tab; projects load their instruments from it |
 | `src/daw/project.js` | the project model (see [the format](#project-files)), every edit as a pure function returning a new project (notes, clips, tracks, tempo, meter, mixer), and the undo history: a list of earlier projects, with consecutive edits of the same kind (a fader drag) merged into one step |
 | `src/daw/project-format.js` | `project.json`: writing it with one compact line per note, reading it with a format and version check |
+| `src/daw/project-midi.js` | a project as a Standard MIDI File: a track each, drums on channel 10 |
 | `src/daw/meter.js` | bars from meter changes: bar lines, the bar a beat is in, beats per bar |
 | `src/daw/automation.js` | automation lanes: the value at a beat from keyframes |
 | `src/daw/fx.js` | MIDI FX: a registry of types (the app registers them) and `performProject(project, pass)`, which runs each track's notes through its FX for one pass round the loop, returning the notes and any events (a tape stop, a send swell) |
@@ -52,6 +54,9 @@ The window has a transport bar at the top, a browser on the left (projects, inst
 | `src/app/player.js` | plays the open project from the playhead, follows it, stops, seeks, keeps the mixer's settings on the playing channels, and restarts after an edit that changes what's heard |
 | `src/app/recording.js` | whistle → MIDI: recording a take into a new clip on the selected track (or a chord onto the chord track), dropped audio files and kept takes read the same way, keeping takes beside the project, and New from melody |
 | `src/app/live.js` | musical typing and MIDI input playing the selected track's instrument |
+| `src/app/commands.js` | every command (label, shortcut, action, when it can be used), the menu bar built from them and kept current, and the plain-key shortcuts; Cmd shortcuts are the menu bar's |
+| `src/app/context-menus.js` | the right-click menus, one per thing clicked, which select it first and are built from the commands and the actions below |
+| `src/app/tracks.js`, `src/app/notes.js`, `src/app/clipboard.js` | the actions on tracks and clips, on the piano roll's picked notes, and cut, copy, paste and duplicate for either |
 | `src/app/focus.js`, `src/app/ask.js` | which pane the editing keys act on; an in-app question for a name or a yes (Electron has no `prompt`) |
 | `src/app/components/` | the views: `Transport`, `Browser`, `Arrange` (ruler, chord track, a lane of clips per track), `Editor` (`PianoRoll` or `Mixer`), `NewProject` (the New dialog), `Ask`; `canvas.js` is a canvas that redraws when the signals it reads change, `roll-draw.js` what the roll draws with |
 | `src/app/app.css` | the look: colour tokens and the panel grid |
@@ -62,6 +67,7 @@ The window has a transport bar at the top, a browser on the left (projects, inst
 | `assets/icon.svg`, `tools/make-icons.sh` | the app icon's source, and the script (`just icons`) that renders it into `assets/icon/` |
 | `tools/project-files.mjs` | the desktop app's `projects/` requests: `GET /projects/` lists the projects, `PUT /projects/<name>/project.json` saves one (to a temporary file, then swapped in), `GET` and `PUT /projects/<name>/takes/…` list and keep its takes |
 | `electron/main.js`, `electron/preload.cjs` | the desktop app (`just app`): serves the checkout on `app://game/`, allows the microphone for that origin only, answers `projects/` requests, and keeps the settings in a file through the `window.appStorage` hook. `--dev` reloads the window when `dist/` changes; `--headless` runs it hidden and muted, with its own settings, for automated tests |
+| `electron/menus.js` | the native menus from the page's items: the menu bar with macOS's app and Window menus round it, and right-click menus; Edit items act on a text field while one has focus. Headless, a right-click menu is kept as `globalThis.contextMenu` for a test to click |
 | `tools/whistle.mjs` | transcribes a whistled recording into a section's `melody:` line, or with `--chords` an arpeggio take into its `progression:` (`just whistle`) |
 | `tools/nsf-report.mjs`, `tools/nsf/` | studies NES music: plays an NSF's 6502 driver (`cpu6502.js`, `nsf.js`), turns its 2A03/VRC6 register writes into notes, drum hits and loops (`decode.js`), and reports how each song's lead moves, its rows, echoes, vibrato and drums (`just nsf`) |
 | `tools/audio-report.mjs`, `tools/audio/`, `tools/music-stats.js` | the same lead statistics from recorded music: follows the lead's pitch in the mixed audio (`lead.js`) and reuses `decode.js`'s note finding; `music-stats.js` holds the interval, turn and leap measures both reports share (`just audio`) |

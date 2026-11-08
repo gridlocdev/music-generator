@@ -8,22 +8,20 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { signal } from '@preact/signals';
 import { barLines, barAt } from '../../daw/meter.js';
 import { presetFor } from '../../daw/instruments.js';
-import { projectEnd, makeTrack, addTrack, removeTrack, updateTrack, setMixer, addClip, updateClip, moveClip, newId } from '../../daw/project.js';
+import { projectEnd, updateClip, moveClip, newId } from '../../daw/project.js';
 import { project, selected, selectedClip, chordRange, beat, settings, setSettings } from '../store.js';
 import { edit } from '../document.js';
 import { seek } from '../player.js';
 import { recording, dropAudio, dropTake } from '../recording.js';
 import { focus } from '../focus.js';
-import { askText } from '../ask.js';
+import { arrangeZoom as zoom, addNewTrack, assignPreset, renameTrack, deleteTrack, toggleMute, toggleSolo, newClipAt } from '../tracks.js';
+import { clipMenu, laneMenu, trackMenu, rulerMenu, chordMenu } from '../context-menus.js';
 import { useCanvas, rgba } from './canvas.js';
 
 const HEAD_W = 200;
 const ZOOM = [0.5, 120];        // px per beat
 const ROOM = 32;                // beats of empty space after the end, to add clips in
-const NEW_CLIP_BARS = 4;
 const EDGE = 6;                 // px at a clip's right edge that resize it
-/** px per beat, or 0 to fit the project to the window */
-const zoom = signal(0);
 /** the arrangement's width for lanes, px */
 const width = signal(0);
 /** a clip being dragged: { track, clip, mode: 'move'|'resize', start, beats, to, copy } */
@@ -83,12 +81,11 @@ function Ruler({ beats, ppb })
             g.fillRect(p.loop.from * ppb, h - 4, (p.loop.to - p.loop.from) * ppb, 4);
         }
     });
-    const click = (e)=>
-    {
-        const r = e.currentTarget.getBoundingClientRect();
-        seek((e.clientX - r.left) / ppb);
-    };
-    return <div class="bars" style={{ width: px(beats * ppb) }} onPointerDown={click}><canvas ref={ref} /></div>;
+    const at = (e)=> (e.clientX - e.currentTarget.getBoundingClientRect().left) / ppb;
+    return (
+        <div class="bars" style={{ width: px(beats * ppb) }} onPointerDown={(e)=> e.button === 0 && seek(at(e))}
+            onContextMenu={(e)=> { e.preventDefault(); rulerMenu(at(e)); }}><canvas ref={ref} /></div>
+    );
 }
 
 /** the chord track: the project's chords, and a stretch dragged out to whistle a chord for */
@@ -117,6 +114,7 @@ function ChordLane({ beats, ppb })
     });
     const down = (e)=>
     {
+        if (e.button !== 0) return;
         focus.value = 'chords';
         const r = e.currentTarget.getBoundingClientRect();
         const at = (x)=> (x - r.left) / ppb;
@@ -132,7 +130,8 @@ function ChordLane({ beats, ppb })
         addEventListener('pointermove', pick);
         addEventListener('pointerup', up);
     };
-    return <div class="lane" style={{ width: px(beats * ppb) }} onPointerDown={down}><canvas ref={ref} /></div>;
+    const menu = (e)=> { e.preventDefault(); chordMenu((e.clientX - e.currentTarget.getBoundingClientRect().left) / ppb); };
+    return <div class="lane" style={{ width: px(beats * ppb) }} onPointerDown={down} onContextMenu={menu}><canvas ref={ref} /></div>;
 }
 
 /** a track's lane: its clips, with their notes drawn small inside, and the take being recorded */
@@ -232,11 +231,15 @@ function Lane({ track, beats, ppb })
     const dblclick = (e)=>
     {
         const b = beatAt(e), c = clipAt(b);
-        if (c) { setSettings({ editorTab: 'roll' }); return; }
-        const meters = project.value.meters, start = barAt(meters, b).start;
-        let id = '';
-        edit(p => { id = newId(p, 'c'); return addClip(p, track.id, { id, start, beats: barAt(meters, start).beatsPerBar * NEW_CLIP_BARS, notes: [] }); });
-        selectedClip.value = { track: track.id, clip: id };
+        if (c) setSettings({ editorTab: 'roll' });
+        else newClipAt(track.id, b);
+    };
+
+    const menu = (e)=>
+    {
+        e.preventDefault();
+        const b = beatAt(e), c = clipAt(b);
+        c ? clipMenu(track.id, c.id, b) : laneMenu(track.id, b);
     };
 
     const hover = (e)=>
@@ -248,7 +251,7 @@ function Lane({ track, beats, ppb })
     const [dropping, setDropping] = useState(false);
     const isFiles = (e)=> e.dataTransfer?.types.includes('Files') || e.dataTransfer?.types.includes('application/x-take');
     return (
-        <div class={`lane ${dropping ? 'drop' : ''}`} style={{ width: px(beats * ppb) }} onPointerDown={down} onDblClick={dblclick} onPointerMove={hover}
+        <div class={`lane ${dropping ? 'drop' : ''}`} style={{ width: px(beats * ppb) }} onPointerDown={down} onDblClick={dblclick} onPointerMove={hover} onContextMenu={menu}
             onDragOver={(e)=> { if (isFiles(e)) { e.preventDefault(); setDropping(true); } }}
             onDragLeave={()=> setDropping(false)}
             onDrop={(e)=> { setDropping(false); if (!isFiles(e)) return; e.preventDefault();
@@ -261,47 +264,28 @@ function Lane({ track, beats, ppb })
 
 const isPreset = (e)=> e.dataTransfer?.types.includes('application/x-preset');
 
-/** puts an instrument on a track */
-export function assignPreset(trackId, { bank, program })
-{
-    edit(p => updateTrack(p, trackId, { instrument: { bank, program } }));
-}
-
 function TrackRow({ track, beats, ppb })
 {
     const [drop, setDrop] = useState(false);
     settings.value.library;
     const m = track.mixer;
-    const rename = async ()=>
-    {
-        const name = await askText('Track name', track.name, 'Rename');
-        if (name) edit(p => updateTrack(p, track.id, { name }));
-    };
     return (
         <div class={`track ${selected.value === track.id ? 'on' : ''} ${drop ? 'drop' : ''}`} data-id={track.id} style={{ '--track': rgba(track.color) }}
             onDragOver={(e)=> { if (isPreset(e)) { e.preventDefault(); setDrop(true); } }}
             onDragLeave={()=> setDrop(false)}
             onDrop={(e)=> { setDrop(false); if (!isPreset(e)) return; e.preventDefault(); assignPreset(track.id, JSON.parse(e.dataTransfer.getData('application/x-preset'))); }}>
-            <div class="head" onClick={()=> { selected.value = track.id; }}>
-                <span class="name" onDblClick={rename} title="Double-click to rename">{track.name}</span>
+            <div class="head" onClick={()=> { selected.value = track.id; }} onContextMenu={(e)=> { e.preventDefault(); trackMenu(track.id); }}>
+                <span class="name" onDblClick={()=> renameTrack(track.id)} title="Double-click to rename">{track.name}</span>
                 <span class="inst">{presetFor(track.instrument.bank, track.instrument.program).name}</span>
                 <div class="ms" onClick={(e)=> e.stopPropagation()}>
-                    <button class={`mute ${m.mute ? 'on' : ''}`} title="Mute" onClick={()=> edit(p => setMixer(p, track.id, { mute: !m.mute }))}>M</button>
-                    <button class={`solo ${m.solo ? 'on' : ''}`} title="Solo" onClick={()=> edit(p => setMixer(p, track.id, { solo: !m.solo }))}>S</button>
-                    <button class="del" title="Delete the track" onClick={()=> edit(p => removeTrack(p, track.id))}>×</button>
+                    <button class={`mute ${m.mute ? 'on' : ''}`} title="Mute" onClick={()=> toggleMute(track.id)}>M</button>
+                    <button class={`solo ${m.solo ? 'on' : ''}`} title="Solo" onClick={()=> toggleSolo(track.id)}>S</button>
+                    <button class="del" title="Delete the track" onClick={()=> deleteTrack(track.id)}>×</button>
                 </div>
             </div>
             <Lane track={track} beats={beats} ppb={ppb} />
         </div>
     );
-}
-
-function addNewTrack()
-{
-    let id = '';
-    edit(p => { const t = makeTrack(p, { name: `Track ${p.tracks.length + 1}` }); id = t.id; return addTrack(p, t); });
-    selected.value = id;
-    setSettings({ browserTab: 'instruments', browserOpen: true });
 }
 
 /** px per beat: the zoom, or the project fitted to the window; a canvas wider than ~32k px doesn't draw */
@@ -364,7 +348,7 @@ export function Arrange()
                         <ChordLane beats={beats} ppb={ppb} />
                     </div>
                     {p.tracks.map(t => <TrackRow key={t.id} track={t} beats={beats} ppb={ppb} />)}
-                    <div class="add-track"><button onClick={addNewTrack} title="Add a track">+ Track</button></div>
+                    <div class="add-track"><button onClick={()=> addNewTrack()} title="Add a track">+ Track</button></div>
                     <div class="playhead" style={{ left: px(HEAD_W + beat.value * ppb) }} />
                 </div>
             </div>

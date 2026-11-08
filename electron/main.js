@@ -2,13 +2,14 @@
 // file://, so modules and the mic's worklet load. It may use the microphone without asking each time (macOS asks
 // once, for the app), projects save straight into projects/, and the settings are kept in a file in the app's
 // data folder. Run it with `just app`; with --dev (`just dev`) the window reloads whenever dist/ is rebuilt.
-import { app, BrowserWindow, ipcMain, net, protocol, session, shell, systemPreferences } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, net, protocol, session, shell, systemPreferences } from 'electron';
 import fs from 'node:fs/promises';
 import { watch } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { projectRequest } from '../tools/project-files.mjs';
+import { installMenus } from './menus.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ORIGIN = 'app://game';
@@ -42,6 +43,27 @@ ipcMain.handle('save:load', async ()=>
     catch { return {}; }    // a first run, or a save that could not be read
 });
 ipcMain.handle('save:write', (event, all)=> writeSave(all));
+
+// ---------------------------------------------------------------- menus, files and the Finder
+installMenus(ipcMain, { headless: HEADLESS });
+/** a path inside the checkout, or null */
+const inside = (rel, folder = '')=>
+{
+    const file = path.resolve(ROOT, folder, String(rel));
+    return file.startsWith(path.join(ROOT, folder) + path.sep) ? file : null;
+};
+// a doc of the checkout opens in its own app; a project or take shows in the Finder
+ipcMain.handle('shell:open', async (e, rel)=> { const file = inside(rel); if (file?.endsWith('.md')) await shell.openPath(file); });
+ipcMain.handle('shell:reveal', (e, rel)=> { const file = inside(rel, 'projects'); if (file) shell.showItemInFolder(file); });
+// an exported file goes where the user picks
+ipcMain.handle('file:save', async (e, name, bytes)=>
+{
+    const win = BrowserWindow.fromWebContents(e.sender);
+    const { canceled, filePath } = await dialog.showSaveDialog(win, { defaultPath: path.join(app.getPath('documents'), path.basename(String(name))) });
+    if (canceled || !filePath) return '';
+    await fs.writeFile(filePath, Buffer.from(bytes));
+    return filePath;
+});
 
 // ---------------------------------------------------------------- the microphone
 // The app's own page may record audio, and nothing else: no camera, no screen, no other origin.

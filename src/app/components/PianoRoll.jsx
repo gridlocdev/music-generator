@@ -3,18 +3,20 @@
 // Click empty space in a clip to draw a note (outside a clip, a bar's clip is made for it) and drag to set its
 // length; drag a note to move it, its right edge to resize it; Shift-click adds to the selection; Delete removes,
 // ↑ ↓ transpose (Shift: an octave), Cmd+A selects the clip's notes. Drag in the velocity strip to set velocity.
-// Everything snaps to the grid picked in the toolbar; hold Alt to place freely. The wheel scrolls (Shift: across),
+// Right-click a note or the background for more. Everything snaps to the grid picked in the toolbar; hold Alt to place freely. The wheel scrolls (Shift: across),
 // Cmd/Ctrl + wheel zooms.
 import { useEffect } from 'preact/hooks';
 import { signal } from '@preact/signals';
 import { barLines, barAt, meterAt } from '../../daw/meter.js';
-import { findClip, updateClip, addClip, newId } from '../../daw/project.js';
+import { findClip, addClip, newId } from '../../daw/project.js';
 import { project, selected, selectedClip, selectedTrack, beat, playing, settings, setSettings } from '../store.js';
 import { edit } from '../document.js';
 import { seek } from '../player.js';
 import { press, release } from '../live.js';
 import { focus } from '../focus.js';
+import { picked, noteId, notesOf, changeNotes, GRIDS } from '../notes.js';
 import { newFromMelody } from '../recording.js';
+import { noteMenu, rollMenu } from '../context-menus.js';
 import { useCanvas, rgba } from './canvas.js';
 import { GUTTER, STRIP, C, text, lanes } from './roll-draw.js';
 
@@ -22,16 +24,10 @@ const PPB = [4, 400];
 const LANE_H = 12;
 const VEL_H = 44;
 const EDGE = 5;                 // px at a note's right edge that resize it
-const GRIDS = [[1, '1/4'], [0.5, '1/8'], [0.25, '1/16'], [1 / 3, '1/8T'], [1 / 6, '1/16T']];
 const NEW_VEL = 90;
 
 /** what's shown: from beat, px per beat, and the key at the bottom */
 const view = signal({ from: 0, ppb: 40, low: 48 });
-/** selected notes, as 'clipId:index' */
-const picked = signal(/** @type {Set<string>} */ (new Set()));
-
-const noteId = (clip, i)=> `${clip}:${i}`;
-
 /** the view's geometry for a canvas of w × h */
 function geometry(w, h)
 {
@@ -47,53 +43,8 @@ function geometry(w, h)
     };
 }
 
-/** a track's notes with where they are: clip, index, and the beat in the project */
-const notesOf = (track)=> track ? track.clips.flatMap(c => c.notes.map((n, i)=> ({ n, i, clip: c, at: c.start + n.beat })).filter(x => x.n.beat < x.clip.beats)) : [];
-
 /** the beat snapped to the grid, unless Alt */
 const snap = (b, e)=> e.altKey ? b : Math.round(b / settings.value.grid) * settings.value.grid;
-
-function changeNotes(trackId, changes, merge)
-{
-    // changes: Map clipId → (notes)=> notes
-    edit(p =>
-    {
-        let out = p;
-        for (const [clip, fn] of changes) out = updateClip(out, trackId, clip, c => ({ ...c, notes: fn(c.notes) }));
-        return out;
-    }, merge);
-}
-
-export function deletePicked()
-{
-    const t = selectedTrack.value;
-    if (!t || !picked.value.size) return false;
-    const byClip = new Map();
-    for (const id of picked.value) { const [c, i] = id.split(':'); byClip.set(c, [...(byClip.get(c) ?? []), Number(i)]); }
-    changeNotes(t.id, new Map([...byClip].map(([c, list])=> [c, (notes)=> notes.filter((_, i)=> !list.includes(i))])));
-    picked.value = new Set();
-    return true;
-}
-
-export function transposePicked(by)
-{
-    const t = selectedTrack.value;
-    if (!t || !picked.value.size) return false;
-    const ids = picked.value;
-    const clips = new Set([...ids].map(id => id.split(':')[0]));
-    changeNotes(t.id, new Map([...clips].map(c => [c, (notes)=> notes.map((n, i)=> ids.has(noteId(c, i)) ? { ...n, key: Math.max(0, Math.min(127, n.key + by)) } : n)])), 'transpose');
-    return true;
-}
-
-export const clearPicked = ()=> { picked.value = new Set(); };
-
-export function pickAll()
-{
-    const t = selectedTrack.value, sel = selectedClip.value;
-    if (!t) return;
-    const clips = t.clips.filter(c => sel?.track !== t.id || c.id === sel.clip);
-    picked.value = new Set(clips.flatMap(c => c.notes.map((_, i)=> noteId(c.id, i))));
-}
 
 function Toolbar()
 {
@@ -318,7 +269,22 @@ function Roll()
         e.currentTarget.style.cursor = py >= G.bottom ? 'ns-resize' : hit ? (G.x(hit.at + hit.n.beats) - px <= EDGE ? 'ew-resize' : 'grab') : px > GUTTER && py > STRIP + 4 ? 'crosshair' : '';
     };
 
-    return <div class="roll" onWheel={wheel} onPointerDown={down} onPointerMove={hover}><canvas ref={ref} /></div>;
+    // right-click a note for what can be done to the picked notes (it's picked, if it wasn't), or the background
+    const menu = (e)=>
+    {
+        e.preventDefault();
+        if (!track) return;
+        const r = e.currentTarget.getBoundingClientRect(), G = geometry(r.width, r.height);
+        const px = e.clientX - r.left, py = e.clientY - r.top, b = G.beatAt(px), key = G.keyAt(py);
+        const hit = py > STRIP + 4 && py < G.bottom && notesOf(track).findLast(o => o.n.key === key && b >= o.at && b < o.at + o.n.beats);
+        if (!hit) { rollMenu(track.id, Math.max(0, b)); return; }
+        const id = noteId(hit.clip.id, hit.i);
+        if (!picked.value.has(id)) picked.value = new Set([id]);
+        selectedClip.value = { track: track.id, clip: hit.clip.id };
+        noteMenu();
+    };
+
+    return <div class="roll" onWheel={wheel} onPointerDown={down} onPointerMove={hover} onContextMenu={menu}><canvas ref={ref} /></div>;
 }
 
 export function PianoRoll()

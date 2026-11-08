@@ -168,6 +168,19 @@ Two flags help while working on it:
   in a temporary folder. Use it for scripted UI tests (for example with Playwright's `_electron`),
   so they don't play sound or change your settings.
 
+  Menus in a headless run: click a menu-bar item with
+  `app.evaluate(({ Menu }, id) => Menu.getApplicationMenu().getMenuItemById(id).click(), 'undo')`
+  (ids are the keys of `COMMANDS` in `src/app/commands.js`; Cmd shortcuts belong to the menu bar,
+  so a scripted `Meta+Z` does nothing). A right-click menu isn't shown; it is kept as
+  `globalThis.contextMenu` in the main process, whose `items` a test can read and click.
+
+## Adding a command
+
+Add it to `COMMANDS` in `src/app/commands.js` with a label, an `accelerator` (a Cmd shortcut the
+menu bar answers) or `shown` (a plain key the page answers, which still types in a text field), and
+`enabled`/`checked` if it has them; then put `item('id')` in the menu bar in `menuBar()` and in any
+right-click menu in `src/app/context-menus.js` it belongs in.
+
 ## SoundFont libraries
 
 | Library | Folder | Size | License |

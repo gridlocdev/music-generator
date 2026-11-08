@@ -50,6 +50,8 @@ export const projectName = signal('');
 /** the project as last saved or opened, to tell whether there are changes to save */
 export const saved = signal(hist.value.present);
 export const dirty = computed(()=> project.value !== saved.value);
+/** the projects in projects/, as last listed */
+export const projectList = signal(/** @type {{ name: string, title: string }[]} */ ([]));
 
 /** the track the editor shows and musical typing plays, by id */
 export const selected = signal(/** @type {string|null} */ (null));
