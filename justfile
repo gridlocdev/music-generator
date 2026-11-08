@@ -1,39 +1,23 @@
-port := "8000"
-
 # list recipes
 default:
     @just --list
 
 # install the desktop app (~/Applications/Music Generator.app on macOS) that runs this checkout
-install: deps
+install: build
     bash tools/install-app.sh
 
-# install the pinned engine and Electron into node_modules
+# install the pinned Preact, esbuild and Electron into node_modules
 deps:
-    @[ -d node_modules/littlejsengine ] && [ -d node_modules/electron ] || npm install
+    @[ -d node_modules/preact ] && [ -d node_modules/esbuild ] && [ -d node_modules/electron ] || npm install
     @[ -f node_modules/electron/path.txt ] || node node_modules/electron/install.js
 
-# serve the game on localhost; ES modules don't load from file://
-serve: deps
-    python3 -m http.server {{port}}
-
-# serve the game and open it in the default browser
-play: deps
-    #!/usr/bin/env bash
-    set -euo pipefail
-    python3 -m http.server {{port}} & server=$!
-    trap 'kill $server' EXIT INT TERM
-    until curl -sf -o /dev/null http://localhost:{{port}}/; do sleep 0.1; done
-    python3 -m webbrowser http://localhost:{{port}}/
-    wait $server
-
-# serve the game with saving to ideas/ for the sketchpad's whistled takes
-sketch: deps
-    node tools/sketch-server.mjs --port {{port}}
+# bundle the UI (src/app/main.jsx) into dist/app.js
+build: deps
+    node tools/build.mjs
 
 # on macOS it starts through `open`, so macOS asks for the microphone for the app, not for the terminal
-# run it in its own window (Electron), without installing: the microphone needs no browser permission, and the sketchpad saves into ideas/
-app: deps
+# build and run it without installing: the microphone needs no browser permission, and the whistle track saves into ideas/
+app: build
     #!/usr/bin/env sh
     if [ "$(uname)" = Darwin ]; then
         open -W -n node_modules/electron/dist/Electron.app --args "$PWD"
@@ -41,9 +25,22 @@ app: deps
         npx electron .
     fi
 
-# syntax-check every module and check the layer rules
-check:
+# run it while working on it: rebuilds on every change and reloads the window
+dev: build
+    #!/usr/bin/env bash
+    set -euo pipefail
+    node tools/build.mjs --watch & watcher=$!
+    trap 'kill $watcher' EXIT INT TERM
+    if [ "$(uname)" = Darwin ]; then
+        open -W -n node_modules/electron/dist/Electron.app --args "$PWD" --dev
+    else
+        npx electron . --dev
+    fi
+
+# syntax-check every module, bundle the UI (which checks the .jsx), and check the layer rules
+check: deps
     @for f in $(find src -name '*.js'); do node --check "$f" || exit 1; done
+    @node tools/build.mjs --check
     node tools/coupling-report.mjs --strict
 
 # run the unit tests for lib/ and *-data.js files
@@ -71,7 +68,7 @@ catalog:
 soundfonts:
     bash tools/fetch-soundfonts.sh
 
-# compose a song without the browser: print its plan, optionally its melody and a .mid file
+# compose a song without the app: print its plan, optionally its melody and a .mid file
 # e.g. just compose first-light --melody --midi first-light.mid   ·   just compose feel:tender
 compose *args:
     node tools/compose.mjs {{args}}

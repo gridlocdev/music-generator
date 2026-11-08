@@ -1,0 +1,4 @@
+{
+    "src": "src",
+    "layers": [["lib"], ["platform"], ["audio"], ["composer", "sketch"], ["app"]]
+}

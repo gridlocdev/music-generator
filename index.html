@@ -5,50 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Music Generator</title>
 <link rel="icon" href="data:,">
-<style>
-  body { margin: 0; background: #141220; color: #eee; font: 16px system-ui, sans-serif; }
-  .ui { position: fixed; left: 50%; transform: translateX(-50%); z-index: 10; pointer-events: none;
-        padding: 6px 14px; border-radius: 999px; background: rgba(0, 0, 0, .55); }
-  #toast { bottom: 64px; }
-  #top { position: fixed; top: 0; left: 0; right: 0; z-index: 10; background: rgba(0, 0, 0, .45); font-size: 14px; }
-  #controls, #song-bar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 8px 16px; }
-  #song-bar { padding-top: 0; }
-  #top select, #top button { font: inherit; color: inherit; background: #2a2638; border: 1px solid #4a4560;
-              border-radius: 6px; padding: 4px 8px; }
-  #top select { min-width: 220px; max-width: 100%; }
-  #top button:disabled { opacity: .7; }
-  #top select:focus { outline: 2px solid #ffc766; outline-offset: 1px; }
-  #status, #song-status { color: #ffc766; }
-  #song-bar .label { color: #a9a3bd; }
-  #song-game { display: none; gap: 8px 12px; align-items: center; color: #a9a3bd; }
-  body.song #song-game { display: inline-flex; flex-wrap: wrap; }
-  #song-game select { min-width: 0; }
-  #song-intensity { accent-color: #ffc766; width: 120px; }
-  #song-story { color: #a9a3bd; font-style: italic; font-size: 13px; flex-basis: 100%; }
-  #song-story:empty { display: none; }
-  body.song #help, body.adventure #help, body.sketchpad #help { display: none; }
-  #adventure-bar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 0 16px 8px; color: #a9a3bd; }
-  #sketch-bar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 0 16px 8px; color: #a9a3bd; }
-  #sketch-bar .controls { display: contents; }
-  #sketch-bar select { min-width: 0; }
-  #sketch-bar input[type=number] { width: 4em; }
-  #sketch-bar input, #sketch-bar label { font: inherit; color: inherit; }
-  #sketch-bar input[type=number], #sketch-bar input[type=text] { background: #2a2638; border: 1px solid #4a4560; border-radius: 6px; padding: 3px 6px; }
-  #sketch-bar [role=status] { color: #ffc766; }
-  #sketch-bar pre { flex-basis: 100%; margin: 0; color: #eee; font: 13px ui-monospace, monospace; white-space: pre-wrap; }
-  #sketch-bar pre:empty { display: none; }
-  #help { position: fixed; z-index: 10; bottom: 12px; left: 16px; right: 16px; text-align: center; font-size: 13px; color: #a9a3bd; }
-  [hidden] { display: none !important; }
-</style>
-<!-- bare engine name for every module; editors resolve the same name to the package's types -->
-<script type="importmap">
-{ "imports": { "littlejsengine": "./node_modules/littlejsengine/dist/littlejs.esm.js" } }
-</script>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' blob: data:; style-src 'self' 'unsafe-inline'">
+<link rel="stylesheet" href="src/app/app.css">
+<script type="module" src="dist/app.js"></script>
 </head>
-<body>
-<div id="top"><div id="controls"></div><div id="song-bar"></div></div>
-<div id="toast" class="ui" hidden></div>
-<div id="help">Play with A–' (white) and W E T Y U O P (black) · Z / X octave · ↑ / ↓ instrument · I to browse instruments, Esc to play again · hold Space to sustain · click or drag the keys · or plug in a MIDI keyboard</div>
-<script type="module" src="src/main.js"></script>
-</body>
+<body></body>
 </html>

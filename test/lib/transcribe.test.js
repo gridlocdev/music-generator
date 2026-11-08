@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { trackPitch } from '../../src/lib/pitch-track.js';
 import { transcribe, tuningOffset, measureVibrato, guessKeys, spellDegree, toNotation, vibratoSummary, noteStarts, clickGrid, freeNotes } from '../../src/lib/transcribe.js';
-import { parseMelody } from '../../src/features/composer/notation.js';
+import { parseMelody } from '../../src/composer/notation.js';
 import { pitchClass } from '../../src/lib/music-theory.js';
 import { RATE, whistle, fromNotation } from './whistle-synth.js';
 

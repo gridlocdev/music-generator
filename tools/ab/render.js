@@ -65,7 +65,8 @@ globalThis.Worker = class
 // &compressors=off swaps the master chain's compressors for plain gains, to hear (or measure) the mix without them
 if (params.get('compressors') === 'off') globalThis.DynamicsCompressorNode = function (ctx) { return new GainNode(ctx); };
 
-const dir = `${root}src/features/composer/`;
+// the composer moved out of features/; older commits still have it there
+const dir = (await fetch(`${root}src/composer/compose.js`, { method: 'HEAD' })).ok ? `${root}src/composer/` : `${root}src/features/composer/`;
 // a song list the version may not have yet (the game songs are newer than some commits)
 const optional = async (file)=> (await fetch(dir + file, { method: 'HEAD' })).ok ? import(dir + file) : {};
 

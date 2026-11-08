@@ -1,76 +1,61 @@
 # Music Generator
 
 I built Music Generator to make it simpler and easier to create music for the games I make.
-Pick a feeling or a song, and it composes one: melody, countermelody, arpeggio, chords, pad,
-bass and drums, written by rule and played in the browser with sampled instruments. There's no
+Pick a feeling or a song, or whistle a tune, and it composes one: melody, countermelody, arpeggio,
+chords, pad, bass and drums, written by rule and played with sampled instruments. There's no
 randomness, so the same song always comes out the same.
 
-![A song playing: one piano per part (trumpet melody, French horn countermelody, harp arpeggio, string chords, choir pad, double bass and orchestral drums) with notes falling onto their keys, the Intensity slider, Sting and Next section buttons above, and the song's sections along the timeline at the bottom](docs/images/composer.webp)
+![The Warden boss fight open in the app: the transport across the top, the song list on the left, the arrangement with the whistle track and a row per part (melody muted), and the melody's piano roll at the bottom with its chords above](docs/images/daw.webp)
 
-It's also a keyboard you can play with your computer keys, the mouse or a MIDI keyboard, through
-every instrument in three openly licensed General MIDI SoundFont libraries.
+It's laid out like a DAW: a transport, a browser, an arrangement, a piano roll and a mixer.
 
 ## What it does
 
-- **Composes from a feeling.** Pick a song or a feeling in the **Composer** bar and press
-  **Play song**. Each part shows as its own piano, with the notes falling onto its keys.
+- **Composes from a feeling.** Pick a song or a feeling in the browser and press play. Each part
+  gets a row in the arrangement, and its notes show in the piano roll.
 - **Tells a story.** Twelve genre songs each tell a story, scene by scene: bossa nova, reggae, funk,
-  synthwave, lo-fi hip hop, tango, country, celtic, chiptune, gospel, cinematic and blues.
-- **Makes game music.** The **Game music** songs show what a game can do with it: loops that
-  vary every pass, an **Intensity** slider that brings parts in and out, **♪ Sting** for in-key
-  event cues, **Next section** to move on at the next phrase, a boss that switches into 7/4, and
-  one leitmotif heard in two moods.
-- **Puts it in a game.** **▶ Adaptive music test level** is a dungeon corridor where the music
-  follows you, from pad and bass at the gate to everything in the arena, with stingers for coins,
-  guards and a hidden alcove.
-- **Turns whistling into songs.** **🎙 Whistle sketchpad** writes out a melody as you whistle it over
-  a click, at whatever tempo suits you, vibrato included. Drag over bars and whistle a chord's notes to
-  set the chord there. It gives you lines to paste into a song.
-- **Plays like an instrument.** Every key responds to how hard you play, from the mouse or a
-  hardware keyboard with velocity and a sustain pedal.
-- **Compares sound libraries.** Switch library and the keyboard keeps the same instrument, and
-  the next song you play uses the new one, so you can hear the difference.
+  synthwave, lo-fi hip hop, tango, country, celtic, chiptune, gospel, cinematic and blues, plus
+  solo piano pieces with a left hand, rubato and ornaments.
+- **Makes game music.** The game music songs loop with a variation every pass; a boss fight switches
+  into 7/4, and one leitmotif is heard in two moods.
+- **Turns whistling into songs.** Press record and whistle a melody over a click, at whatever tempo
+  suits you, vibrato included. Drag over bars and whistle a chord's notes to set the chord there.
+  **Make song** composes a band around it; **Save** keeps the takes in `ideas/`.
+- **Mixes.** Mute, solo, a fader and pan for every part, and any instrument from the libraries on
+  any part: click it in the browser, or drag it onto the track.
+- **Plays like an instrument.** Your computer keys or a MIDI keyboard, with velocity and a sustain
+  pedal, play the selected track's instrument.
 
 ## Running it
 
-Music Generator runs in the browser. You need Node.js, Python 3 and
-[just](https://github.com/casey/just):
+Music Generator is a desktop app. You need Node.js and [just](https://github.com/casey/just):
 
 ```bash
 just soundfonts  # download the three libraries, about 400 MB
-just play        # serve on http://localhost:8000 and open it
-```
-
-Each library's file downloads to the browser the first time you pick one of its instruments.
-
-To whistle into the sketchpad without giving a browser the microphone, run it as a desktop app:
-
-```bash
 just install     # install it as an app: ~/Applications/Music Generator.app on macOS
 just app         # or just open it in its own window, without installing
 ```
 
-The installed app runs this folder, so it keeps up with your changes and uses its sound libraries. The
-first time you record, macOS asks whether it may use the microphone.
-In the app, **Save to ideas/** writes straight into the repository's `ideas/` folder.
+The installed app runs this folder, so it uses its sound libraries and its `ideas/` folder, and
+picks up your changes the next time it opens (run `just build` first). The first time you record,
+macOS asks whether it may use the microphone.
 
 ## Controls
 
 | | Keyboard | Mouse or MIDI |
 | --- | --- | --- |
-| Play a note | `A S D F G H J K L ; '` white keys, `W E T Y U O P` black keys | click or drag across the keys (lower on a key is louder), or play a MIDI keyboard |
+| Play and stop | `Space` | **▶** and **■**; **■** twice goes back to the start |
+| Move the playhead | | click the ruler, or the chords above the piano roll |
+| Zoom the arrangement or piano roll | | `Cmd` + scroll |
+| Record a melody on the whistle track | `R` starts and stops | **●** |
+| Set a chord | drag over bars in the whistle track's roll, then `R` and whistle its notes | |
+| Edit a whistled note | `↑` `↓` move it, `←` `→` select, `V` vibrato, `Delete`, `Esc` lets go | drag it up or down; click a chord for its next reading |
+| Play the selected track's instrument | `A S D F G H J K L ; '` white keys, `W E T Y U O P` black keys | a MIDI keyboard, with its sustain pedal |
 | Octave down, up | `Z`, `X` | |
-| Change instrument | `↑` `↓` | the instrument list |
-| Browse the instrument list | `I`, then the arrows; `Esc` or `Enter` to play again | |
-| Sustain | hold `Space` | sustain pedal |
-| Jump through a song | `←` `→` step between sections | click the timeline |
-| Stop a song | `Esc` | **■ Stop** |
-| Walk the test level | arrows or `W A S D` | |
-| Record a melody in the sketchpad | `R` starts and stops | **● Record** |
-| Set a chord in the sketchpad | drag over bars, then `R` and whistle its notes | |
-| Edit a sketch's note | `↑` `↓` move it, `←` `→` select, `V` vibrato, `Delete` | drag it; click a chord for its next guess |
+| Show or hide the browser | `B` | |
+| Put an instrument on a track | | click it in the browser's Instruments tab, or drag it onto the track |
 
-**Connect MIDI** in the control bar turns on a hardware keyboard.
+Audio files dropped on the whistle track are read as takes.
 
 ## Sound libraries
 
@@ -90,7 +75,6 @@ a song, for example:
 - [How does a feeling turn into music?](docs/COMPOSING.md#2-from-emotion-to-parameters)
 - [How do I write a song?](docs/COMPOSING.md#12-the-song-spec-writing-a-song)
 - [What makes a funk song sound like funk?](docs/COMPOSING.md#13-genre-recipes)
-- [How does the music follow the game?](docs/COMPOSING.md#11-adaptive-music-for-games)
 
 ## For developers
 

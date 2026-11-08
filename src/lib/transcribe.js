@@ -1,5 +1,5 @@
 // Turns a pitch track (pitch-track.js) of a whistled melody into notes in 8ths and triplets, finds its key and writes
-// it in the composer's scale-degree notation (features/composer/notation.js), `~` marking notes with vibrato. Pure.
+// it in the composer's scale-degree notation (composer/notation.js), `~` marking notes with vibrato. Pure.
 //
 // The steps: the take's tuning offset (whistlers sit a steady few cents off); note starts from silences, dips in level
 // and changes of pitch; the beat grid that best fits those starts near the tempo given (whistling slower than the song

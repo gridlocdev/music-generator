@@ -1,6 +1,6 @@
 # Composing: a knowledge base for writing music by rule
 
-This is how an AI, or anyone without an instrument in hand, can turn a feeling into a finished multi-instrument song without leaning on chance. It explains each decision the composer in `src/features/composer/` makes and why, then shows how to write a song for it.
+This is how an AI, or anyone without an instrument in hand, can turn a feeling into a finished multi-instrument song without leaning on chance. It explains each decision the composer in `src/composer/` makes and why, then shows how to write a song for it.
 
 The tables in `composer-data.js` and `patterns-data.js` are this document in data form. When the two disagree, the code is what plays; fix whichever one is wrong.
 
@@ -607,9 +607,7 @@ Game music plays for a long time and has to follow the game. A song can be built
 - **Stingers.** `sting(kind)` plays a short cue on the next beat, in the key and mode of the section playing (`STINGERS`): `pickup`, `levelUp`, `secret`, and `fail`, a diminished seventh falling in minor thirds, the cartoon "uh-oh".
 - **Leitmotifs.** A spec's `motif` names a theme from `LEITMOTIFS` (or writes one). *Hero's Road* plays the `hero` motif bold and mixolydian in 4/4; *Hero's Rest* plays the same steps slow, aeolian and in 6/8, where the motif's rhythm adapts to the meter.
 
-In the game: play a song from **Game music**, then use the **Intensity** slider, **♪ Sting** and **Next section** (which waits for the next phrase). From code: `composer.intensity(0.3)`, `composer.sting('pickup')`, `composer.queue('Phase two 1', 'bar')`.
-
-From another feature, through events, with the song in the background and no grid on screen: `music:play { song }`, `music:intensity x`, `music:sting kind`, `music:queue { section, at }` and `music:stop`. The composer answers with `music:status { text }` while loading and `music:started { title, sections, parts }`. The **adaptive music test level** (`src/features/adventure/`) is a worked example. Its zones blend the intensity as you walk, coins, guards, a hidden alcove and the exit fire stingers, and its arena queues The Warden's second phase at the next bar.
+The app plays these songs as they loop, but has no controls for intensity, stingers or queued sections yet. A game drives them from code, through the handle `playScore(score, band)` in `src/composer/song-player.js` returns: `handle.setIntensity(0.3)`, `handle.sting('pickup')`, `handle.queue('Phase two 1', 'bar')`, `handle.stop()`. Compose the score with `compose(spec)` and load its instruments with `loadBand(score)` first.
 
 **Hearing a change.** `just ab [commit]` renders every song with that commit and with the working tree, offline, and plays them side by side, with peak and loudness for each and a blind mode. Tune the tables by ear, one at a time.
 
@@ -675,16 +673,14 @@ A song is a plain object. Only `title` (or `id`) and `emotion` are needed; every
 
 **Where specs go.**
 
-- In the game: add it to `GENRE_SONGS` in `src/features/composer/genre-songs-data.js`, `GAME_SONGS` in `game-songs-data.js`, `CHIP_SONGS` in `chip-songs-data.js` (chiptune, `sound: 'chip'`), `CLASSICAL_SONGS` in `classical-songs-data.js` (solo piano, `genre: 'Classical'`) or `SONGS` in `songs-data.js`, and it appears in the Composer menu. The tests check that a hand-written hook puts chord tones on at least 85% of its strong beats, and that every scene names a real section.
-- In the browser console, or from a page that embeds the game: `composer.play({ title: 'Test', emotion: 'tender', key: 'A' })`, `composer.play('first-light')`, `composer.stop()`, and `composer.compose(spec)` to get the score without playing it.
-- In a link: `index.html#song=first-light`, `#feel=heroic`, or `#spec=` followed by the URI-encoded JSON. Browsers need a click before sound, so the song starts on the first click or key press.
+- In the app: add it to `GENRE_SONGS` in `src/composer/genre-songs-data.js`, `GAME_SONGS` in `game-songs-data.js`, `CHIP_SONGS` in `chip-songs-data.js` (chiptune, `sound: 'chip'`), `CLASSICAL_SONGS` in `classical-songs-data.js` (solo piano, `genre: 'Classical'`) or `SONGS` in `songs-data.js`, and it appears in the browser's Songs tab. The tests check that a hand-written hook puts chord tones on at least 85% of its strong beats, and that every scene names a real section.
 - On the command line: `just compose first-light --melody --midi out.mid` prints the plan (sections, energy, chords, parts) and the melody bar by bar, and writes a Standard MIDI File any DAW can open. Run `just compose path/to/spec.json` for a spec saved as a file.
 
 **What comes out.** `compose(spec)` returns a score: tempo, its `tempoMap` and the `loop`; `sections` with labels, start beats, energy, meter, key and mode, and which is the climax; the `motif`; `chords` with names; and one track per part, each `{ role, name, program, bank, notes: [{ key, beat, beats, vel }] }` (an ornament's quick notes also carry `ornament: true`). The player schedules those notes on the Web Audio clock through the SoundFont instruments. The view draws each track as its own piano in a grid, with notes falling onto the keys that play them.
 
 ## 13. Genre recipes
 
-A genre is mostly a groove, a comping rhythm, a bass pattern and a band. Harmony and melody habits come second. Each recipe below is a full song in `src/features/composer/genre-songs-data.js` (the Classical ones in `classical-songs-data.js`); the table gives the settings, and the notes explain the moves that make the genre recognisable.
+A genre is mostly a groove, a comping rhythm, a bass pattern and a band. Harmony and melody habits come second. Each recipe below is a full song in `src/composer/genre-songs-data.js` (the Classical ones in `classical-songs-data.js`); the table gives the settings, and the notes explain the moves that make the genre recognisable.
 
 | Genre | Song | Key / mode | Tempo | Groove · comp · arp | Band (lead / counter / chords / bass) | Harmony |
 |---|---|---|---|---|---|---|

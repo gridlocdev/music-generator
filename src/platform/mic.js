@@ -20,7 +20,8 @@ export const mic = {
         const stream = await navigator.mediaDevices.getUserMedia({
             audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 },
         });
-        await ctx.audioWorklet.addModule(new URL('./mic-worklet.js', import.meta.url));
+        // by its path in the checkout: the app's bundle doesn't carry the worklet, which runs on the audio thread
+        await ctx.audioWorklet.addModule('src/platform/mic-worklet.js');
         const source = ctx.createMediaStreamSource(stream);
         const tap = new AudioWorkletNode(ctx, 'mic-tap', { numberOfInputs: 1, numberOfOutputs: 0, channelCount: 1, channelCountMode: 'explicit' });
         tap.port.onmessage = ({ data })=> onBlock(data.samples, data.frame / ctx.sampleRate);

@@ -16,3 +16,6 @@ reference/
 # whistled takes for `just whistle` and the sketchpad: the audio stays local, transcriptions are kept
 ideas/**/*.wav
 ideas/**/*.m4a
+
+# the bundled UI; `just build` makes it
+dist/

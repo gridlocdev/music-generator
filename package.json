@@ -4,18 +4,20 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "python3 -m http.server 8000",
+    "build": "node tools/build.mjs",
     "test": "node --test",
     "check": "node tools/coupling-report.mjs --strict",
-    "app": "electron ."
-  },
-  "dependencies": {
-    "littlejsengine": "1.21.0"
+    "app": "node tools/build.mjs && electron ."
   },
   "devDependencies": {
     "electron": "44.9.2",
+    "esbuild": "0.28.2",
     "playwright-core": "1.64.1"
   },
   "productName": "Music Generator",
-  "main": "electron/main.js"
+  "main": "electron/main.js",
+  "dependencies": {
+    "@preact/signals": "2.11.4",
+    "preact": "11.2.0"
+  }
 }

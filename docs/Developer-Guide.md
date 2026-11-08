@@ -1,9 +1,11 @@
 # Developer guide
 
-Music Generator is plain JavaScript ES modules on [LittleJS](https://github.com/KilledByAPixel/LittleJS),
-with no bundler: the browser loads `src/` as it is, and the import map in `index.html` points at
-the engine in `node_modules/`. The SoundFont 2 parser and the Web Audio sampler are written from
-scratch. The rules in `AGENTS.md` at the repository root apply to everyone working on it, and the
+Music Generator is an Electron app. Its interface is [Preact](https://preactjs.com) with
+[signals](https://preactjs.com/guide/v10/signals/), written in JSX and bundled by
+[esbuild](https://esbuild.github.io) into `dist/app.js`. Everything under the interface (the
+composer, the whistle transcription, the SoundFont 2 parser and the Web Audio sampler, all written
+from scratch) is plain JavaScript ES modules that also run as they are in Node, for the tools and
+tests. The rules in `AGENTS.md` at the repository root apply to everyone working on it, and the
 code layout and its layer rules are in [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Getting set up
@@ -11,46 +13,35 @@ code layout and its layer rules are in [ARCHITECTURE.md](ARCHITECTURE.md).
 You need Node.js, Python 3 and [just](https://github.com/casey/just).
 
 ```bash
-just deps        # install the pinned LittleJS and Electron into node_modules
+just deps        # install the pinned Preact, signals, esbuild and Electron into node_modules
 just soundfonts  # download GeneralUser GS, FluidR3_GM and MuseScore_General into soundfonts/
-just play        # serve on http://localhost:8000 and open the browser
-just serve       # serve on http://localhost:8000 without opening a browser
-just app         # run it in its own window (Electron), with the microphone and ideas/ saving
-just install     # install that window as an app: ~/Applications/Music Generator.app on macOS
+just build       # bundle src/app/main.jsx into dist/app.js
+just app         # build, then run it in its own window
+just dev         # rebuild on every change and reload the window
+just install     # install it as an app: ~/Applications/Music Generator.app on macOS
 ```
 
-`just play`, `just serve`, `just app` and `just install` run `just deps` first if the engine or Electron is missing. Pages must be
-served over HTTP, not opened as files, because ES modules don't load from `file://`. Without
-just: `npm install && npm start`.
+`just build`, `just app`, `just dev` and `just install` run `just deps` first if anything is
+missing. `dist/` is ignored by git.
 
 ## Checking your work
 
 Run both after every change:
 
 ```bash
-just check   # syntax-check every module, then the layer rules (tools/coupling-report.mjs --strict)
+just check   # syntax-check every module, build the bundle without writing it, then the layer rules
 just test    # node --test: the tests in test/ for lib/ and *-data.js files
 ```
 
 ## Writing songs
 
-Songs are plain specs in `src/features/composer/`: `songs-data.js`, `genre-songs-data.js` (one
-per genre, each with a story), `game-songs-data.js` (the game music) and `chip-songs-data.js`
-(chiptune in different moods). The spec format and how
-the composer reads it are in [COMPOSING.md](COMPOSING.md#12-the-song-spec-writing-a-song).
+Songs are plain specs in `src/composer/`: `songs-data.js`, `genre-songs-data.js` (one
+per genre, each with a story), `game-songs-data.js` (the game music), `chip-songs-data.js`
+(chiptune in different moods) and `classical-songs-data.js` (solo piano). Each shows up in the
+browser's Songs tab. The spec format and how the composer reads it are in
+[COMPOSING.md](COMPOSING.md#12-the-song-spec-writing-a-song).
 
-In the browser, a song can also be played from the console or opened from a link:
-
-```js
-composer.play({ title: 'Test', emotion: 'tender' })
-```
-
-```
-http://localhost:8000/#song=first-light
-http://localhost:8000/#feel=heroic
-```
-
-### Composing without a browser
+### Composing from the command line
 
 `just compose` (`tools/compose.mjs`) composes a song in Node and prints its plan. It takes a
 song id, `feel:<emotion>` or a path to a spec in JSON:
@@ -64,12 +55,12 @@ just compose feel:tender
 
 ### Transcribing a whistled melody
 
-**The sketchpad.** `just sketch` serves the game like `just serve`, through `tools/sketch-server.mjs`,
-which also saves into `ideas/`. Open **🎙 Whistle sketchpad**, set the tempo you'll whistle at and
-the meter, and press **● Record** (or `R`). After a bar of count-in, whistle the melody. The click is
-a low tick under the pitch tracker's range, but use headphones anyway. A playhead sweeps across the
-bars, your pitch is drawn as you go, the note you're on shows faintly at the playhead, and notes are
-written out about a beat behind it. When you stop, the whole take is read again on the click's grid.
+**The whistle track.** The top row of the arrangement is the whistle track. Select it and the
+editor below shows its roll and toolbar: set the tempo you'll whistle at and the meter, and press
+**●** (or `R`). After a bar of count-in, whistle the melody. The click is a low tick under the pitch
+tracker's range, but use headphones anyway. A playhead sweeps across the bars, your pitch is drawn
+as you go, the note you're on shows faintly at the playhead, and notes are written out about a beat
+behind it. When you stop, the whole take is read again on the click's grid.
 
 Then the chords: drag over bars (it snaps to half bars, or to beats with Alt held), press `R` and
 whistle the chord's notes as an arpeggio, in any order and octave, in your own time. Nothing plays
@@ -80,11 +71,11 @@ its runners-up; `Delete` on a dragged stretch forgets the chords whistled there.
 dragging it or with `↑` `↓` (`←` `→` select, `V` vibrato, `Delete` removes). The key is guessed from
 the melody and the chords' notes; the key menu overrides it.
 
-**▶ Play sketch** plays the sketch at the song tempo, **Copy** puts the section's lines on the
-clipboard, and **Save to ideas/** writes the melody take and every chord take (`take-n.wav`,
-`take-n.json`) and `section.js.txt` to `ideas/<name>/`. `just app` saves the same way. Under any other server, the files download
-instead. Audio files dropped on the page become melody takes, read at the tempo set, or the chord for
-a dragged stretch.
+**Make song** composes a band around the sketch at the song tempo and opens it in the arrangement,
+**Copy** puts the section's lines on the clipboard, and **Save** writes the melody take and every
+chord take (`take-n.wav`, `take-n.json`) and `section.js.txt` to `ideas/<name>/`. The browser's
+Ideas tab lists those folders and opens one again. Audio files dropped on the whistle track become
+melody takes, read at the tempo set, or the chord for a dragged stretch.
 
 **From the command line.**
 
@@ -153,16 +144,23 @@ length, peak and loudness, has a blind mode, and saves the WAVs in `.ab/out/`, w
 `just app` runs the checkout in Electron. `just install` (`tools/install-app.sh`) makes it an app you
 open from the Dock: on macOS a copy of the Electron in `node_modules`, renamed to Music Generator with its own
 bundle id, whose only code is a stub that loads `electron/main.js` from the checkout, so it always runs
-what's checked out, with its `soundfonts/` and `ideas/`. On Linux it adds a launcher to
+what's checked out (as last built), with its `soundfonts/` and `ideas/`. On Linux it adds a launcher to
 `~/.local/share/applications`. Run it again after moving the checkout or updating Electron. There is no
-packaged build to share. `electron/main.js` serves the
-repository on a private `app://game/` origin, lets that origin (and nothing else) use the
-microphone, and answers the same `ideas/` requests as `tools/sketch-server.mjs`
-(`tools/ideas-files.mjs`). The game's save goes to `save.json` in Electron's user data folder
-through `electron/preload.cjs`, so it is separate from the browser's. On macOS `just app` starts
-Electron with `open`, so the microphone prompt is for the app and not for the terminal. If you
-refused it, turn on Electron (or Music Generator, for the installed app) under System Settings →
-Privacy & Security → Microphone.
+packaged build to share.
+
+`electron/main.js` serves the repository on a private `app://game/` origin, lets that origin (and
+nothing else) use the microphone, and answers the `ideas/` requests (`tools/ideas-files.mjs`). The
+settings (library, panel sizes, browser tab, last song) go to `save.json` in Electron's user data
+folder through `electron/preload.cjs`. On macOS `just app` starts Electron with `open`, so the
+microphone prompt is for the app and not for the terminal. If you refused it, turn on Electron (or
+Music Generator, for the installed app) under System Settings → Privacy & Security → Microphone.
+
+Two flags help while working on it:
+
+- `--dev` (what `just dev` passes) reloads the window whenever `dist/` changes.
+- `--headless` shows no window and mutes the audio, asks for no microphone, and keeps its settings
+  in a temporary folder. Use it for scripted UI tests (for example with Playwright's `_electron`),
+  so they don't play sound or change your settings.
 
 ## SoundFont libraries
 
@@ -214,9 +212,11 @@ Keep each program in its General MIDI family (80–87 leads, 38–39 bass, 88–
 composer's vibrato, slide and scoop rules still pick it up. `CHIP_ROLES` is the instrument each part
 falls back to when the band names one the chip bank doesn't have.
 
-## Adding a feature
+## Adding to the interface
 
-A feature goes in its own folder, `src/features/<name>/`, with its code, its `*-data.js` content
-and its save slice, and is registered in `src/features/index.js`. Features don't import each
-other: they talk through `src/game/events.js` (the adventure level drives the composer only
-through `music:*` events). The full rules are in [ARCHITECTURE.md](ARCHITECTURE.md#rules).
+The interface lives in `src/app/`: the state as signals in `store.js`, what the controls do in
+`player.js`, `live.js` and `sketchpad.js`, and the views in `components/`. A view reads signals and
+calls actions; it doesn't touch the audio engine or the composer itself. Music logic goes in
+`src/composer/` or `src/sketch/`, which know nothing of the interface and don't import each other,
+and content goes in a `*-data.js` file with a test. Show a control only when there is code behind
+it. The full rules are in [ARCHITECTURE.md](ARCHITECTURE.md#rules).

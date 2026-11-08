@@ -40,7 +40,7 @@ function walk(dir)
         if (e.name === 'node_modules' || e.name.startsWith('.')) continue;
         const p = path.join(dir, e.name);
         if (e.isDirectory()) out.push(...walk(p));
-        else if (/\.(m?js)$/.test(e.name)) out.push(p);
+        else if (/\.(m?js|jsx)$/.test(e.name)) out.push(p);
     }
     return out;
 }
@@ -180,7 +180,7 @@ function moduleReport()
             const spec = m[1] ?? m[2];
             if (!spec.startsWith('.')) continue;
             let target = path.resolve(path.dirname(f), spec);
-            if (!source.has(target) && source.has(target + '.js')) target += '.js';
+            if (!source.has(target)) target = [target + '.js', target + '.jsx'].find(t => source.has(t)) ?? target;
             if (!source.has(target)) continue;      // outside src (engine in node_modules, etc.)
             out.push(target);
             const a = place(f), b = place(target);

@@ -1,12 +1,14 @@
-// Where the sketchpad may save: whistled takes and a sketch's text, into ideas/<sketch>/, for both tools/sketch-server.mjs
-// and the desktop app. Only names of letters, digits, - and _ are accepted, and only under ideas/.
+// Where the app may save: whistled takes and a sketch's text, into ideas/<sketch>/. Only names of letters, digits,
+// - and _ are accepted, and only under ideas/. The files themselves are read like any other file in the checkout.
 //   PUT /ideas/<sketch>/<file>   take-1.wav, take-1.json, section.js.txt
-//   GET /ideas/<sketch>/         the folder's files as a JSON list: the sketchpad asks this to know it can save here
+//   GET /ideas/<sketch>/         the folder's files as a JSON list
+//   GET /ideas/                  the sketch folders as a JSON list, newest first
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
 const FILE = /^\/ideas\/([\w-]+)\/([\w-]+(?:\.js)?\.(?:wav|json|txt))$/;
 const FOLDER = /^\/ideas\/([\w-]+)\/$/;
+const IDEAS = /^\/ideas\/?$/;
 
 /**
  * Answers a request to save or list a sketch, or returns null when the request isn't one.
@@ -30,6 +32,14 @@ export async function ideasRequest(root, method, pathname, body)
     {
         const files = await fs.readdir(path.join(ideas, list[1])).catch(()=> []);
         return { status: 200, type: 'application/json', body: JSON.stringify(files) };
+    }
+    if (method === 'GET' && IDEAS.test(pathname))
+    {
+        const entries = await fs.readdir(ideas, { withFileTypes: true }).catch(()=> []);
+        const folders = await Promise.all(entries.filter(e => e.isDirectory() && /^[\w-]+$/.test(e.name))
+            .map(async e => ({ name: e.name, time: (await fs.stat(path.join(ideas, e.name))).mtimeMs })));
+        folders.sort((a, b)=> b.time - a.time);
+        return { status: 200, type: 'application/json', body: JSON.stringify(folders.map(f => f.name)) };
     }
     return null;
 }
