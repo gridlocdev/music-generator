@@ -5,10 +5,9 @@
 // What Edit's commands act on follows the part last clicked (focus.js): the picked notes in the piano roll, the
 // selected clip in the arrangement, or the stretch picked on the chord track.
 import { appMenu } from '../platform/app-menu.js';
-import { barAt, barLines, beatsPerBar } from '../daw/meter.js';
-import { projectEnd, markerRange, addMarker, setTempo, setMeter, findClip, insertTime, deleteTime } from '../daw/project.js';
+import { barAt, barLines } from '../daw/meter.js';
+import { projectEnd, markerRange, addMarker, findClip, insertTime, deleteTime } from '../daw/project.js';
 import { projectMidi } from '../daw/project-midi.js';
-import { bpmAt } from '../lib/tempo-map.js';
 import { cut as cutChord } from '../sketch/takes.js';
 import { project, projectName, dirty, hist, selected, selectedClip, selectedTrack, chordRange, beat, playing,
     settings, setSettings, status, picked } from './store.js';
@@ -25,6 +24,7 @@ import { addNewTrack, renameTrack, deleteTrack, duplicateTheTrack, moveTrackBy, 
     humanizeClip, scaleClip, reverseClip } from './tracks.js';
 import { bounce } from './bounce.js';
 import { audioEngine } from '../platform/audio-engine.js';
+import { askTempo, askMeter } from './timeline.js';
 import { dialog } from './components/NewProject.jsx';
 
 /** a dialog is open: commands wait */
@@ -96,19 +96,6 @@ export async function addMarkerAt(at = beat.value)
 {
     const name = await askText('Marker name', `Marker ${project.value.markers.length + 1}`, 'Add');
     if (name) edit(p => addMarker(p, at, name));
-}
-
-export async function askTempo()
-{
-    const now = Math.round(bpmAt(project.value.tempoMap, beat.value));
-    const v = Number(await askText('Tempo (bpm): the whole tempo map changes in proportion', String(now), 'Set'));
-    if (v >= 20 && v <= 300) edit(p => setTempo(p, v));
-}
-
-export async function askMeter()
-{
-    const v = (await askText('Meter (4/4, 6/8, 7/8…)', project.value.meters[0].sig, 'Set'))?.trim();
-    if (v && /^\d{1,2}\/(2|4|8|16)$/.test(v) && beatsPerBar(v) > 0) edit(p => setMeter(p, v));
 }
 
 async function exportMidi()

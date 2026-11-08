@@ -74,6 +74,7 @@ macOS asks whether it may use the microphone.
 | Split a clip at the playhead, join it to the next | `Cmd T`, `Cmd J` | right-click, **Split Here** |
 | Mute a clip | `M` | right-click, **Mute Clip** |
 | Insert or delete bars at the playhead (everything after moves) | Edit menu | right-click the ruler |
+| Change the tempo or meter from a bar on (a flag on the ruler shows each change) | | right-click the ruler, **Tempo Change Here…** or **Meter Change Here…**; right-click or double-click a flag to edit it, ramp to the next tempo, or remove it |
 | New, duplicate or delete a track; move it | `Alt Cmd N`, `Shift Cmd D`, `Cmd Delete`; `Alt Cmd ↑` `↓` | right-click its header |
 | Draw an empty clip | | double-click a track's lane |
 | Play the selected track's instrument | `A S D F G H J K L ; '` white keys, `W E T Y U O P` black keys | a MIDI keyboard, with its sustain pedal |

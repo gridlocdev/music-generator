@@ -56,6 +56,7 @@ The window has a transport bar at the top, a browser on the left (projects, inst
 | `src/app/recording.js` | whistle → MIDI: recording a take into a new clip on the selected track (or a chord onto the chord track), dropped audio files and kept takes read the same way, keeping takes beside the project, and New from melody |
 | `src/app/live.js` | musical typing and MIDI input playing the selected track's instrument |
 | `src/app/commands.js` | every command (label, shortcut, action, when it can be used); `menu-bar.js` builds the menu bar from them and keeps it current, `keys.js` answers the plain-key shortcuts (Cmd shortcuts are the menu bar's) |
+| `src/app/timeline.js` | tempo and meter: the whole song's, changes from a bar on, and the flags the ruler shows for them with their menu |
 | `src/app/context-menus.js` | the right-click menus, one per thing clicked, which select it first and are built from the commands and the actions below |
 | `src/app/tracks.js`, `src/app/notes.js`, `src/app/clipboard.js` | the actions on tracks and clips, on the piano roll's picked notes, and cut, copy, paste and duplicate for either |
 | `src/app/focus.js`, `src/app/ask.js` | which pane the editing keys act on; an in-app question for a name or a yes (Electron has no `prompt`) |

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { insertTime, deleteTime, humanizeNotes, scaleNotes, reverseNotes, updateClip, emptyProject, makeTrack, addTrack, addClip, moveClip, splitAt, removeTrack, setMixer, setTempo, trackNotes,
+import { insertTime, deleteTime, humanizeNotes, scaleNotes, reverseNotes, updateClip, emptyProject, makeTrack, addTrack, addClip, moveClip, splitAt, removeTrack, setMixer, setTempo, setTempoAt, removeTempoChange, setMeterAt, removeMeterChange, trackNotes,
     history, commit, undo, redo, newId, setLoop, addMarker, renameMarker, removeMarker, markerRange, moveTrack, duplicateTrack,
     joinClips, quantizeNotes } from '../../src/daw/project.js';
 import { writeProject, readProject } from '../../src/daw/project-format.js';
@@ -205,4 +205,34 @@ test('humanize, speed and reverse', ()=>
     assert.deepEqual(h.map(n => [n.beat, n.vel]), [[0.1, 90], [2.1, 90]]);
     assert.deepEqual(scaleNotes(notes, 0.5).map(n => [n.beat, n.beats]), [[0, 0.5], [1, 1]]);
     assert.deepEqual(reverseNotes(notes, 0, 4).map(n => [n.beat, n.key]), [[0, 64], [3, 60]]);
+});
+
+test('tempo changes are added, edited, ramped and removed', ()=>
+{
+    let p = emptyProject({ bpm: 100 });
+    p = setTempoAt(p, 16, 120);
+    assert.deepEqual(p.tempoMap, [{ beat: 0, bpm: 100 }, { beat: 16, bpm: 120 }]);
+    p = setTempoAt(p, 0, 100, { ramp: true });
+    assert.deepEqual(p.tempoMap[0], { beat: 0, bpm: 100, to: 120 });
+    // a ramp into a change follows it to its new tempo
+    p = setTempoAt(p, 16, 130);
+    assert.deepEqual(p.tempoMap, [{ beat: 0, bpm: 100, to: 130 }, { beat: 16, bpm: 130 }]);
+    p = setTempoAt(p, 0, 100, { ramp: false });
+    assert.equal(p.tempoMap[0].to, undefined);
+    p = setTempoAt(p, 8, 90);
+    assert.deepEqual(p.tempoMap.map(s => s.beat), [0, 8, 16]);
+    assert.equal(removeTempoChange(p, 0), p, 'the first stays');
+    assert.deepEqual(removeTempoChange(p, 1).tempoMap.map(s => s.beat), [0, 16]);
+});
+
+test('meter changes are added, edited and removed', ()=>
+{
+    let p = emptyProject({ sig: '4/4' });
+    p = setMeterAt(p, 16, '6/8');
+    assert.deepEqual(p.meters, [{ beat: 0, sig: '4/4' }, { beat: 16, sig: '6/8' }]);
+    assert.deepEqual(barAt(p.meters, 19), { bar: 5, start: 19, beatsPerBar: 3 });
+    p = setMeterAt(p, 16, '7/8');
+    assert.deepEqual(p.meters[1], { beat: 16, sig: '7/8' });
+    assert.equal(removeMeterChange(p, 0), p);
+    assert.deepEqual(removeMeterChange(p, 1).meters, [{ beat: 0, sig: '4/4' }]);
 });

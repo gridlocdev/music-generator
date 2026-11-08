@@ -137,6 +137,39 @@ export function setTempo(p, bpm)
 /** the meter from the start, until the first change after it */
 export const setMeter = (p, sig)=> ({ ...p, meters: p.meters.map((m, i)=> i === 0 ? { ...m, sig } : m) });
 
+const sameBeat = (a, b)=> Math.abs(a - b) < 1e-6;
+
+/**
+ * a tempo change at a beat, or a new tempo for the one there; a ramp into it from the change before follows it
+ * @param {{ ramp?: boolean }} [options]  ramp: from here to the next change (false: hold)
+ */
+export function setTempoAt(p, beat, bpm, { ramp } = {})
+{
+    const i = p.tempoMap.findIndex(s => sameBeat(s.beat, beat));
+    const old = p.tempoMap[i];
+    let seg = { ...(old ?? { beat: Math.max(0, beat) }), bpm };
+    if (ramp === false) { const { to, ...held } = seg; seg = held; }
+    const list = (old ? p.tempoMap.map(s => s === old ? seg : s) : [...p.tempoMap, seg]).sort((a, b)=> a.beat - b.beat);
+    const at = list.indexOf(seg), before = list[at - 1];
+    if (old && before?.to !== undefined && Math.abs(before.to - old.bpm) < 1e-6) list[at - 1] = { ...before, to: bpm };
+    if (ramp && list[at + 1]) list[at] = { ...seg, to: list[at + 1].bpm };
+    return { ...p, tempoMap: list };
+}
+
+/** takes out a tempo change after the first; the tempo before it holds on */
+export const removeTempoChange = (p, index)=> index > 0 ? { ...p, tempoMap: p.tempoMap.filter((_, i)=> i !== index) } : p;
+
+/** a meter change at a beat (a bar line), or a new meter for the one there */
+export function setMeterAt(p, beat, sig)
+{
+    const i = p.meters.findIndex(m => sameBeat(m.beat, beat));
+    const meters = i >= 0 ? p.meters.map((m, k)=> k === i ? { ...m, sig } : m) : [...p.meters, { beat: Math.max(0, beat), sig }].sort((a, b)=> a.beat - b.beat);
+    return { ...p, meters };
+}
+
+/** takes out a meter change after the first; the meter before it holds on */
+export const removeMeterChange = (p, index)=> index > 0 ? { ...p, meters: p.meters.filter((_, i)=> i !== index) } : p;
+
 /** loops the playback between two beats, or stops looping with null */
 export const setLoop = (p, loop)=> ({ ...p, loop: loop && loop.to > loop.from ? { from: Math.max(0, loop.from), to: loop.to } : null });
 

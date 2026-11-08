@@ -16,7 +16,8 @@ import { paste, clipboard } from './clipboard.js';
 import { trackOf, addNewTrack, assignPreset, chooseInstrument, renameTrack, deleteTrack, duplicateTheTrack, moveTrackBy, setTrackColor,
     toggleMute, toggleSolo, setMix, newClipAt, deleteClip, splitClipsAt, joinWithNext, nextClip, setClipBars, quantizeClip,
     transposeClip, loopOver, clipRange, toggleClipMute, humanizeClip, scaleClip, reverseClip } from './tracks.js';
-import { item, snapItems, addMarkerAt, askTempo, askMeter, COMMANDS } from './commands.js';
+import { item, snapItems, addMarkerAt, COMMANDS } from './commands.js';
+import { askTempo, askMeter, askTempoChange, askMeterChange } from './timeline.js';
 
 const COLOR_NAMES = ['Amber', 'Sky', 'Green', 'Pink', 'Violet', 'Orange', 'Grey'];
 const sameColor = (a, b)=> a.every((v, i)=> Math.abs(v - b[i]) < 1e-3);
@@ -139,6 +140,8 @@ export function rulerMenu(at)
         item('insertBars', { run: ()=> { seek(bar); COMMANDS.insertBars.run(); } }),
         item('deleteBars', { run: ()=> { seek(bar); COMMANDS.deleteBars.run(); } }),
         '-',
+        { label: 'Tempo Change Here…', run: ()=> askTempoChange(bar) },
+        { label: 'Meter Change Here…', run: ()=> askMeterChange(bar) },
         { label: 'Tempo…', run: askTempo },
         { label: 'Meter…', run: askMeter },
     ]);

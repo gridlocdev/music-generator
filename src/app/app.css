@@ -96,7 +96,7 @@ input[type=range] { accent-color: var(--accent); }
 .arrange .scroll { flex: 1; overflow: auto; position: relative; }
 .arrange .rows { position: relative; min-width: 100%; }
 .ruler, .track { display: flex; }
-.ruler { position: sticky; top: 0; z-index: 3; height: 34px; background: var(--panel); border-bottom: 1px solid var(--line); }
+.ruler { position: sticky; top: 0; z-index: 3; height: 46px; background: var(--panel); border-bottom: 1px solid var(--line); }
 .head {
     position: sticky; left: 0; z-index: 2; flex: 0 0 var(--head-w, 200px); background: var(--panel);
     border-right: 1px solid var(--line); border-bottom: 1px solid var(--line-soft);
