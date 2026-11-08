@@ -184,7 +184,7 @@ Two flags help while working on it:
 Add it to `COMMANDS` in `src/app/commands.js` with a label, an `accelerator` (a Cmd shortcut the
 menu bar answers) or `shown` (a plain key the page answers, which still types in a text field; never one of
 the musical-typing letters `A`–`L`, `;`, `'`, `W E T Y U O P`, `Z`, `X`), and
-`enabled`/`checked` if it has them; then put `item('id')` in the menu bar in `menuBar()` and in any
+`enabled`/`checked` if it has them; then put `item('id')` in the menu bar in `menuBar()` (`src/app/menu-bar.js`) and in any
 right-click menu in `src/app/context-menus.js` it belongs in.
 
 ## SoundFont libraries

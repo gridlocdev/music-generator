@@ -55,11 +55,11 @@ The window has a transport bar at the top, a browser on the left (projects, inst
 | `src/app/bounce.js` | Export as Audio File: the project played once through an offline render and saved as a stereo WAV |
 | `src/app/recording.js` | whistle → MIDI: recording a take into a new clip on the selected track (or a chord onto the chord track), dropped audio files and kept takes read the same way, keeping takes beside the project, and New from melody |
 | `src/app/live.js` | musical typing and MIDI input playing the selected track's instrument |
-| `src/app/commands.js` | every command (label, shortcut, action, when it can be used), the menu bar built from them and kept current, and the plain-key shortcuts; Cmd shortcuts are the menu bar's |
+| `src/app/commands.js` | every command (label, shortcut, action, when it can be used); `menu-bar.js` builds the menu bar from them and keeps it current, `keys.js` answers the plain-key shortcuts (Cmd shortcuts are the menu bar's) |
 | `src/app/context-menus.js` | the right-click menus, one per thing clicked, which select it first and are built from the commands and the actions below |
 | `src/app/tracks.js`, `src/app/notes.js`, `src/app/clipboard.js` | the actions on tracks and clips, on the piano roll's picked notes, and cut, copy, paste and duplicate for either |
 | `src/app/focus.js`, `src/app/ask.js` | which pane the editing keys act on; an in-app question for a name or a yes (Electron has no `prompt`) |
-| `src/app/components/` | the views: `Transport`, `Browser`, `Arrange` (ruler, chord track, a lane of clips per track), `Editor` (`PianoRoll` or `Mixer`), `NewProject` (the New dialog), `Ask`; `canvas.js` is a canvas that redraws when the signals it reads change, `roll-draw.js` what the roll draws with |
+| `src/app/components/` | the views: `Transport`, `Browser`, `Arrange` (`Ruler`, `ChordLane`, a `TrackRow` per track, sharing `arrange-view.js`), `Editor` (`PianoRoll` or `Mixer`), `NewProject` (the New dialog), `Ask`; `canvas.js` is a canvas that redraws when the signals it reads change, the piano roll's parts are `roll-view.js` (what's shown, its geometry), `roll-draw.js` (drawing), `roll-input.js` (the pointer), `RollToolbar` and `RollPlayhead` |
 | `src/app/app.css` | the look: colour tokens and the panel grid |
 | `tools/compose.mjs` | composes a song in Node: prints the plan and melody, writes a `.mid` (`just compose`) |
 | `tools/make-projects.mjs` | writes the written songs as project files in `projects/` (`just projects`) |

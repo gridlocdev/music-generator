@@ -1,21 +1,18 @@
 // The app's commands: each with its label, shortcut, action and when it can be used, for the menu bar, the keys and
 // the right-click menus alike. Shortcuts with Cmd are answered by the menu bar (`accelerator`); plain keys, which
-// must still type in a text field, by the page (`shown`, matched by handleKey).
+// must still type in a text field, by the page (`shown`, matched in keys.js). The menu bar is built in menu-bar.js.
 //
 // What Edit's commands act on follows the part last clicked (focus.js): the picked notes in the piano roll, the
 // selected clip in the arrangement, or the stretch picked on the chord track.
-import { effect } from '@preact/signals';
 import { appMenu } from '../platform/app-menu.js';
-import { typing } from '../platform/keys.js';
-import { barAt, barLines } from '../daw/meter.js';
+import { barAt, barLines, beatsPerBar } from '../daw/meter.js';
 import { projectEnd, markerRange, addMarker, setTempo, setMeter, findClip, insertTime, deleteTime } from '../daw/project.js';
 import { projectMidi } from '../daw/project-midi.js';
-import { beatsPerBar } from '../daw/meter.js';
 import { bpmAt } from '../lib/tempo-map.js';
 import { cut as cutChord } from '../sketch/takes.js';
-import { project, projectName, projectList, dirty, hist, selected, selectedClip, selectedTrack, chordRange, beat, playing,
+import { project, projectName, dirty, hist, selected, selectedClip, selectedTrack, chordRange, beat, playing,
     settings, setSettings, status, picked } from './store.js';
-import { edit, undo, redo, save, saveAs, openProject, refreshProjects } from './document.js';
+import { edit, undo, redo, save, saveAs, openProject } from './document.js';
 import { toggle, seek } from './player.js';
 import { record, recording, newFromMelody } from './recording.js';
 import { focus } from './focus.js';
@@ -31,7 +28,7 @@ import { audioEngine } from '../platform/audio-engine.js';
 import { dialog } from './components/NewProject.jsx';
 
 /** a dialog is open: commands wait */
-const busy = ()=> !!(dialog.value || asking.value || audioEngine.rendering);
+export const busy = ()=> !!(dialog.value || asking.value || audioEngine.rendering);
 
 // ── what the commands act on ─────────────────────────────────────────────────────────────────────────────────────────
 
@@ -252,72 +249,3 @@ export function item(id, extra = {})
 
 /** the snap grids, as radio items */
 export const snapItems = ()=> GRIDS.map(([g, name])=> ({ label: name, radio: true, checked: settings.value.grid === g, run: ()=> setSettings({ grid: g }) }));
-
-// ── the menu bar ─────────────────────────────────────────────────────────────────────────────────────────────────────
-
-function menuBar()
-{
-    const open = projectList.value.map(x => ({ label: x.title, radio: true, checked: x.name === projectName.value, run: ()=> openProject(x.name) }));
-    return [
-        { label: 'File', submenu: [item('new'), item('open'), { label: 'Open Project', submenu: open.length ? open : [{ label: 'No projects', enabled: false }] }, '-',
-            item('save'), item('saveAs'), item('revert'), '-', item('exportAudio'), item('exportMidi'), item('reveal')] },
-        { label: 'Edit', submenu: [item('undo'), item('redo'), '-', item('cut'), item('copy'), item('paste'), item('duplicate'), item('delete'), '-',
-            item('selectAll'), item('deselect'), '-', item('split'), item('join'), item('muteClip'), '-',
-            item('quantize'), item('humanize'), { label: 'Snap', submenu: snapItems() }, '-',
-            item('up'), item('down'), item('octaveUp'), item('octaveDown'), item('nudgeLeft'), item('nudgeRight'), '-',
-            item('doubleSpeed'), item('halfSpeed'), item('reverse'), '-', item('insertBars'), item('deleteBars')] },
-        { label: 'Track', submenu: [item('newTrack'), item('duplicateTrack'), item('renameTrack'), item('instrument'), '-',
-            item('mute'), item('solo'), '-', item('trackUp'), item('trackDown'), '-', item('deleteTrack')] },
-        { label: 'Transport', submenu: [item('play'), item('record'), '-', item('start'), item('end'), item('prevBar'), item('nextBar'), item('prevMarker'), item('nextMarker'), '-',
-            item('loop'), item('loopSelection'), item('metronome'), item('click'), '-', item('addMarker'), item('tempo'), item('meter'), '-', item('newFromMelody')] },
-        { label: 'View', submenu: [item('browser'), '-', item('roll'), item('mixer'), '-', item('zoomIn'), item('zoomOut'), item('fit'), '-',
-            item('follow'), item('ghosts'), { role: 'togglefullscreen' }, '-',
-            { label: 'Developer', submenu: [{ role: 'reload' }, { role: 'toggleDevTools' }] }] },
-        { label: 'Help', submenu: [item('composing'), item('readme')] },
-    ];
-}
-
-/** keeps the menu bar's items enabled, checked and listed as the app changes, a moment after it does */
-export function startMenus()
-{
-    let timer = 0;
-    effect(()=>
-    {
-        const bar = menuBar();
-        clearTimeout(timer);
-        timer = setTimeout(()=> appMenu.setBar(bar), 60);
-    });
-    const focusChanged = ()=> appMenu.typing(typing());
-    addEventListener('focusin', focusChanged);
-    addEventListener('focusout', ()=> setTimeout(focusChanged));
-    refreshProjects();
-}
-
-// ── plain keys ───────────────────────────────────────────────────────────────────────────────────────────────────────
-
-const CODES = { Space: 'Space', Up: 'ArrowUp', Down: 'ArrowDown', Left: 'ArrowLeft', Right: 'ArrowRight', End: 'End', '=': 'Equal', '-': 'Minus', Return: 'Enter', ',': 'Comma', '.': 'Period', Escape: 'Escape', Backspace: 'Backspace' };
-const codeOf = (key)=> CODES[key] ?? (/^\d$/.test(key) ? `Digit${key}` : `Key${key}`);
-
-function parse(keys, id)
-{
-    const parts = keys.split('+');
-    return { code: codeOf(parts.at(-1)), shift: parts.includes('Shift'), alt: parts.includes('Alt'), cmd: parts.includes('CmdOrCtrl'), id };
-}
-
-/** the shortcuts the page answers: the plain keys, and the Cmd ones too where there's no menu bar */
-const KEYS = Object.entries(COMMANDS).flatMap(([id, c])=> [c.shown && parse(c.shown, id), !appMenu.native && c.accelerator && parse(c.accelerator, id)]).filter(Boolean);
-
-/** answers a key the menu bar doesn't: true when it did something */
-export function handleKey(e)
-{
-    if (busy()) return false;
-    const code = e.code === 'Delete' ? 'Backspace' : e.code, cmd = e.metaKey || e.ctrlKey;
-    const k = KEYS.find(x => x.code === code && x.shift === e.shiftKey && x.alt === e.altKey && x.cmd === cmd);
-    // a text field keeps its own keys, and its own undo, copy and paste
-    if (!k || (typing() && (!k.cmd || COMMANDS[k.id].text))) return false;
-    if (e.repeat && !['up', 'down', 'octaveUp', 'octaveDown', 'nudgeLeft', 'nudgeRight', 'prevBar', 'nextBar'].includes(k.id)) return false;
-    const c = COMMANDS[k.id];
-    if (c.enabled && !c.enabled()) return false;
-    c.run();
-    return true;
-}
