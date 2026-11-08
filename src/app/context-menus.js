@@ -11,12 +11,12 @@ import { seek } from './player.js';
 import { record, dropTake } from './recording.js';
 import { focus } from './focus.js';
 import { askText } from './ask.js';
-import { picked, pickedNotes, setVelocity, legatoPicked, pickKey, transposePicked } from './notes.js';
+import { picked, pickedNotes, setVelocity, legatoPicked, pickKey, transposePicked, humanizePicked, scalePicked, reversePicked } from './notes.js';
 import { paste, clipboard } from './clipboard.js';
 import { trackOf, addNewTrack, assignPreset, chooseInstrument, renameTrack, deleteTrack, duplicateTheTrack, moveTrackBy, setTrackColor,
     toggleMute, toggleSolo, setMix, newClipAt, deleteClip, splitClipsAt, joinWithNext, nextClip, setClipBars, quantizeClip,
-    transposeClip, loopOver, clipRange } from './tracks.js';
-import { item, snapItems, addMarkerAt, askTempo, askMeter } from './commands.js';
+    transposeClip, loopOver, clipRange, toggleClipMute, humanizeClip, scaleClip, reverseClip } from './tracks.js';
+import { item, snapItems, addMarkerAt, askTempo, askMeter, COMMANDS } from './commands.js';
 
 const COLOR_NAMES = ['Amber', 'Sky', 'Green', 'Pink', 'Violet', 'Orange', 'Grey'];
 const sameColor = (a, b)=> a.every((v, i)=> Math.abs(v - b[i]) < 1e-3);
@@ -26,6 +26,11 @@ const transposeItems = (by)=> [
     { label: 'Down a Semitone', run: ()=> by(-1) },
     { label: 'Up an Octave', run: ()=> by(12) },
     { label: 'Down an Octave', run: ()=> by(-12) },
+];
+
+const speedItems = (by)=> [
+    { label: 'Double Speed', run: ()=> by(0.5) },
+    { label: 'Half Speed', run: ()=> by(2) },
 ];
 
 const pasteHere = (trackId, at)=> ({ label: 'Paste Here', enabled: !!clipboard.value, run: ()=> paste(at, trackId) });
@@ -72,8 +77,12 @@ export function clipMenu(trackId, clipId, at)
         { label: 'Split Here', enabled: !!inside, run: ()=> splitClipsAt(barSnap(at), trackId) },
         item('split'),
         { label: 'Join with Next Clip', enabled: !!nextClip(trackId, clipId), run: ()=> joinWithNext(trackId, clipId) },
+        { label: 'Mute Clip', checked: !!c?.mute, run: ()=> toggleClipMute(trackId, clipId) },
         '-',
         { label: 'Quantize Notes', run: ()=> quantizeClip(trackId, clipId) },
+        { label: 'Humanize', run: ()=> humanizeClip(trackId, clipId) },
+        { label: 'Speed', submenu: speedItems(k => scaleClip(trackId, clipId, k)) },
+        { label: 'Reverse', run: ()=> reverseClip(trackId, clipId) },
         { label: 'Transpose', submenu: transposeItems(by => transposeClip(trackId, clipId, by)) },
         { label: 'Length', submenu: [1, 2, 4, 8, 16].map(n => ({ label: `${n} bar${n > 1 ? 's' : ''}`, radio: true, checked: Math.abs(bars - n) < 1e-6, run: ()=> setClipBars(trackId, clipId, n) })) },
         '-',
@@ -127,6 +136,9 @@ export function rulerMenu(at)
         { label: 'Loop This Bar', run: ()=> loopOver({ from: bar, to: bar + barAt(p.meters, at).beatsPerBar }) },
         { label: 'Loop Off', enabled: !!p.loop, run: ()=> loopOver(null) },
         '-',
+        item('insertBars', { run: ()=> { seek(bar); COMMANDS.insertBars.run(); } }),
+        item('deleteBars', { run: ()=> { seek(bar); COMMANDS.deleteBars.run(); } }),
+        '-',
         { label: 'Tempo…', run: askTempo },
         { label: 'Meter…', run: askMeter },
     ]);
@@ -167,6 +179,9 @@ export function noteMenu()
         { label: 'Transpose', submenu: transposeItems(transposePicked) },
         { label: 'Velocity', submenu: [32, 56, 80, 100, 120, 127].map(v => ({ label: String(v), radio: true, checked: vel === v, run: ()=> setVelocity(v) })) },
         { label: 'Legato', enabled: list.length > 1, run: legatoPicked },
+        { label: 'Humanize', run: humanizePicked },
+        { label: 'Speed', submenu: speedItems(scalePicked) },
+        { label: 'Reverse', run: reversePicked },
         '-',
         item('selectAll'),
         { label: 'Select Same Pitch', run: ()=> pickKey(list[0].n.key) },

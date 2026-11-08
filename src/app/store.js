@@ -19,6 +19,9 @@ const DEFAULTS = {
     editorHeight: 300,      // px
     grid: 0.25,             // the piano roll's snap, in beats
     click: true,            // a click while recording, after the count-in
+    metronome: false,       // a click while playing
+    follow: true,           // the arrangement scrolls to keep the playhead in view while playing
+    ghosts: true,           // the piano roll shows the other tracks' notes faintly
 };
 
 export const settings = signal(DEFAULTS);
@@ -80,3 +83,5 @@ export const playing = signal(false);
 export const beat = signal(0);
 /** what's loading or what went wrong, shown in the transport */
 export const status = signal('');
+/** while playing: each track's level (peak 0..1) and the master's, for the mixer's meters */
+export const levels = signal(/** @type {{ tracks: number[], master: number }} */ ({ tracks: [], master: 0 }));

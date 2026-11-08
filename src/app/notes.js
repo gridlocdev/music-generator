@@ -1,7 +1,7 @@
 // The notes picked in the piano roll, on the selected track, and what can be done to them: delete, transpose, quantize,
-// set velocity, make legato. Each is one undo step.
+// set velocity, make legato, nudge, humanize, change speed, reverse. Each is one undo step.
 import { signal } from '@preact/signals';
-import { updateClip, quantizeNotes } from '../daw/project.js';
+import { updateClip, quantizeNotes, humanizeNotes, scaleNotes, reverseNotes } from '../daw/project.js';
 import { selectedTrack, selectedClip, settings } from './store.js';
 import { edit } from './document.js';
 
@@ -90,3 +90,32 @@ export function pickAll()
 
 /** every note of the track at a key */
 export const pickKey = (key)=> { picked.value = new Set(notesOf(selectedTrack.value).filter(o => o.n.key === key).map(o => noteId(o.clip.id, o.i))); };
+
+/** the picked notes moved later (or earlier) by some beats, none before its clip's start */
+export const nudgePicked = (by)=> mapPicked(n => ({ ...n, beat: Math.max(0, n.beat + by) }), 'nudge');
+
+/** fn(notes, from, to) on the picked notes of each clip, given the stretch they span in it */
+function mapPickedTogether(fn)
+{
+    const t = selectedTrack.value, ids = picked.value;
+    if (!t || !ids.size) return false;
+    const clips = new Set([...ids].map(id => id.split(':')[0]));
+    changeNotes(t.id, new Map([...clips].map(c => [c, (notes)=>
+    {
+        const mine = notes.filter((_, i)=> ids.has(noteId(c, i)));
+        const from = Math.min(...mine.map(n => n.beat)), to = Math.max(...mine.map(n => n.beat + n.beats));
+        const changed = fn(mine, from, to);
+        let k = 0;
+        // keeps each note at its index, so the picks still point at them
+        return notes.map((n, i)=> ids.has(noteId(c, i)) ? changed[k++] : n);
+    }])));
+    return true;
+}
+
+export const humanizePicked = ()=> mapPickedTogether(notes => humanizeNotes(notes));
+
+/** the picked notes faster (k < 1) or slower (k > 1), from the first of them */
+export const scalePicked = (k)=> mapPickedTogether((notes, from)=> scaleNotes(notes, k, from));
+
+/** the picked notes backwards, over the stretch they span */
+export const reversePicked = ()=> mapPickedTogether((notes, from, to)=> notes.map(n => ({ ...n, beat: from + to - n.beat - n.beats })));

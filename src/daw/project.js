@@ -5,7 +5,8 @@
 /**
  * @typedef {{ beat: number, beats: number, key: number, vel: number, [mark: string]: any }} Note
  *   beat is from the clip's start; extra fields are marks a MIDI FX may read (vibrato, ornament …)
- * @typedef {{ id: string, start: number, beats: number, notes: Note[] }} Clip
+ * @typedef {{ id: string, start: number, beats: number, notes: Note[], mute?: boolean }} Clip
+ *   a muted clip is kept but not played
  * @typedef {{ beat: number, value: number, curve: 'set' | 'linear' | 'exp' }} Keyframe
  * @typedef {{ volumeDb: number, pan: number, mute: boolean, solo: boolean, lowCut: number,
  *   sends: { reverb: number, delay: number }, autoPan: { rate: number, depth: number } | null,
@@ -59,7 +60,7 @@ export function trackNotes(track)
 {
     const out = [];
     for (const c of track.clips)
-        for (const n of c.notes)
+        if (!c.mute) for (const n of c.notes)
             if (n.beat < c.beats - 1e-9 && n.beat >= -1e-9) out.push({ ...n, beat: c.start + n.beat });
     return out.sort((a, b)=> a.beat - b.beat || a.key - b.key);
 }
@@ -117,7 +118,7 @@ export function splitAt(p, beat, trackId = null)
             if (beat <= c.start + 1e-9 || beat >= c.start + c.beats - 1e-9) continue;
             const cut = beat - c.start;
             const left = { ...c, beats: cut, notes: c.notes.filter(n => n.beat < cut - 1e-9).map(n => ({ ...n, beats: Math.min(n.beats, cut - n.beat) })) };
-            const right = { id: newId(out, 'c'), start: beat, beats: c.beats - cut,
+            const right = { ...c, id: newId(out, 'c'), start: beat, beats: c.beats - cut,
                 notes: c.notes.filter(n => n.beat >= cut - 1e-9).map(n => ({ ...n, beat: n.beat - cut })) };
             out = addClip(updateClip(out, t.id, c.id, left), t.id, right);
         }
@@ -206,6 +207,80 @@ export function quantizeNotes(notes, grid, strength = 1)
         const end = n.beat + n.beats, to = end + (on(end) - end) * strength;
         return { ...n, beat, beats: Math.max(Math.min(n.beats, grid), to - beat) };
     });
+}
+
+/** notes played a little looser: each moved by up to `timing` beats and its velocity by up to `velocity`, at random
+ * (`random` gives 0..1, so a test can pass a fixed sequence) */
+export function humanizeNotes(notes, { timing = 0.02, velocity = 8 } = {}, random = Math.random)
+{
+    const spread = (x)=> (random() * 2 - 1) * x;
+    return notes.map(n => ({ ...n, beat: Math.max(0, n.beat + spread(timing)), vel: Math.max(1, Math.min(127, Math.round(n.vel + spread(velocity)))) }));
+}
+
+/** notes played faster (k < 1) or slower (k > 1): their starts from `from` and their lengths scaled */
+export const scaleNotes = (notes, k, from = 0)=> notes.map(n => ({ ...n, beat: from + (n.beat - from) * k, beats: n.beats * k }));
+
+/** notes backwards over the stretch [from, to): a note ending at `to` starts at `from` */
+export const reverseNotes = (notes, from, to)=> notes.map(n => ({ ...n, beat: Math.max(from, from + to - n.beat - n.beats) })).sort((a, b)=> a.beat - b.beat || a.key - b.key);
+
+// ── time ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+/** chords cut at a beat, where one spans it */
+const splitChords = (chords, at)=> chords.flatMap(c => c.beat < at - 1e-9 && c.beat + c.beats > at + 1e-9
+    ? [{ ...c, beats: at - c.beat }, { ...c, beat: at, beats: c.beat + c.beats - at }] : [c]);
+
+/** everything in the project at a beat or after it, moved on by `beats` (or back, for a negative): clips, notes,
+ * markers, chords, tempo and meter changes, automation and the loop. Nothing at beat 0's tempo or meter moves. */
+function shiftFrom(p, at, by)
+{
+    const move = (b)=> b >= at - 1e-9 ? b + by : b;
+    const keepFirst = (list)=> list.map((x, i)=> i === 0 ? x : { ...x, beat: move(x.beat) });
+    return {
+        ...p,
+        length: Math.max(0, p.length + by),
+        tempoMap: keepFirst(p.tempoMap),
+        meters: keepFirst(p.meters),
+        markers: p.markers.map(m => ({ ...m, beat: move(m.beat) })),
+        chords: p.chords.map(c => ({ ...c, beat: move(c.beat) })),
+        loop: p.loop && { from: move(p.loop.from), to: move(p.loop.to) },
+        tracks: p.tracks.map(t => ({
+            ...t,
+            clips: t.clips.map(c => ({ ...c, start: move(c.start) })),
+            automation: Object.fromEntries(Object.entries(t.automation).map(([k, frames])=> [k, frames.map(f => ({ ...f, beat: move(f.beat) }))])),
+        })),
+    };
+}
+
+/** empty time put in at a beat, `beats` long: what was there and after moves on, a clip across it is cut in two */
+export function insertTime(p, at, beats)
+{
+    if (beats <= 0) return p;
+    const cut = { ...splitAt(p, at), chords: splitChords(p.chords, at) };
+    return shiftFrom(cut, at, beats);
+}
+
+/** the time from one beat to another taken out: what was in it goes, what was after moves back */
+export function deleteTime(p, from, to)
+{
+    if (to <= from) return p;
+    const len = to - from, inside = (b)=> b >= from - 1e-9 && b < to - 1e-9;
+    let q = splitAt(splitAt(p, from), to);
+    q = {
+        ...q,
+        chords: splitChords(splitChords(q.chords, from), to).filter(c => !inside(c.beat)),
+        markers: q.markers.filter(m => !inside(m.beat)),
+        tempoMap: q.tempoMap.filter((x, i)=> i === 0 || !inside(x.beat)),
+        meters: q.meters.filter((x, i)=> i === 0 || !inside(x.beat)),
+        // a loop end inside the stretch comes back to its start
+        loop: q.loop && { from: inside(q.loop.from) ? to : q.loop.from, to: inside(q.loop.to) ? from + len : q.loop.to },
+        tracks: q.tracks.map(t => ({
+            ...t,
+            clips: t.clips.filter(c => !inside(c.start)),
+            automation: Object.fromEntries(Object.entries(t.automation).map(([k, frames])=> [k, frames.filter(f => !inside(f.beat))])),
+        })),
+    };
+    const out = shiftFrom(q, to, -len);
+    return { ...out, length: Math.max(0, p.length - Math.max(0, Math.min(p.length, to) - from)), loop: out.loop && out.loop.to - out.loop.from > 1e-9 ? out.loop : null };
 }
 
 // ── history ─────────────────────────────────────────────────────────────────────────────────────────────────────────

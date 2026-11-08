@@ -4,12 +4,14 @@ import { effect } from '@preact/signals';
 import { loadInstruments } from '../daw/instruments.js';
 import { playProject } from '../daw/player.js';
 import { projectEnd } from '../daw/project.js';
-import { project, mix, playing, beat, status } from './store.js';
+import { audioEngine } from '../platform/audio-engine.js';
+import { project, mix, playing, beat, status, settings, levels } from './store.js';
 
 let handle = null;
 let heard = null;           // the project the handle plays
 let starting = 0;           // id of the newest play request, so a slow load can't start a project that was replaced
 let frame = 0;
+const FALL = 0.92;           // what's left of a meter's level a frame later
 
 export async function play()
 {
@@ -23,7 +25,7 @@ export async function play()
         if (id !== starting) return;
         const from = beat.value >= projectEnd(p) ? 0 : beat.value;
         heard = p;
-        handle = playProject(p, instruments, { from, mix: mix.value });
+        handle = playProject(p, instruments, { from, mix: mix.value, click: settings.value.metronome });
         status.value = '';
         follow(handle);
     }
@@ -42,6 +44,12 @@ function follow(h)
         if (h !== handle) return;
         if (h.done) { stop(); return; }
         beat.value = Math.max(0, h.beat);
+        if (settings.value.editorTab === 'mixer')
+        {
+            // a meter falls back slowly from a peak, so a short note still shows
+            const was = levels.value, fall = (v, i)=> Math.max(v, (i === undefined ? was.master : was.tracks[i] ?? 0) * FALL);
+            levels.value = { tracks: h.levels().map(fall), master: fall(audioEngine.level) };
+        }
         frame = requestAnimationFrame(step);
     };
     step();
@@ -52,6 +60,7 @@ function halt()
     cancelAnimationFrame(frame);
     handle?.stop();
     handle = null;
+    levels.value = { tracks: [], master: 0 };
 }
 
 /** stops where it is; stopping when already stopped goes back to the start */
@@ -102,3 +111,6 @@ effect(()=>
     restart = setTimeout(()=> { if (playing.value && project.value !== heard) play(); }, 250);
 });
 effect(()=> { const m = mix.value; handle?.setMix(m); });
+// the metronome turned on or off is heard at once
+let clicking = settings.value.metronome;
+effect(()=> { const on = settings.value.metronome; if (on !== clicking) { clicking = on; reload(); } });

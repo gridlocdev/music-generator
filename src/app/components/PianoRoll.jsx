@@ -1,7 +1,8 @@
 // The piano roll for the selected track: every clip's notes, the chords above, velocity below and the playhead.
 //
 // Click empty space in a clip to draw a note (outside a clip, a bar's clip is made for it) and drag to set its
-// length; drag a note to move it, its right edge to resize it; Shift-click adds to the selection; Delete removes,
+// length; drag a note to move it, its right edge to resize it; Shift-click adds to the selection, Shift-drag on empty
+// space picks the notes in a rectangle; other tracks' notes show faintly behind; Delete removes,
 // ↑ ↓ transpose (Shift: an octave), Cmd+A selects the clip's notes. Drag in the velocity strip to set velocity.
 // Right-click a note or the background for more. Everything snaps to the grid picked in the toolbar; hold Alt to place freely. The wheel scrolls (Shift: across),
 // Cmd/Ctrl + wheel zooms.
@@ -26,6 +27,8 @@ const VEL_H = 44;
 const EDGE = 5;                 // px at a note's right edge that resize it
 const NEW_VEL = 90;
 
+/** a selection rectangle being dragged out: two corners as { beat, key } */
+const band = signal(/** @type {{ a: { beat: number, key: number }, b: { beat: number, key: number } }|null} */ (null));
 /** what's shown: from beat, px per beat, and the key at the bottom */
 const view = signal({ from: 0, ppb: 40, low: 48 });
 /** the view's geometry for a canvas of w × h */
@@ -120,6 +123,19 @@ function Roll()
             g.fillStyle = C.chord; g.fillRect(a + 2, 1, b - a - 4, STRIP - 2);
             if (b - a > 20) text(g, c.name, (a + b) / 2, STRIP / 2, 12, C.text, 'center');
         }
+        // the other tracks' notes, faintly, to write against (drum kits' keys are drums, not pitches)
+        if (settings.value.ghosts)
+            for (const t of p.tracks)
+            {
+                if (t === track || t.instrument.bank >= 128) continue;
+                g.fillStyle = rgba(t.color, 0.16);
+                for (const { n, clip, at: b0 } of notesOf(t))
+                {
+                    const a = G.x(b0), b = G.x(b0 + Math.min(n.beats, clip.beats - n.beat)), y = G.L.y(n.key);
+                    if (b < GUTTER || a > w || y < G.top - 1 || y >= G.bottom) continue;
+                    g.fillRect(a + 0.5, y + 3, Math.max(2, b - a - 1), LANE_H - 6);
+                }
+            }
         // notes, and their velocities below
         g.fillStyle = 'rgba(255,255,255,.04)';
         g.fillRect(GUTTER, G.bottom, w, VEL_H);
@@ -140,6 +156,14 @@ function Roll()
             g.fillStyle = sel ? C.selected : rgba(track.color, 0.9);
             g.fillRect(a, h - 2 - vh, 2, vh);
             g.fillRect(a, h - 2 - vh, 6, 2);
+        }
+        const box = band.value;
+        if (box)
+        {
+            const x0 = G.x(Math.min(box.a.beat, box.b.beat)), x1 = G.x(Math.max(box.a.beat, box.b.beat));
+            const y0 = G.L.y(Math.max(box.a.key, box.b.key)), y1 = G.L.y(Math.min(box.a.key, box.b.key)) + LANE_H;
+            g.fillStyle = 'rgba(140,190,255,.12)'; g.fillRect(x0, y0, x1 - x0, y1 - y0);
+            g.strokeStyle = 'rgba(140,190,255,.8)'; g.lineWidth = 1; g.strokeRect(x0 + 0.5, y0 + 0.5, x1 - x0, y1 - y0);
         }
         g.fillStyle = C.playhead;
         g.fillRect(G.x(now), 0, 1, h);
@@ -204,6 +228,22 @@ function Roll()
             mode = G.x(hit.at + hit.n.beats) - px <= EDGE ? 'resize' : 'move';
             grabbed = hit;
             press(hit.n.key);
+        }
+        else if (e.shiftKey)
+        {
+            // Shift-drag on empty space picks every note the rectangle touches, added to what was picked
+            const was = picked.value, a = { beat: b, key };
+            const drag = (m)=>
+            {
+                const c = { beat: G.beatAt(m.clientX - r.left), key: G.keyAt(m.clientY - r.top) };
+                band.value = { a, b: c };
+                const [b0, b1] = [Math.min(a.beat, c.beat), Math.max(a.beat, c.beat)], [k0, k1] = [Math.min(a.key, c.key), Math.max(a.key, c.key)];
+                picked.value = new Set([...was, ...all.filter(o => o.n.key >= k0 && o.n.key <= k1 && o.at < b1 && o.at + o.n.beats > b0).map(o => noteId(o.clip.id, o.i))]);
+            };
+            const done = ()=> { band.value = null; el.removeEventListener('pointermove', drag); el.removeEventListener('pointerup', done); };
+            el.addEventListener('pointermove', drag);
+            el.addEventListener('pointerup', done);
+            return;
         }
         else
         {

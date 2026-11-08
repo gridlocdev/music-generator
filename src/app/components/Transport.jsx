@@ -38,6 +38,8 @@ export function Transport()
                 <button class={`play ${playing.value ? 'on' : ''}`} title="Play (Space)" onClick={()=> play()}>▶</button>
                 <button class={`rec ${recording.value ? 'on' : ''}`} title="Record a whistled melody on the selected track, or a chord over the stretch picked on the chord track (R)"
                     onClick={record}>●</button>
+                <button class={`click ${settings.value.metronome ? 'on' : ''}`} title="Metronome: a click on every beat while playing"
+                    onClick={()=> setSettings({ metronome: !settings.value.metronome })}>♩</button>
             </div>
             <div class="lcd">
                 <span class="pos">{position(p.meters, now)}</span>

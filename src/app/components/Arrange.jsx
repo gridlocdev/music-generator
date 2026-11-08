@@ -1,5 +1,6 @@
 // The arrangement: a ruler of bars and markers, the chord track, then a row per track with its header (name,
-// instrument, mute, solo) and a lane of clips. Click the ruler to move the playhead; Cmd/Ctrl + wheel zooms.
+// instrument, mute, solo) and a lane of clips. Click the ruler to move the playhead, or drag along it to loop the bars
+// dragged over; Cmd/Ctrl + wheel zooms. While playing, the view scrolls to keep the playhead in sight (Follow Playhead).
 //
 // Clips: drag to move (to another track too), Alt-drag to copy, drag the right edge to resize, double-click empty
 // space for a new clip; they snap to bars, or to beats with Shift. Drag across the chord track to pick a stretch to
@@ -9,12 +10,12 @@ import { signal } from '@preact/signals';
 import { barLines, barAt } from '../../daw/meter.js';
 import { presetFor } from '../../daw/instruments.js';
 import { projectEnd, updateClip, moveClip, newId } from '../../daw/project.js';
-import { project, selected, selectedClip, chordRange, beat, settings, setSettings } from '../store.js';
+import { project, selected, selectedClip, chordRange, beat, playing, settings, setSettings } from '../store.js';
 import { edit } from '../document.js';
 import { seek } from '../player.js';
 import { recording, dropAudio, dropTake } from '../recording.js';
 import { focus } from '../focus.js';
-import { arrangeZoom as zoom, addNewTrack, assignPreset, renameTrack, deleteTrack, toggleMute, toggleSolo, newClipAt } from '../tracks.js';
+import { arrangeZoom as zoom, arrangePpb, addNewTrack, assignPreset, renameTrack, deleteTrack, toggleMute, toggleSolo, newClipAt } from '../tracks.js';
 import { clipMenu, laneMenu, trackMenu, rulerMenu, chordMenu } from '../context-menus.js';
 import { useCanvas, rgba } from './canvas.js';
 
@@ -82,8 +83,31 @@ function Ruler({ beats, ppb })
         }
     });
     const at = (e)=> (e.clientX - e.currentTarget.getBoundingClientRect().left) / ppb;
+    // a click seeks; a drag loops the bars it covers, snapped to bar lines (beats with Shift)
+    const down = (e)=>
+    {
+        if (e.button !== 0) return;
+        const el = e.currentTarget, left = el.getBoundingClientRect().left, x0 = e.clientX, from = at(e);
+        el.setPointerCapture(e.pointerId);
+        let looping = false;
+        const move = (m)=>
+        {
+            if (!looping && Math.abs(m.clientX - x0) < 4) return;
+            looping = true;
+            const to = (m.clientX - left) / ppb;
+            const a = snapTo(Math.min(from, to), m), b = snapTo(Math.max(from, to), m);
+            if (b > a) edit(q => ({ ...q, loop: { from: a, to: b } }), `loop ${e.timeStamp}`);
+        };
+        const up = ()=>
+        {
+            el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up);
+            if (!looping) seek(from);
+        };
+        el.addEventListener('pointermove', move);
+        el.addEventListener('pointerup', up);
+    };
     return (
-        <div class="bars" style={{ width: px(beats * ppb) }} onPointerDown={(e)=> e.button === 0 && seek(at(e))}
+        <div class="bars" style={{ width: px(beats * ppb) }} onPointerDown={down}
             onContextMenu={(e)=> { e.preventDefault(); rulerMenu(at(e)); }}><canvas ref={ref} /></div>
     );
 }
@@ -153,7 +177,7 @@ function Lane({ track, beats, ppb })
         {
             const a = start * ppb + 1, b = (start + len) * ppb - 1;
             const on = sel?.track === track.id && sel.clip === c.id;
-            g.globalAlpha = ghost ? 0.5 : 1;
+            g.globalAlpha = ghost ? 0.5 : c.mute ? 0.35 : 1;
             g.fillStyle = rgba(track.color, on ? 0.3 : 0.18);
             g.beginPath(); g.roundRect(a, 2, b - a, h - 4, 4); g.fill();
             g.fillStyle = rgba(track.color, 0.7);
@@ -330,6 +354,16 @@ export function Arrange()
         return ()=> el.removeEventListener('wheel', wheel);
     }, []);
     const ppb = fitted();
+    useEffect(()=> { arrangePpb.value = ppb; }, [ppb]);
+    // while playing, a playhead that runs off the right (or is left of the view) brings the view along a page
+    const now = beat.value;
+    useEffect(()=>
+    {
+        const el = scroller.current;
+        if (!el || !playing.value || !settings.value.follow) return;
+        const x = now * ppb, view = el.clientWidth - HEAD_W;
+        if (x > el.scrollLeft + view - 20 || x < el.scrollLeft) el.scrollLeft = Math.max(0, x - 20);
+    }, [now, ppb]);
     const marker = p.markers.findLast(m => m.beat <= beat.value + 1e-9);
     const range = chordRange.value;
     return (

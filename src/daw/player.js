@@ -5,7 +5,7 @@
 // Playback is a chain of segments: each plays from one beat until the end or the loop's end, where the next takes
 // over seamlessly at the loop's start, one pass further on so the MIDI FX can vary it. Reverb and delay tails carry
 // over the loop point, because nothing is pre-rendered.
-import { audioEngine } from '../platform/audio-engine.js';
+import { audioEngine, peak } from '../platform/audio-engine.js';
 import { startTicker } from '../platform/ticker.js';
 import { createInstrument } from '../audio/soundfont.js';
 import { createMixer, dbToGain } from '../audio/mixer.js';
@@ -13,23 +13,26 @@ import { beatToSeconds, secondsToBeat } from '../lib/tempo-map.js';
 import { trackNotes, projectEnd, isDrums } from './project.js';
 import { performProject } from './fx.js';
 import { valueAt } from './automation.js';
+import { barAt } from './meter.js';
 
 const LOOKAHEAD = 0.2;          // seconds of notes handed to Web Audio ahead of time
 const TICK_MS = 25;             // how often more notes are scheduled
-const LEAD_IN = 0.25;           // seconds between pressing play and the first beat
+export const LEAD_IN = 0.25;          // seconds between pressing play and the first beat
 const SWITCH_LEAD = 0.5;        // seconds before the loop's end that the next pass takes over, for its early notes
 const PICKUP_BEATS = 1;         // how far before its grid a played note can sound (anticipation, drift)
 const GLIDE_SECONDS = 0.08;     // a slide from one note into the next
 const DUCK = { seconds: 0.1, attack: 0.01 };     // a duck's dip and recovery
+const CLICK = { bar: 1760, beat: 1320, seconds: 0.05, gain: 0.3 };  // the metronome: pitches of a bar's first beat and the rest
 
 /**
- * Starts playing. Returns a handle: the position in beats, seek(beat), setMix(channels) and stop().
+ * Starts playing. Returns a handle: the position in beats, seek(beat), setMix(channels), levels() and stop().
  * @param {import('./project.js').Project} project
  * @param {{ font: any, preset: any }[]} instrumentsOf  from loadInstruments, one per track
- * @param {{ from?: number, mix?: { gain: number, pan: number }[] }} [opts]  from: the beat to start at;
- *   mix: each track's gain and pan to start with (see setMix)
+ * @param {{ from?: number, mix?: { gain: number, pan: number }[], click?: boolean, ticker?: typeof startTicker }} [opts]
+ *   from: the beat to start at; mix: each track's gain and pan to start with (see setMix); click: a metronome on
+ *   every beat; ticker: what calls the scheduler (an offline render drives it itself)
  */
-export function playProject(project, instrumentsOf, { from = 0, mix = null } = {})
+export function playProject(project, instrumentsOf, { from = 0, mix = null, click = false, ticker = startTicker } = {})
 {
     const ctx = audioEngine.context;
     const map = project.tempoMap;
@@ -39,6 +42,8 @@ export function playProject(project, instrumentsOf, { from = 0, mix = null } = {
     const strips = tracks.map(t => mixer.channel({ volumeDb: 0, pan: t.mixer.pan, lowCut: t.mixer.lowCut,
         reverb: t.mixer.sends.reverb, delay: t.mixer.sends.delay, autoPan: t.mixer.autoPan }));
     strips.forEach((s, i)=> { s.user.gain.value = dbToGain(tracks[i].mixer.volumeDb); });
+    // a meter on each strip, after its fader and pan
+    const meters = strips.map(s => { const a = new AnalyserNode(ctx, { fftSize: 512 }); s.panner.connect(a); return a; });
     const makeInstruments = ()=> instrumentsOf.map((b, i)=> createInstrument(b.font, b.preset, strips[i].input));
     let instruments = makeInstruments();
 
@@ -132,8 +137,22 @@ export function playProject(project, instrumentsOf, { from = 0, mix = null } = {
         }
     };
 
+    // the metronome, straight to the output past the mixer
+    const tick = (beat, at)=>
+    {
+        const first = Math.abs(barAt(project.meters, beat).start - beat) < 1e-6;
+        const osc = new OscillatorNode(ctx, { frequency: first ? CLICK.bar : CLICK.beat });
+        const env = new GainNode(ctx, { gain: 0 });
+        env.gain.setValueAtTime(CLICK.gain, at);
+        env.gain.exponentialRampToValueAtTime(0.001, at + CLICK.seconds);
+        osc.connect(env).connect(audioEngine.output);
+        osc.start(at);
+        osc.stop(at + CLICK.seconds);
+        osc.onended = ()=> env.disconnect();
+    };
+
     const sounding = new Map();       // `${track}:${key}` → { i, key }, notes on and not yet off
-    let next = 0, nextDuck = 0, nextFx = 0, stopped = false;
+    let next = 0, nextDuck = 0, nextFx = 0, nextClick = 0, stopped = false;
     const indexFrom = (list, beat, get)=> { const k = list.findIndex(x => get(x) >= beat - 1e-9); return k < 0 ? list.length : k; };
     const begin = (s)=>
     {
@@ -141,6 +160,7 @@ export function playProject(project, instrumentsOf, { from = 0, mix = null } = {
         next = indexFrom(data.events, s.from - PICKUP_BEATS, e => e.beat);
         nextDuck = indexFrom(duckBeats, s.from, b => b);
         nextFx = indexFrom(data.fx, s.from, e => e.beat);
+        nextClick = Math.ceil(s.from - 1e-6);
         automate(s);
     };
     begin(seg);
@@ -175,6 +195,7 @@ export function playProject(project, instrumentsOf, { from = 0, mix = null } = {
             const lead = (e)=> e.kind === 'tapeStop' ? e.seconds : 0;
             for (; nextFx < data.fx.length && data.fx[nextFx].beat < seg.until - 1e-9 && timeOf(seg, data.fx[nextFx].beat) - lead(data.fx[nextFx]) < limit; nextFx++)
                 fxEvent(data.fx[nextFx], seg);
+            if (click) for (; nextClick < seg.until - 1e-9 && timeOf(seg, nextClick) < limit; nextClick++) tick(nextClick, timeOf(seg, nextClick));
 
             // the loop's end: carry on from its start, one pass further on
             if (!switching) break;
@@ -187,7 +208,7 @@ export function playProject(project, instrumentsOf, { from = 0, mix = null } = {
         }
     };
     schedule();
-    const stopTicker = startTicker(TICK_MS, schedule);
+    const stopTicker = ticker(TICK_MS, schedule);
 
     const handle = {
         /** position in beats; negative during the lead-in */
@@ -233,6 +254,8 @@ export function playProject(project, instrumentsOf, { from = 0, mix = null } = {
                 s.panner.pan.setTargetAtTime(Math.max(-1, Math.min(1, c.pan)), now, 0.01);
             });
         },
+        /** each track's level now, its peak 0..1 */
+        levels: ()=> meters.map(peak),
         stop()
         {
             if (stopped) return;

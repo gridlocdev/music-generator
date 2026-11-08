@@ -8,7 +8,7 @@ import { effect } from '@preact/signals';
 import { appMenu } from '../platform/app-menu.js';
 import { typing } from '../platform/keys.js';
 import { barAt, barLines } from '../daw/meter.js';
-import { projectEnd, markerRange, addMarker, setTempo, setMeter, findClip } from '../daw/project.js';
+import { projectEnd, markerRange, addMarker, setTempo, setMeter, findClip, insertTime, deleteTime } from '../daw/project.js';
 import { projectMidi } from '../daw/project-midi.js';
 import { beatsPerBar } from '../daw/meter.js';
 import { bpmAt } from '../lib/tempo-map.js';
@@ -20,10 +20,13 @@ import { toggle, seek } from './player.js';
 import { record, recording, newFromMelody } from './recording.js';
 import { focus } from './focus.js';
 import { asking, askText } from './ask.js';
-import { picked, pickedNotes, deletePicked, transposePicked, quantizePicked, pickAll, clearPicked, GRIDS } from './notes.js';
+import { picked, pickedNotes, deletePicked, transposePicked, quantizePicked, pickAll, clearPicked, GRIDS, nudgePicked, humanizePicked,
+    scalePicked, reversePicked } from './notes.js';
 import { cut, copy, paste, duplicate, canCopy, clipboard } from './clipboard.js';
 import { addNewTrack, renameTrack, deleteTrack, duplicateTheTrack, moveTrackBy, toggleMute, toggleSolo, chooseInstrument,
-    deleteClip, splitClipsAt, joinWithNext, nextClip, quantizeClip, loopOver, clipRange, arrangeZoom } from './tracks.js';
+    deleteClip, splitClipsAt, joinWithNext, nextClip, quantizeClip, loopOver, clipRange, arrangeZoom, arrangePpb, toggleClipMute, nudgeClip,
+    humanizeClip, scaleClip, reverseClip } from './tracks.js';
+import { bounce } from './bounce.js';
 import { dialog } from './components/NewProject.jsx';
 
 /** a dialog is open: commands wait */
@@ -117,6 +120,26 @@ async function exportMidi()
     if (file) status.value = `Exported ${file}`;
 }
 
+/** asks how many bars, then puts in (or takes out) that many from the bar the playhead is in */
+async function changeBars(insert)
+{
+    const p = project.value, bar = barAt(p.meters, beat.value);
+    const n = Math.round(Number(await askText(insert ? 'Bars to insert at the playhead' : 'Bars to delete from the playhead', '1', insert ? 'Insert' : 'Delete')));
+    if (!(n >= 1 && n <= 64)) return;
+    const beats = n * bar.beatsPerBar;
+    edit(q => insert ? insertTime(q, bar.start, beats) : deleteTime(q, bar.start, bar.start + beats));
+    selectedClip.value = null;
+    clearPicked();
+}
+
+/** the picked notes in the piano roll, else the selected clip: fn(notes) or fn(track, clip) */
+const onSelection = (notes, clip)=> ()=> inRoll() ? notes() : clip(selectedClip.value.track, selectedClip.value.clip);
+
+const ZOOM = 1.5;
+const zoomBy = (k)=> { arrangeZoom.value = Math.max(0.5, Math.min(120, (arrangeZoom.value || arrangePpb.value || 20) * k)); };
+
+const clipMuted = ()=> { const c = selectedClip.value; return !!c && !!findClip(project.value, c.track, c.clip)?.mute; };
+
 // ── the commands ─────────────────────────────────────────────────────────────────────────────────────────────────────
 
 const track = ()=> selectedTrack.value;
@@ -134,6 +157,7 @@ export const COMMANDS = {
     saveAs: { label: 'Save As…', accelerator: 'Shift+CmdOrCtrl+S', run: saveAs },
     revert: { label: 'Revert to Saved', run: ()=> openProject(projectName.value), enabled: ()=> !!projectName.value && dirty.value },
     exportMidi: { label: 'Export as MIDI File…', accelerator: 'CmdOrCtrl+E', run: exportMidi },
+    exportAudio: { label: 'Export as Audio File…', accelerator: 'CmdOrCtrl+B', run: bounce, enabled: ()=> project.value.tracks.some(t => t.clips.length) },
     reveal: { label: 'Show in Finder', run: ()=> appMenu.reveal(`${projectName.value}/project.json`), enabled: ()=> !!projectName.value },
     // Edit
     undo: { label: 'Undo', accelerator: 'CmdOrCtrl+Z', text: 'undo', run: undo, enabled: ()=> hist.value.past.length > 0 },
@@ -154,6 +178,18 @@ export const COMMANDS = {
     down: { label: 'Transpose Down', shown: 'Down', run: ()=> transposePicked(-1), enabled: inRoll },
     octaveUp: { label: 'Octave Up', shown: 'Shift+Up', run: ()=> transposePicked(12), enabled: inRoll },
     octaveDown: { label: 'Octave Down', shown: 'Shift+Down', run: ()=> transposePicked(-12), enabled: inRoll },
+    nudgeLeft: { label: 'Nudge Left', shown: 'Left', enabled: ()=> inRoll() || clipSelected(),
+        run: onSelection(()=> nudgePicked(-settings.value.grid), (t, c)=> nudgeClip(t, c, -barAt(project.value.meters, beat.value).beatsPerBar)) },
+    nudgeRight: { label: 'Nudge Right', shown: 'Right', enabled: ()=> inRoll() || clipSelected(),
+        run: onSelection(()=> nudgePicked(settings.value.grid), (t, c)=> nudgeClip(t, c, barAt(project.value.meters, beat.value).beatsPerBar)) },
+    humanize: { label: 'Humanize', enabled: ()=> inRoll() || clipSelected(), run: onSelection(humanizePicked, humanizeClip) },
+    doubleSpeed: { label: 'Double Speed', enabled: ()=> inRoll() || clipSelected(), run: onSelection(()=> scalePicked(0.5), (t, c)=> scaleClip(t, c, 0.5)) },
+    halfSpeed: { label: 'Half Speed', enabled: ()=> inRoll() || clipSelected(), run: onSelection(()=> scalePicked(2), (t, c)=> scaleClip(t, c, 2)) },
+    reverse: { label: 'Reverse', enabled: ()=> inRoll() || clipSelected(), run: onSelection(reversePicked, reverseClip) },
+    muteClip: { label: 'Mute Clip', shown: 'M', enabled: ()=> !!selectedClip.value, checked: clipMuted,
+        run: ()=> toggleClipMute(selectedClip.value.track, selectedClip.value.clip) },
+    insertBars: { label: 'Insert Bars at Playhead…', run: ()=> changeBars(true) },
+    deleteBars: { label: 'Delete Bars at Playhead…', run: ()=> changeBars(false) },
     // Track
     newTrack: { label: 'New Track', accelerator: 'Alt+CmdOrCtrl+N', run: ()=> addNewTrack({ after: selected.value }) },
     duplicateTrack: { label: 'Duplicate Track', accelerator: 'Shift+CmdOrCtrl+D', run: ()=> duplicateTheTrack(selected.value), enabled: ()=> !!track() },
@@ -166,12 +202,14 @@ export const COMMANDS = {
     trackDown: { label: 'Move Track Down', accelerator: 'Alt+CmdOrCtrl+Down', run: ()=> moveTrackBy(selected.value, 1), enabled: ()=> !!track() && project.value.tracks.at(-1) !== track() },
     // Transport
     play: { label: 'Play or Stop', shown: 'Space', run: toggle },
+    end: { label: 'Go to End', shown: 'End', run: ()=> seek(projectEnd(project.value)) },
     start: { label: 'Go to Start', shown: 'Return', run: ()=> seek(project.value.loop && playing.value ? project.value.loop.from : 0) },
     prevBar: { label: 'Back a Bar', shown: ',', run: ()=> stepBar(-1) },
     nextBar: { label: 'Forward a Bar', shown: '.', run: ()=> stepBar(1) },
     prevMarker: { label: 'Previous Marker', shown: 'Alt+,', run: ()=> stepMarker(-1), enabled: ()=> project.value.markers.length > 0 },
     nextMarker: { label: 'Next Marker', shown: 'Alt+.', run: ()=> stepMarker(1), enabled: ()=> project.value.markers.length > 0 },
     record: { label: 'Record', shown: 'R', run: record, checked: ()=> !!recording.value },
+    metronome: { label: 'Metronome', run: ()=> setSettings({ metronome: !settings.value.metronome }), checked: ()=> settings.value.metronome },
     click: { label: 'Click While Recording', run: ()=> setSettings({ click: !settings.value.click }), checked: ()=> settings.value.click },
     loop: { label: 'Loop', shown: 'C', run: ()=> loopOver(project.value.loop ? null : selectionRange()), checked: ()=> !!project.value.loop },
     loopSelection: { label: 'Loop Selection', accelerator: 'CmdOrCtrl+U', run: ()=> loopOver(selectionRange()) },
@@ -187,7 +225,11 @@ export const COMMANDS = {
     browser: { label: 'Browser', shown: 'B', run: ()=> setSettings({ browserOpen: !settings.value.browserOpen }), checked: ()=> settings.value.browserOpen },
     roll: { label: 'Piano Roll', accelerator: 'CmdOrCtrl+1', radio: true, run: ()=> setSettings({ editorTab: 'roll' }), checked: ()=> settings.value.editorTab === 'roll' },
     mixer: { label: 'Mixer', accelerator: 'CmdOrCtrl+2', radio: true, run: ()=> setSettings({ editorTab: 'mixer' }), checked: ()=> settings.value.editorTab === 'mixer' },
+    zoomIn: { label: 'Zoom In', accelerator: 'CmdOrCtrl+=', run: ()=> zoomBy(ZOOM) },
+    zoomOut: { label: 'Zoom Out', accelerator: 'CmdOrCtrl+-', run: ()=> zoomBy(1 / ZOOM) },
     fit: { label: 'Zoom to Fit', accelerator: 'CmdOrCtrl+0', run: ()=> { arrangeZoom.value = 0; } },
+    follow: { label: 'Follow Playhead', run: ()=> setSettings({ follow: !settings.value.follow }), checked: ()=> settings.value.follow },
+    ghosts: { label: 'Show Other Tracks’ Notes', run: ()=> setSettings({ ghosts: !settings.value.ghosts }), checked: ()=> settings.value.ghosts },
     // Help
     composing: { label: 'How It Composes', run: ()=> appMenu.open('docs/COMPOSING.md') },
     readme: { label: 'Read Me', run: ()=> appMenu.open('README.md') },
@@ -217,15 +259,18 @@ function menuBar()
     const open = projectList.value.map(x => ({ label: x.title, radio: true, checked: x.name === projectName.value, run: ()=> openProject(x.name) }));
     return [
         { label: 'File', submenu: [item('new'), item('open'), { label: 'Open Project', submenu: open.length ? open : [{ label: 'No projects', enabled: false }] }, '-',
-            item('save'), item('saveAs'), item('revert'), '-', item('exportMidi'), item('reveal')] },
+            item('save'), item('saveAs'), item('revert'), '-', item('exportAudio'), item('exportMidi'), item('reveal')] },
         { label: 'Edit', submenu: [item('undo'), item('redo'), '-', item('cut'), item('copy'), item('paste'), item('duplicate'), item('delete'), '-',
-            item('selectAll'), item('deselect'), '-', item('split'), item('join'), item('quantize'), { label: 'Snap', submenu: snapItems() }, '-',
-            item('up'), item('down'), item('octaveUp'), item('octaveDown')] },
+            item('selectAll'), item('deselect'), '-', item('split'), item('join'), item('muteClip'), '-',
+            item('quantize'), item('humanize'), { label: 'Snap', submenu: snapItems() }, '-',
+            item('up'), item('down'), item('octaveUp'), item('octaveDown'), item('nudgeLeft'), item('nudgeRight'), '-',
+            item('doubleSpeed'), item('halfSpeed'), item('reverse'), '-', item('insertBars'), item('deleteBars')] },
         { label: 'Track', submenu: [item('newTrack'), item('duplicateTrack'), item('renameTrack'), item('instrument'), '-',
             item('mute'), item('solo'), '-', item('trackUp'), item('trackDown'), '-', item('deleteTrack')] },
-        { label: 'Transport', submenu: [item('play'), item('record'), '-', item('start'), item('prevBar'), item('nextBar'), item('prevMarker'), item('nextMarker'), '-',
-            item('loop'), item('loopSelection'), item('click'), '-', item('addMarker'), item('tempo'), item('meter'), '-', item('newFromMelody')] },
-        { label: 'View', submenu: [item('browser'), '-', item('roll'), item('mixer'), '-', item('fit'), { role: 'togglefullscreen' }, '-',
+        { label: 'Transport', submenu: [item('play'), item('record'), '-', item('start'), item('end'), item('prevBar'), item('nextBar'), item('prevMarker'), item('nextMarker'), '-',
+            item('loop'), item('loopSelection'), item('metronome'), item('click'), '-', item('addMarker'), item('tempo'), item('meter'), '-', item('newFromMelody')] },
+        { label: 'View', submenu: [item('browser'), '-', item('roll'), item('mixer'), '-', item('zoomIn'), item('zoomOut'), item('fit'), '-',
+            item('follow'), item('ghosts'), { role: 'togglefullscreen' }, '-',
             { label: 'Developer', submenu: [{ role: 'reload' }, { role: 'toggleDevTools' }] }] },
         { label: 'Help', submenu: [item('composing'), item('readme')] },
     ];
@@ -249,7 +294,7 @@ export function startMenus()
 
 // ── plain keys ───────────────────────────────────────────────────────────────────────────────────────────────────────
 
-const CODES = { Space: 'Space', Up: 'ArrowUp', Down: 'ArrowDown', Return: 'Enter', ',': 'Comma', '.': 'Period', Escape: 'Escape', Backspace: 'Backspace' };
+const CODES = { Space: 'Space', Up: 'ArrowUp', Down: 'ArrowDown', Left: 'ArrowLeft', Right: 'ArrowRight', End: 'End', '=': 'Equal', '-': 'Minus', Return: 'Enter', ',': 'Comma', '.': 'Period', Escape: 'Escape', Backspace: 'Backspace' };
 const codeOf = (key)=> CODES[key] ?? (/^\d$/.test(key) ? `Digit${key}` : `Key${key}`);
 
 function parse(keys, id)
@@ -269,7 +314,7 @@ export function handleKey(e)
     const k = KEYS.find(x => x.code === code && x.shift === e.shiftKey && x.alt === e.altKey && x.cmd === cmd);
     // a text field keeps its own keys, and its own undo, copy and paste
     if (!k || (typing() && (!k.cmd || COMMANDS[k.id].text))) return false;
-    if (e.repeat && !['up', 'down', 'octaveUp', 'octaveDown', 'prevBar', 'nextBar'].includes(k.id)) return false;
+    if (e.repeat && !['up', 'down', 'octaveUp', 'octaveDown', 'nudgeLeft', 'nudgeRight', 'prevBar', 'nextBar'].includes(k.id)) return false;
     const c = COMMANDS[k.id];
     if (c.enabled && !c.enabled()) return false;
     c.run();

@@ -2,13 +2,15 @@
 import { signal } from '@preact/signals';
 import { barAt } from '../daw/meter.js';
 import { makeTrack, addTrack, removeTrack, updateTrack, setMixer, moveTrack, duplicateTrack, addClip, updateClip, removeClip,
-    findClip, joinClips, splitAt, newId, setLoop, quantizeNotes } from '../daw/project.js';
+    findClip, joinClips, splitAt, newId, setLoop, quantizeNotes, humanizeNotes, scaleNotes, reverseNotes } from '../daw/project.js';
 import { project, selected, selectedClip, settings, setSettings } from './store.js';
 import { edit } from './document.js';
 import { askText } from './ask.js';
 
 /** the arrangement's zoom in px per beat, or 0 to fit the project to the window */
 export const arrangeZoom = signal(0);
+/** the arrangement's px per beat as drawn now, to zoom in and out from */
+export const arrangePpb = signal(0);
 
 export const trackOf = (id)=> project.value.tracks.find(t => t.id === id) ?? null;
 
@@ -119,6 +121,18 @@ export function transposeClip(trackId, clipId, by)
 {
     edit(p => updateClip(p, trackId, clipId, c => ({ ...c, notes: c.notes.map(n => ({ ...n, key: Math.max(0, Math.min(127, n.key + by)) })) })));
 }
+
+export const toggleClipMute = (trackId, clipId)=> edit(p => updateClip(p, trackId, clipId, c => ({ ...c, mute: !c.mute })));
+
+/** a clip moved later (or earlier) by some beats, not before the start */
+export const nudgeClip = (trackId, clipId, by)=> edit(p => updateClip(p, trackId, clipId, c => ({ ...c, start: Math.max(0, c.start + by) })), `nudge ${clipId}`);
+
+export const humanizeClip = (trackId, clipId)=> edit(p => updateClip(p, trackId, clipId, c => ({ ...c, notes: humanizeNotes(c.notes) })));
+
+/** a clip played faster (k < 1) or slower (k > 1): its notes and its length scaled */
+export const scaleClip = (trackId, clipId, k)=> edit(p => updateClip(p, trackId, clipId, c => ({ ...c, beats: c.beats * k, notes: scaleNotes(c.notes, k) })));
+
+export const reverseClip = (trackId, clipId)=> edit(p => updateClip(p, trackId, clipId, c => ({ ...c, notes: reverseNotes(c.notes, 0, c.beats) })));
 
 /** loops playback over a stretch, or stops looping with null */
 export const loopOver = (range)=> edit(p => setLoop(p, range));

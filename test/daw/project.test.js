@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { emptyProject, makeTrack, addTrack, addClip, moveClip, splitAt, removeTrack, setMixer, setTempo, trackNotes,
+import { insertTime, deleteTime, humanizeNotes, scaleNotes, reverseNotes, updateClip, emptyProject, makeTrack, addTrack, addClip, moveClip, splitAt, removeTrack, setMixer, setTempo, trackNotes,
     history, commit, undo, redo, newId, setLoop, addMarker, renameMarker, removeMarker, markerRange, moveTrack, duplicateTrack,
     joinClips, quantizeNotes } from '../../src/daw/project.js';
 import { writeProject, readProject } from '../../src/daw/project-format.js';
@@ -154,4 +154,55 @@ test('a project exports as a MIDI file with a track per track', ()=>
     assert.equal((bytes[10] << 8) | bytes[11], 3);      // the conductor track and two tracks
     // the kit plays on channel 10: a program change 0xC9
     assert.ok(bytes.some((b, i)=> b === 0xc9 && bytes[i + 1] === 0));
+});
+
+test('inserting time moves everything after it on, cutting a clip across it', ()=>
+{
+    let p = emptyProject({ bars: 4 });
+    p = addTrack(p, makeTrack(p, { name: 'Keys' }));
+    const id = p.tracks[0].id;
+    p = addClip(p, id, { id: 'c1', start: 0, beats: 8, notes: [{ beat: 1, beats: 1, key: 60, vel: 90 }, { beat: 5, beats: 1, key: 62, vel: 90 }] });
+    p = { ...p, markers: [{ beat: 0, name: 'A' }, { beat: 4, name: 'B' }], loop: { from: 4, to: 8 }, chords: [{ beat: 0, beats: 8, name: 'C', tones: [0, 4, 7] }] };
+    const q = insertTime(p, 4, 4);
+    assert.deepEqual(trackNotes(q.tracks[0]).map(n => n.beat), [1, 9]);
+    assert.deepEqual(q.markers.map(m => m.beat), [0, 8]);
+    assert.deepEqual(q.loop, { from: 8, to: 12 });
+    assert.deepEqual(q.chords.map(c => [c.beat, c.beats]), [[0, 4], [8, 4]]);
+    assert.equal(q.length, 20);
+    // and taking it out again puts the notes back
+    const back = deleteTime(q, 4, 8);
+    assert.deepEqual(trackNotes(back.tracks[0]).map(n => n.beat), [1, 5]);
+    assert.deepEqual(back.loop, { from: 4, to: 8 });
+    assert.equal(back.length, 16);
+});
+
+test('deleting time drops what was in it', ()=>
+{
+    let p = emptyProject({ bars: 4 });
+    p = addTrack(p, makeTrack(p, { name: 'Keys' }));
+    const id = p.tracks[0].id;
+    p = addClip(p, id, { id: 'c1', start: 0, beats: 12, notes: [0, 4, 8].map(beat => ({ beat, beats: 1, key: 60, vel: 90 })) });
+    p = { ...p, markers: [{ beat: 0, name: 'A' }, { beat: 4, name: 'B' }, { beat: 8, name: 'C' }], tempoMap: [{ beat: 0, bpm: 100 }, { beat: 6, bpm: 120 }] };
+    const q = deleteTime(p, 4, 8);
+    assert.deepEqual(trackNotes(q.tracks[0]).map(n => n.beat), [0, 4]);
+    assert.deepEqual(q.markers.map(m => m.name), ['A', 'C']);
+    assert.deepEqual(q.tempoMap, [{ beat: 0, bpm: 100 }]);
+});
+
+test('a muted clip is not played', ()=>
+{
+    let p = emptyProject();
+    p = addTrack(p, makeTrack(p, { name: 'Keys' }));
+    const id = p.tracks[0].id;
+    p = addClip(p, id, { id: 'c1', start: 0, beats: 4, notes: [{ beat: 0, beats: 1, key: 60, vel: 90 }] });
+    assert.equal(trackNotes(updateClip(p, id, 'c1', { mute: true }).tracks[0]).length, 0);
+});
+
+test('humanize, speed and reverse', ()=>
+{
+    const notes = [{ beat: 0, beats: 1, key: 60, vel: 80 }, { beat: 2, beats: 2, key: 64, vel: 80 }];
+    const h = humanizeNotes(notes, { timing: 0.1, velocity: 10 }, ()=> 1);
+    assert.deepEqual(h.map(n => [n.beat, n.vel]), [[0.1, 90], [2.1, 90]]);
+    assert.deepEqual(scaleNotes(notes, 0.5).map(n => [n.beat, n.beats]), [[0, 0.5], [1, 1]]);
+    assert.deepEqual(reverseNotes(notes, 0, 4).map(n => [n.beat, n.key]), [[0, 64], [3, 60]]);
 });

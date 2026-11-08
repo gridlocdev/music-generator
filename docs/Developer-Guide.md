@@ -174,10 +174,16 @@ Two flags help while working on it:
   so a scripted `Meta+Z` does nothing). A right-click menu isn't shown; it is kept as
   `globalThis.contextMenu` in the main process, whose `items` a test can read and click.
 
+  Exports in a headless run: swap the save dialog for a stub in the main process, with
+  `ipcMain.removeHandler('file:save')` and a new `ipcMain.handle('file:save', …)` that keeps the
+  bytes, then run `exportAudio` and read the WAV it was given. The audio export renders offline, so
+  it works with the audio muted.
+
 ## Adding a command
 
 Add it to `COMMANDS` in `src/app/commands.js` with a label, an `accelerator` (a Cmd shortcut the
-menu bar answers) or `shown` (a plain key the page answers, which still types in a text field), and
+menu bar answers) or `shown` (a plain key the page answers, which still types in a text field; never one of
+the musical-typing letters `A`–`L`, `;`, `'`, `W E T Y U O P`, `Z`, `X`), and
 `enabled`/`checked` if it has them; then put `item('id')` in the menu bar in `menuBar()` and in any
 right-click menu in `src/app/context-menus.js` it belongs in.
 
