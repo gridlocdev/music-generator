@@ -91,7 +91,8 @@ a dragged stretch.
 `just whistle <file or folder> --tempo <bpm>` (`tools/whistle.mjs`, needs ffmpeg for anything but
 `.wav`) turns a whistled recording into a section's `melody:` line. `--tempo` is the speed you
 whistled at, roughly: the tool fits the beat grid within ±10% of it, and since the notation counts
-beats you can whistle slower than the song plays. It snaps notes to 8ths, guesses the key (or takes
+beats you can whistle slower than the song plays. It snaps notes to 8ths or triplets, beat by beat
+(a triplet is written `5:1/3`), keeps staccato notes however short, guesses the key (or takes
 `--key Eb --mode major`), writes `~` on notes with vibrato, and flags notes more than 30 cents off.
 `--meter 3/4` places the bar lines; `--json out.json` keeps the notes. Keep takes in `ideas/`: git
 ignores the audio there but keeps anything else.

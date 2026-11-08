@@ -18,7 +18,7 @@ A keyboard that plays every instrument in three openly licensed General MIDI Sou
 | `src/lib/midi-file.js` | writes a Standard MIDI File from a score, with tempo and meter changes (`just compose … --midi`) |
 | `src/lib/tempo-map.js` | a song's tempo over time (steady or ramping segments) and conversion between beats and seconds |
 | `src/lib/pitch-track.js` | a whistled or sung line's pitch and level, 100 frames a second (YIN), vibrato kept in the frames |
-| `src/lib/transcribe.js` | pitch frames → notes on an 8th-note grid: tuning offset, note starts (silences, dips, pitch changes), the beat grid near a rough tempo (or on a click's, `clickGrid`), vibrato per note, key guess, and the composer's degree notation with `~` for vibrato; `freeNotes` reads notes whistled with no beat |
+| `src/lib/transcribe.js` | pitch frames → notes in 8ths and triplets, chosen beat by beat: tuning offset, note starts (silences, dips, pitch changes, glides left out), the beat grid near a rough tempo (or on a click's, `clickGrid`), vibrato per note, key guess, and the composer's degree notation with `~` for vibrato; `freeNotes` reads notes whistled with no beat |
 | `src/lib/chord-guess.js` | a whistled arpeggio take → a progression: chords in the key scored against the notes, the changes found with them by dynamic programming over beats, slash basses from the arpeggio's first note, runners-up, and the key settled by which reading fits best; with `melody` it harmonises a tune instead (triads, changes on bar lines and half bars); `nameChord` names one chord whistled freely |
 | `src/lib/wav.js` | mono 16-bit WAV files, for saving whistled takes |
 | `src/lib/motif.js` | a motif's developments: sequence, inversion, retrograde, augmentation, diminution, fragmentation |

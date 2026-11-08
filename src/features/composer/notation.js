@@ -3,7 +3,7 @@
 /**
  * A melody written out by hand: space-separated tokens `degree[:beats]`. Degrees are scale steps (1 = tonic,
  * 8 = tonic an octave up), with b/# for accidentals and ' or , for an octave up/down, then `~` for vibrato on
- * that note (`5~:2`); `r` is a rest. Default length 1 beat; '|' is ignored. The line repeats to fill the section.
+ * that note (`5~:2`); `r` is a rest. A length can be a fraction, `5:1/3` for a triplet 8th. Default length 1 beat; '|' is ignored. The line repeats to fill the section.
  */
 export function parseMelody(text)
 {
@@ -11,9 +11,9 @@ export function parseMelody(text)
     let t = 0;
     for (const token of text.split(/\s+/).filter(x => x && x !== '|'))
     {
-        const m = /^(?:(r)|(b|#)?(-?\d+)('*|,*)(~)?)(?::([\d.]+))?$/.exec(token);
+        const m = /^(?:(r)|(b|#)?(-?\d+)('*|,*)(~)?)(?::([\d.]+(?:\/\d+)?))?$/.exec(token);
         if (!m) throw new Error(`bad melody token: ${token}`);
-        const beats = m[6] ? Number(m[6]) : 1;
+        const beats = !m[6] ? 1 : m[6].includes('/') ? Number(m[6].split('/')[0]) / Number(m[6].split('/')[1]) : Number(m[6]);
         if (!(beats > 0)) throw new Error(`bad melody length: ${token}`);
         if (!m[1])
         {

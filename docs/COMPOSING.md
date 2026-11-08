@@ -356,7 +356,7 @@ The rules make a good, singable line; a hook you write yourself will usually be 
 - `b`/`#` before it bends it a semitone (`b3`, `#4`)
 - `'` after it raises it an octave and `,` lowers it (`5'`, `7,`)
 - `~` after that marks vibrato on that note (`5~:2`). In a section with any `~`, only the marked notes vibrate, on any melodic instrument and at any length; the automatic late vibrato on held notes is off there. The rate and depth come from the style's `vibrato` (`style: { vibrato: { rate: 5.9, cents: 39 } }`), which `just whistle` measures from your take
-- `:n` is the length in beats (default 1); `r` is a rest
+- `:n` is the length in beats (default 1), a decimal or a fraction (`5:1/3` is a triplet 8th); `r` is a rest
 - `|` is ignored; use it to mark bars
 - the line repeats if it is shorter than the section
 

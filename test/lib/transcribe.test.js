@@ -101,6 +101,24 @@ test('transcribe: a legato line with no breaks between notes is split by its pit
     assert.equal(toNotation(t.notes, { tonic: pitchClass('D'), mode: 'minor' }), text);
 });
 
+test('transcribe: triplets come back as thirds of a beat, among straight 8ths, and read back to whole beats', ()=>
+{
+    const text = '1:1/3 2:1/3 3:1/3 4 5:0.5 4:0.5 3:1/3 2:1/3 1:1/3 | 5:2 r:2/3 3:1/3 1';
+    const s = whistle(fromNotation(text, 'Db', 'major'), { tempo: 70 });
+    const t = transcribe(trackPitch(s, RATE), { tempo: 70 });
+    assert.equal(toNotation(t.notes, { tonic: pitchClass('Db'), mode: 'major' }), text);
+    assert.deepEqual(parseMelody(text).notes.map(n => Math.round(n.beat * 1e9) / 1e9).filter(Number.isInteger), [0, 1, 2, 3, 4, 7]);
+});
+
+test('transcribe: short staccato notes, much shorter than their 8th, are kept', ()=>
+{
+    const text = '1:0.5 3:0.5 5:0.5 8:0.5 7:0.5 5:0.5 3 | 2:0.5 4:0.5 6:0.5 5:0.5 1:2';
+    // each note sounds for about 0.1 s of its 0.43 s
+    const notes = fromNotation(text, 'C', 'major').map(n => ({ ...n, gap: n.beats * 60 / 70 - 0.1 }));
+    const t = transcribe(trackPitch(whistle(notes, { tempo: 70 }), RATE), { tempo: 70 });
+    assert.deepEqual(t.notes.map(n => n.key), notes.map(n => n.key));
+});
+
 test('click grid: a take recorded against a click keeps its bar lines, through latency and a player behind the beat', ()=>
 {
     // a bar of count-in at 90 bpm, then the tune, whistled 70 ms late (the click reaching the ear, the whistle the mic)

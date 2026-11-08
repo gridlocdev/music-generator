@@ -1,10 +1,11 @@
-// Turns a pitch track (pitch-track.js) of a whistled melody into notes on an 8th-note grid, finds its key and writes
+// Turns a pitch track (pitch-track.js) of a whistled melody into notes in 8ths and triplets, finds its key and writes
 // it in the composer's scale-degree notation (features/composer/notation.js), `~` marking notes with vibrato. Pure.
 //
 // The steps: the take's tuning offset (whistlers sit a steady few cents off); note starts from silences, dips in level
 // and changes of pitch; the beat grid that best fits those starts near the tempo given (whistling slower than the song
-// is fine: the notation counts beats, not seconds); a pitch for each 8th from the curve with vibrato averaged out;
-// repeated 8ths merged into one note unless a start falls between them; vibrato measured on each note's own wobble.
+// is fine: the notation counts beats, not seconds); each beat split in 8ths or triplets, whichever its note starts fit;
+// a pitch for each slot from the curve with vibrato averaged out; repeated slots merged into one note unless a start
+// falls between them; vibrato measured on each note's own wobble.
 
 import { MODES, degreeToKey, keyToDegree } from './music-theory.js';
 
@@ -170,13 +171,65 @@ export function measureVibrato(pitches, fps, { minCorr = 0.4, minDepth = 0.1 } =
 }
 
 /**
- * Notes on the grid. Each 8th takes the median of the smoothed pitch over its voiced frames (a rest when under
- * `voiced` of it is pitched); neighbouring 8ths on the same key join unless a note start lands on the line between.
+ * Note starts without the passing semitones of a legato glide: a start in the middle of a sound, on a key between the
+ * one before it and the one after, with the next start under `glide` seconds later. They'd ask for a finer split.
+ */
+export function withoutGlides(starts, frames, smooth, offset, { glide = 0.12 } = {})
+{
+    const fps = frames.length > 1 ? 1 / (frames[1].time - frames[0].time) : 100;
+    const at = (t)=> Math.min(frames.length - 1, Math.max(0, Math.round((t - frames[0].time) * fps)));
+    const keyAt = (t)=> { const v = smooth[at(t)]; return v === null ? null : Math.round(v - offset); };
+    return starts.filter((t, i)=>
+    {
+        const next = starts[i + 1];
+        if (next === undefined || next - t >= glide) return true;
+        const before = keyAt(t - 0.03), here = keyAt(t + 0.02), after = keyAt(next + 0.03);
+        if (before === null || here === null || after === null) return true;
+        return !((before < here && here < after) || (before > here && here > after));
+    });
+}
+
+// what a finer split of the beat costs, in squared beats, so a beat is split in three or four only when its notes need it
+const DIVISION_COST = { 1: 0, 2: 0, 3: 0.01, 4: 0.012 };
+
+/**
+ * How each beat is split: for every beat, the division in `divisions` whose lines lie closest to the note starts in it,
+ * a start counting toward the beat it's within an 8th before. Two starts on one line cost a lost note.
+ * @param {number[]} pos note starts, in beats from the grid's origin
+ * @returns {number[]} a division for each of `beats` beats
+ */
+export function beatDivisions(pos, beats, divisions = [2, 3])
+{
+    const byBeat = Array.from({ length: beats }, ()=> []);
+    for (const x of pos) { const b = Math.floor(x + 0.125); if (b >= 0 && b < beats) byBeat[b].push(x - b); }
+    return byBeat.map(xs =>
+    {
+        let best = divisions[0], bestCost = Infinity;
+        for (const d of divisions)
+        {
+            let cost = DIVISION_COST[d] ?? 0.012;
+            const lines = new Set();
+            for (const x of xs)
+            {
+                const line = Math.round(x * d);
+                cost += (x - line / d) ** 2 + (lines.has(line) ? 0.05 : 0);
+                lines.add(line);
+            }
+            if (cost < bestCost - 1e-12) { bestCost = cost; best = d; }
+        }
+        return best;
+    });
+}
+
+/**
+ * Notes on the grid, each beat split in 8ths or triplets (or 16ths, with 4 in `divisions`) as its note starts need. Each slot takes
+ * the median of the smoothed pitch over its voiced frames, and holds a note when `voiced` of it is pitched or a note
+ * starts in it (a short staccato note); neighbouring slots on the same key join unless a note start lands between them.
  * @returns {{ notes: { beat: number, beats: number, key: number, cents: number, vibrato: { rate: number, depth: number }|null }[],
  *   tempo: number, offset: number, origin: number }} key in the whistle's own register; beats from the first grid line;
  *   cents how far the note's centre sat from the key once the tuning offset is taken out
  */
-export function transcribe(frames, { tempo, voiced = 0.4, starts = null, grid = null } = {})
+export function transcribe(frames, { tempo, voiced = 0.4, starts = null, grid = null, divisions = [2, 3] } = {})
 {
     if (!(tempo > 0)) throw new Error('transcribe needs the tempo you whistled at');
     const fps = frames.length > 1 ? 1 / (frames[1].time - frames[0].time) : 100;
@@ -186,35 +239,52 @@ export function transcribe(frames, { tempo, voiced = 0.4, starts = null, grid = 
     grid ??= fitGrid(starts, tempo);
     const last = frames.findLast(f => f.midi !== null);
     if (!last || !starts.length) return { notes: [], tempo: grid.tempo, offset, origin: grid.origin };
-    const slots = Math.max(1, Math.round((last.time - grid.origin) / grid.slot + 0.5));
+    const beatSec = 2 * grid.slot;
+    const beats = Math.max(1, Math.ceil((last.time - grid.origin) / beatSec + 0.25));
+    const pos = withoutGlides(starts, frames, smooth, offset).map(t => (t - grid.origin) / beatSec);
+    const split = beatDivisions(pos, beats, divisions);
     const at = (t)=> Math.min(frames.length - 1, Math.max(0, Math.round((t - frames[0].time) * fps)));
-    const keys = [];
-    for (let s = 0; s < slots; s++)
+    const atBeat = (b)=> at(grid.origin + b * beatSec);
+    // the slots, in beats, and the one each note start lands on
+    const slots = [];
+    split.forEach((d, b)=> { for (let k = 0; k < d; k++) slots.push({ beat: b + k / d, beats: 1 / d }); });
+    const slotOf = (x)=>
     {
-        const a = at(grid.origin + s * grid.slot), b = at(grid.origin + (s + 1) * grid.slot);
+        const b = Math.floor(x + 0.125);
+        if (b < 0 || b >= beats) return -1;
+        let i = 0;
+        for (let j = 0; j < b; j++) i += split[j];
+        return i + Math.min(split[b] - 1, Math.max(0, Math.round((x - b) * split[b])));
+    };
+    const breaks = new Set(pos.map(slotOf));
+    const minFrames = Math.max(2, Math.round(0.03 * fps));
+    const keys = slots.map((s, i)=>
+    {
+        const a = atBeat(s.beat), b = atBeat(s.beat + s.beats);
         const ps = [];
-        for (let i = a; i < b; i++) if (smooth[i] !== null) ps.push(smooth[i]);
-        keys.push(ps.length >= voiced * Math.max(1, b - a) ? Math.round(median(ps) - offset) : null);
-    }
-    const breaks = new Set(starts.map(t => Math.round((t - grid.origin) / grid.slot)));
+        for (let j = a; j < b; j++) if (smooth[j] !== null) ps.push(smooth[j]);
+        const enough = ps.length >= voiced * Math.max(1, b - a) || (breaks.has(i) && ps.length >= minFrames);
+        return enough ? Math.round(median(ps) - offset) : null;
+    });
     const notes = [];
-    for (let s = 0; s < slots; s++)
+    for (let s = 0; s < slots.length; s++)
     {
         if (keys[s] === null) continue;
         const prev = notes.at(-1);
-        if (prev && keys[s - 1] === keys[s] && !breaks.has(s)) { prev.beats += 0.5; prev.slots[1] = s + 1; continue; }
-        notes.push({ beat: s / 2, beats: 0.5, key: keys[s], slots: [s, s + 1] });
+        if (prev && keys[s - 1] === keys[s] && !breaks.has(s)) { prev.beats += slots[s].beats; continue; }
+        notes.push({ beat: slots[s].beat, beats: slots[s].beats, key: keys[s] });
     }
     for (const n of notes)
     {
+        n.beat = Math.round(n.beat * 1e9) / 1e9;
+        n.beats = Math.round(n.beats * 1e9) / 1e9;
         // the note's own frames, trimmed at both ends so scoops and releases don't read as vibrato
-        const a = at(grid.origin + n.slots[0] * grid.slot), b = at(grid.origin + n.slots[1] * grid.slot);
+        const a = atBeat(n.beat), b = atBeat(n.beat + n.beats);
         const trim = Math.max(Math.round(0.06 * fps), Math.round((b - a) * 0.1));
         const raw = [];
         for (let i = a + trim; i < b - trim; i++) if (frames[i].midi !== null && Math.abs(frames[i].midi - offset - n.key) < 1.5) raw.push(frames[i].midi - offset);
         n.vibrato = measureVibrato(raw, fps);
         n.cents = raw.length ? Math.round(100 * (raw.reduce((s, x)=> s + x, 0) / raw.length - n.key)) : 0;
-        delete n.slots;
     }
     return { notes, tempo: grid.tempo, offset, origin: grid.origin };
 }
@@ -274,7 +344,17 @@ export function spellDegree(key, tonic, mode, octave)
     return { degree: above, accidental: -flatBy };
 }
 
-const beatText = (b)=> String(Math.round(b * 1000) / 1000);
+/** a length in beats: one that isn't a whole number of 16ths (a triplet's) as a fraction, `1/3` or `7/6`, so they add up exactly */
+function beatText(b)
+{
+    const twelfths = Math.round(b * 12);
+    if (Math.abs(b * 12 - twelfths) < 1e-6 && twelfths % 3 !== 0)
+    {
+        const gcd = (x, y)=> y ? gcd(y, x % y) : x, g = gcd(twelfths, 12);
+        return `${twelfths / g}/${12 / g}`;
+    }
+    return String(Math.round(b * 1000) / 1000);
+}
 
 /**
  * Notes as the composer's melody notation: `degree[~][:beats]`, rests between notes, a `|` at each bar line.
