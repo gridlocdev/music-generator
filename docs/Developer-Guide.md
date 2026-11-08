@@ -37,9 +37,14 @@ just test    # node --test: the tests in test/ for lib/ and *-data.js files
 
 Songs are plain specs in `src/composer/`: `songs-data.js`, `genre-songs-data.js` (one
 per genre, each with a story), `game-songs-data.js` (the game music), `chip-songs-data.js`
-(chiptune in different moods) and `classical-songs-data.js` (solo piano). Each shows up in the
-browser's Songs tab. The spec format and how the composer reads it are in
-[COMPOSING.md](COMPOSING.md#12-the-song-spec-writing-a-song).
+(chiptune in different moods) and `classical-songs-data.js` (solo piano). Each is a preset in the
+app's New dialog (New → Song), which composes it into a new project. The spec format and how the
+composer reads it are in [COMPOSING.md](COMPOSING.md#12-the-song-spec-writing-a-song).
+
+The songs are also kept as project files in `projects/`, which open like any other project and can
+be edited and saved. `just projects` (`tools/make-projects.mjs`) writes them again from the specs:
+all of them, or the ids you name (`just projects first-light`). It overwrites the edits made to
+those projects in the app, so commit or save under another name first.
 
 ### Composing from the command line
 
@@ -55,27 +60,23 @@ just compose feel:tender
 
 ### Transcribing a whistled melody
 
-**The whistle track.** The top row of the arrangement is the whistle track. Select it and the
-editor below shows its roll and toolbar: set the tempo you'll whistle at and the meter, and press
-**●** (or `R`). After a bar of count-in, whistle the melody. The click is a low tick under the pitch
-tracker's range, but use headphones anyway. A playhead sweeps across the bars, your pitch is drawn
-as you go, the note you're on shows faintly at the playhead, and notes are written out about a beat
-behind it. When you stop, the whole take is read again on the click's grid.
+**In the app.** Select a track (or none, and a Whistle track is added) and press **●** (or `R`).
+After a bar of count-in, at the project's tempo and meter where the playhead is, whistle the melody.
+The click is a low tick under the pitch tracker's range, but use headphones anyway. Nothing else
+plays while you record, so the band can't leak into the take. The playhead follows the take and
+notes are written out about a beat behind it. When you stop, the whole take is read again on the
+click's grid and put in a new clip from the bar you started in.
 
-Then the chords: drag over bars (it snaps to half bars, or to beats with Alt held), press `R` and
-whistle the chord's notes as an arpeggio, in any order and octave, in your own time. Nothing plays
-while you do, so the band can't leak into the take. Press `R` again and the chord is named from the
-notes you held longest; starting on its lowest note, a third or seventh, makes an inversion. Bars with
-no chord whistled get chords guessed from the melody, drawn faint. Click any chord to step through
-its runners-up; `Delete` on a dragged stretch forgets the chords whistled there. Fix a note by
-dragging it or with `↑` `↓` (`←` `→` select, `V` vibrato, `Delete` removes). The key is guessed from
-the melody and the chords' notes; the key menu overrides it.
+Then the chords: drag over the chord track above the tracks (bars, or beats with Shift held), press
+`R` and whistle the chord's notes as an arpeggio, in any order and octave, in your own time. Press
+`R` again and the chord is named in the project's key from the notes you held longest, and replaces
+the chords there. Fix notes in the piano roll like any others.
 
-**Make song** composes a band around the sketch at the song tempo and opens it in the arrangement,
-**Copy** puts the section's lines on the clipboard, and **Save** writes the melody take and every
-chord take (`take-n.wav`, `take-n.json`) and `section.js.txt` to `ideas/<name>/`. The browser's
-Ideas tab lists those folders and opens one again. Audio files dropped on the whistle track become
-melody takes, read at the tempo set, or the chord for a dragged stretch.
+**New from melody** (in the piano roll's toolbar) takes the selected clip and the chords over it
+(guessing chords from the melody where none were whistled) and composes a band round it in a new
+project. In a saved project each take's audio is kept as `projects/<name>/takes/take-n.wav`
+(ignored by git), listed in the browser's Takes tab: click one, or drag it onto a track, to read it
+again. Audio files dropped on a track are read the same way, at the project's tempo.
 
 **From the command line.**
 
@@ -144,13 +145,13 @@ length, peak and loudness, has a blind mode, and saves the WAVs in `.ab/out/`, w
 `just app` runs the checkout in Electron. `just install` (`tools/install-app.sh`) makes it an app you
 open from the Dock: on macOS a copy of the Electron in `node_modules`, renamed to Music Generator with its own
 bundle id, whose only code is a stub that loads `electron/main.js` from the checkout, so it always runs
-what's checked out (as last built), with its `soundfonts/` and `ideas/`. On Linux it adds a launcher to
+what's checked out (as last built), with its `soundfonts/` and `projects/`. On Linux it adds a launcher to
 `~/.local/share/applications`. Run it again after moving the checkout or updating Electron. There is no
 packaged build to share.
 
 `electron/main.js` serves the repository on a private `app://game/` origin, lets that origin (and
-nothing else) use the microphone, and answers the `ideas/` requests (`tools/ideas-files.mjs`). The
-settings (library, panel sizes, browser tab, last song) go to `save.json` in Electron's user data
+nothing else) use the microphone, and answers the `projects/` requests (`tools/project-files.mjs`: list the projects, save one, keep and list its takes). The
+settings (library, panel sizes, browser tab, last project, grid) go to `save.json` in Electron's user data
 folder through `electron/preload.cjs`. On macOS `just app` starts Electron with `open`, so the
 microphone prompt is for the app and not for the terminal. If you refused it, turn on Electron (or
 Music Generator, for the installed app) under System Settings → Privacy & Security → Microphone.
@@ -220,8 +221,10 @@ falls back to when the band names one the chip bank doesn't have.
 ## Adding to the interface
 
 The interface lives in `src/app/`: the state as signals in `store.js`, what the controls do in
-`player.js`, `live.js` and `sketchpad.js`, and the views in `components/`. A view reads signals and
-calls actions; it doesn't touch the audio engine or the composer itself. Music logic goes in
-`src/composer/` or `src/sketch/`, which know nothing of the interface and don't import each other,
+`document.js` (open, save, New and `edit`), `player.js`, `recording.js` and `live.js`, and the
+views in `components/`. A view reads signals and calls actions; it doesn't touch the audio engine or
+the composer itself. Every change to the project goes through `edit(p => …)` with one of the pure
+edits in `src/daw/project.js`, so it can be undone; add a new edit there, with a test. DAW logic that isn't about
+songs goes in `src/daw/`; music logic goes in `src/composer/` or `src/sketch/`, which know nothing of the interface and don't import each other,
 and content goes in a `*-data.js` file with a test. Show a control only when there is code behind
 it. The full rules are in [ARCHITECTURE.md](ARCHITECTURE.md#rules).

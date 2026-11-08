@@ -18,7 +18,7 @@ const TABS = [['projects', 'Projects'], ['instruments', 'Instruments'], ['takes'
 const listed = signal(/** @type {{ name: string, title: string }[]} */ ([]));
 const takes = signal(/** @type {string[]} */ ([]));
 
-export async function refreshProjects()
+async function refreshProjects()
 {
     listed.value = await projectFiles.list().catch(e => { status.value = e.message; return []; });
 }

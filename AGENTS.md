@@ -2,7 +2,8 @@
 
 This app follows the layered layout in `docs/ARCHITECTURE.md`. Read it before adding or moving code. In short:
 
-- `lib → platform → audio → (composer, sketch) → app`; imports only point down that chain.
+- `lib → platform → audio → daw → (composer, sketch) → app`; imports only point down that chain.
+- `daw/` is the generic DAW: projects, their file format, edits with undo, playback and the MIDI FX hook. It knows nothing of songs, specs or whistling.
 - `composer/` and `sketch/` hold the music logic and know nothing of the UI. `app/` is the Preact UI: signals in `app/store.js`, actions in `app/*.js`, views in `app/components/`.
 - `composer/` and `sketch/` don't import each other; `app/` joins them.
 - Content (songs, tables, tuning) goes in `*-data.js` files.

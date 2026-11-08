@@ -21,10 +21,10 @@
  *   groove: settings a MIDI FX shares across tracks (swing, style); markers' meta is for MIDI FX too
  */
 
-export const TRACK_COLORS = [[1, 0.78, 0.4], [0.45, 0.8, 1], [0.6, 0.85, 0.5], [0.98, 0.55, 0.62], [0.7, 0.62, 1], [1, 0.6, 0.35], [0.85, 0.85, 0.9]];
+const TRACK_COLORS = [[1, 0.78, 0.4], [0.45, 0.8, 1], [0.6, 0.85, 0.5], [0.98, 0.55, 0.62], [0.7, 0.62, 1], [1, 0.6, 0.35], [0.85, 0.85, 0.9]];
 
 /** @returns {Mixer} */
-export const defaultMixer = ()=> ({ volumeDb: -6, pan: 0, mute: false, solo: false, lowCut: 20, sends: { reverb: 0.15, delay: 0 }, autoPan: null, duck: null });
+const defaultMixer = ()=> ({ volumeDb: -6, pan: 0, mute: false, solo: false, lowCut: 20, sends: { reverb: 0.15, delay: 0 }, autoPan: null, duck: null });
 
 /** @returns {Project} */
 export function emptyProject({ title = 'Untitled', bpm = 120, sig = '4/4', bars = 16 } = {})
@@ -70,8 +70,6 @@ export const projectEnd = (p)=> Math.max(p.length, ...p.tracks.flatMap(t => t.cl
 // ── edits ───────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 const patchOf = (x, patch)=> typeof patch === 'function' ? patch(x) : { ...x, ...patch };
-
-export const setTitle = (p, title)=> ({ ...p, title });
 
 /** changes a track: a patch object, or a function from the old track to the new */
 export const updateTrack = (p, id, patch)=> ({ ...p, tracks: p.tracks.map(t => t.id === id ? patchOf(t, patch) : t) });
@@ -137,8 +135,6 @@ export function setTempo(p, bpm)
 
 /** the meter from the start, until the first change after it */
 export const setMeter = (p, sig)=> ({ ...p, meters: p.meters.map((m, i)=> i === 0 ? { ...m, sig } : m) });
-
-export const setLength = (p, length)=> ({ ...p, length: Math.max(1, length) });
 
 // ── history ─────────────────────────────────────────────────────────────────────────────────────────────────────────
 

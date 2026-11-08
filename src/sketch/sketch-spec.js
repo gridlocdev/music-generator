@@ -36,21 +36,3 @@ export function sketchSpec({ name = 'Sketch', key, tempo, meter, section })
         sections: { verse: body },
     };
 }
-
-/** the lines to paste into a song in a *-songs-data.js file */
-export function sketchText({ name = 'sketch', key, tempo, meter, section, whistledAt })
-{
-    const fields = [`key: '${key.key}'`, `mode: '${key.mode}'`, `tempo: ${tempo}`, ...(meter !== '4/4' ? [`meter: '${meter}'`] : [])];
-    const body = [
-        section.progression && `progression: '${section.progression}'`,
-        section.melody && `melody: '${section.melody}'`,
-    ].filter(Boolean).join(',\n        ');
-    return [
-        `// ${name}: whistled at ${whistledAt} bpm, ${section.bars} bar${section.bars === 1 ? '' : 's'}`,
-        `${fields.join(', ')},`,
-        ...(section.vibrato ? [`style: { vibrato: { rate: ${section.vibrato.rate}, cents: ${section.vibrato.cents} } },`] : []),
-        'sections: {',
-        `    verse: {\n        ${body},\n    },`,
-        '},',
-    ].join('\n');
-}

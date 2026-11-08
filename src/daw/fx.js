@@ -22,10 +22,8 @@ const types = new Map();
 /** @param {string} type  @param {FxType} impl */
 export const registerFx = (type, impl)=> { types.set(type, impl); };
 
-export const fxName = (type)=> types.get(type)?.name ?? type;
-
 /** a track's notes as written, ready to play */
-export const plainNotes = (track)=> trackNotes(track).map(n => ({ ...n, grid: n.beat }));
+const plainNotes = (track)=> trackNotes(track).map(n => ({ ...n, grid: n.beat }));
 
 /**
  * Every track's notes for one pass, through its FX, and the FX's events.

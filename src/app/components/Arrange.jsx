@@ -296,7 +296,7 @@ function TrackRow({ track, beats, ppb })
     );
 }
 
-export function addNewTrack()
+function addNewTrack()
 {
     let id = '';
     edit(p => { const t = makeTrack(p, { name: `Track ${p.tracks.length + 1}` }); id = t.id; return addTrack(p, t); });

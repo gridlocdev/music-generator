@@ -1,17 +1,15 @@
-// What both piano rolls draw with: the colours, text, and a key's lanes with note names in the gutter.
+// What the piano roll draws with: the colours, text, and a key's lanes with note names in the gutter.
 import { MODES } from '../../lib/music-theory.js';
 import { noteName } from '../../lib/notes.js';
-import { VIEW } from '../../sketch/sketchpad-data.js';
 import { held } from '../live.js';
 
-export const GUTTER = VIEW.gutter, STRIP = VIEW.chordStrip;
+export const GUTTER = 46;     // px of note names at the left
+export const STRIP = 26;      // px of chord names above the lanes
 const FONT = '-apple-system, system-ui, sans-serif';
 export const C = {
     lane: 'rgba(255,255,255,.025)', inKey: 'rgba(255,255,255,.07)', tonic: 'rgba(255,199,102,.16)', held: 'rgba(127,180,255,.45)',
-    beat: 'rgba(255,255,255,.07)', bar: 'rgba(255,255,255,.22)', downbeat: 'rgba(255,199,102,.5)',
-    label: '#9898a4', text: '#e6e6ea', selected: '#ffffff', melody: 'rgba(255,199,102,.85)', live: 'rgba(255,199,102,.3)',
-    chord: '#403856', chordEdge: '#7f75a0', chordPicked: '#6b4d33', guessEdge: '#514c61', guessText: '#9994ad',
-    range: 'rgba(140,190,255,.12)', rangeEdge: 'rgba(140,190,255,.7)', playhead: '#ff5a5a', trace: [0.55, 0.85, 1],
+    beat: 'rgba(255,255,255,.07)', bar: 'rgba(255,255,255,.22)',
+    label: '#9898a4', text: '#e6e6ea', selected: '#ffffff', chord: '#403856', chordEdge: '#7f75a0', playhead: '#ff5a5a',
 };
 
 export function text(g, s, x, y, size, color, align = 'left')

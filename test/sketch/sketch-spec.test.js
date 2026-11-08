@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { beatsPerBar, sketchSection, sketchSpec, sketchText } from '../../src/sketch/sketch-spec.js';
+import { beatsPerBar, sketchSection, sketchSpec } from '../../src/sketch/sketch-spec.js';
 import { compose } from '../../src/composer/compose.js';
 
 const key = { key: 'G', tonic: 7, mode: 'major' };
@@ -24,7 +24,7 @@ test('sketch: a melody and chords become a section, with the whistle\'s vibrato 
     assert.equal(sketchSection({ key, meter: '4/4', chords }).melody, undefined);
 });
 
-test('sketch: the spec composes, one section the sketch\'s length, and the text pastes into a song', ()=>
+test('sketch: the spec composes, one section the sketch\'s length', ()=>
 {
     for (const s of [{ melody, chords }, { melody }, { chords }])
     {
@@ -32,9 +32,4 @@ test('sketch: the spec composes, one section the sketch\'s length, and the text 
         const score = compose(sketchSpec({ key, tempo: 96, meter: '4/4', section }));
         assert.deepEqual(score.sections.map(x => [x.type, x.beats]), [['verse', 8]]);
     }
-    const section = sketchSection({ key, meter: '4/4', melody, chords });
-    const text = sketchText({ name: 'hook', key, tempo: 96, meter: '4/4', section, whistledAt: 70 });
-    assert.match(text, /key: 'G', mode: 'major', tempo: 96,/);
-    assert.match(text, /style: \{ vibrato: \{ rate: 6\.2, cents: 32 \} \},/);
-    assert.match(text, /progression: 'I V\/7',\n\s+melody: '1 3~ 5:2 \| 1~:4',/);
 });

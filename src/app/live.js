@@ -16,8 +16,6 @@ const OCTAVES = [1, 7];
 export const held = signal(/** @type {Set<number>} */ (new Set()));
 /** the instrument musical typing plays, by name */
 export const liveName = signal('');
-/** connected MIDI inputs, or null before asking */
-export const midiInputs = signal(/** @type {number|null} */ (null));
 
 let instrument = null;
 let loading = 0;
@@ -69,11 +67,7 @@ function releaseAll()
     typed.clear();
 }
 
-export async function connectMidi()
-{
-    const ok = await midi.init(n => { midiInputs.value = n; });
-    if (!ok) midiInputs.value = 0;
-}
+export const connectMidi = ()=> midi.init(()=> {});
 
 /** wires the keyboard and MIDI, and reloads the instrument whenever the selected track's preset changes */
 export function startLive()

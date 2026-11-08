@@ -30,7 +30,9 @@ The tables in `composer-data.js` and `patterns-data.js` are this document in dat
 2. **Section plan** (`harmony.js`): the chords at the section's harmonic rhythm, ending on its cadence, with passing chords.
 3. **Phrases**: the melody from the motif's development, call and response, harmony voices, then the accompaniment (`parts.js`, `meter-patterns.js`).
 4. **Arrangement and rhythm passes** (`arrange.js`, `syncopation.js`): entries, exits, the breath before a payoff, anticipations, offbeat accents, echo rhythms.
-5. **Playback** (`perform.js`, `mix-plan.js`, `song-player.js`): ghost notes, scoops, ear candy, swing, timing, mix automation and adaptive control.
+5. **Performance and mix** (`perform.js`, `ear-candy.js`, `mix-plan.js`): ghost notes, scoops, ear candy, swing, timing and mix automation.
+
+**Into a project.** `toProject(score)` (`to-project.js`) turns the score into a DAW project: each part a track whose clips hold the written notes, a section a marker (its type, energy and scene in the marker's meta), the chords on the chord track, the mix plan as automation and ducking. The performance isn't baked in: each track gets the **Humanize** MIDI FX (`humanize-fx.js`), which runs stage 5 as the project plays, from the notes in its clips, so edited notes are performed too and each pass round a loop comes out a little different. The 38 written songs are kept as projects in `projects/` (`just projects` writes them again); a spec stays a preset for File → New.
 
 ---
 
@@ -599,15 +601,12 @@ The Chiptune menu group (`chip-songs-data.js`) shows the range: a bright overwor
 
 ## 11. Adaptive music for games
 
-Game music plays for a long time and has to follow the game. A song can be built for that, and the player has the controls.
+Game music plays for a long time and has to follow the game. A song can be built for that.
 
 - **Loops.** `loop: true` drops the outro. The intro plays once, then everything after it repeats. The last section ends on a half cadence and a fill, so its last bar leads back to the first. Nothing is pre-rendered, so reverb and delay tails carry across the loop point. Each pass round the loop is performed with a different hash, so its ghost notes, scoops, slides, timing and ear candy change while the music stays the same. That's a defence against listener fatigue that only a generator has.
-- **Vertical layering.** `setIntensity(x)` (0 calm … 1 everything) fades each part's layer gain over a bar as the intensity crosses its threshold in `LAYERS`: the pad and bass always play, then chords, lead, arpeggio, drums and the countermelody. It sits before the fader, so ducking and mix moves still work.
-- **Horizontal resequencing.** `queue(section, 'bar' | 'phrase' | 'section')` carries on from another section (by index, label or type) at the next boundary, rather than cutting in at once. It's quantised on the lookahead scheduler, so the switch lands exactly on the grid.
-- **Stingers.** `sting(kind)` plays a short cue on the next beat, in the key and mode of the section playing (`STINGERS`): `pickup`, `levelUp`, `secret`, and `fail`, a diminished seventh falling in minor thirds, the cartoon "uh-oh".
 - **Leitmotifs.** A spec's `motif` names a theme from `LEITMOTIFS` (or writes one). *Hero's Road* plays the `hero` motif bold and mixolydian in 4/4; *Hero's Rest* plays the same steps slow, aeolian and in 6/8, where the motif's rhythm adapts to the meter.
 
-The app plays these songs as they loop, but has no controls for intensity, stingers or queued sections yet. A game drives them from code, through the handle `playScore(score, band)` in `src/composer/song-player.js` returns: `handle.setIntensity(0.3)`, `handle.sting('pickup')`, `handle.queue('Phase two 1', 'bar')`, `handle.stop()`. Compose the score with `compose(spec)` and load its instruments with `loadBand(score)` first.
+A game plays a project with `playProject(project, instruments)` from `src/daw/player.js` (load the instruments with `loadInstruments(project.tracks)` and register Humanize with `registerFx` first); its handle has `seek`, `setMix` and `stop`.
 
 **Hearing a change.** `just ab [commit]` renders every song with that commit and with the working tree, offline, and plays them side by side, with peak and loudness for each and a blind mode. Tune the tables by ear, one at a time.
 
@@ -673,7 +672,7 @@ A song is a plain object. Only `title` (or `id`) and `emotion` are needed; every
 
 **Where specs go.**
 
-- In the app: add it to `GENRE_SONGS` in `src/composer/genre-songs-data.js`, `GAME_SONGS` in `game-songs-data.js`, `CHIP_SONGS` in `chip-songs-data.js` (chiptune, `sound: 'chip'`), `CLASSICAL_SONGS` in `classical-songs-data.js` (solo piano, `genre: 'Classical'`) or `SONGS` in `songs-data.js`, and it appears in the browser's Songs tab. The tests check that a hand-written hook puts chord tones on at least 85% of its strong beats, and that every scene names a real section.
+- In the app: add it to `GENRE_SONGS` in `src/composer/genre-songs-data.js`, `GAME_SONGS` in `game-songs-data.js`, `CHIP_SONGS` in `chip-songs-data.js` (chiptune, `sound: 'chip'`), `CLASSICAL_SONGS` in `classical-songs-data.js` (solo piano, `genre: 'Classical'`) or `SONGS` in `songs-data.js`. It appears under New project → Song, and `just projects` writes it into `projects/` as a project file. The tests check that a hand-written hook puts chord tones on at least 85% of its strong beats, and that every scene names a real section.
 - On the command line: `just compose first-light --melody --midi out.mid` prints the plan (sections, energy, chords, parts) and the melody bar by bar, and writes a Standard MIDI File any DAW can open. Run `just compose path/to/spec.json` for a spec saved as a file.
 
 **What comes out.** `compose(spec)` returns a score: tempo, its `tempoMap` and the `loop`; `sections` with labels, start beats, energy, meter, key and mode, and which is the climax; the `motif`; `chords` with names; and one track per part, each `{ role, name, program, bank, notes: [{ key, beat, beats, vel }] }` (an ornament's quick notes also carry `ornament: true`). The player schedules those notes on the Web Audio clock through the SoundFont instruments. The view draws each track as its own piano in a grid, with notes falling onto the keys that play them.

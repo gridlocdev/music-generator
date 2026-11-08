@@ -16,7 +16,7 @@ build: deps
     node tools/build.mjs
 
 # on macOS it starts through `open`, so macOS asks for the microphone for the app, not for the terminal
-# build and run it without installing: the microphone needs no browser permission, and the whistle track saves into ideas/
+# build and run it without installing: the microphone needs no browser permission, and projects save into projects/
 app: build
     #!/usr/bin/env sh
     if [ "$(uname)" = Darwin ]; then
@@ -77,7 +77,7 @@ soundfonts:
 compose *args:
     node tools/compose.mjs {{args}}
 
-# write the catalog's songs as project files in projects/ (all of them, or the ones named); overwrites edits
+# write the written songs as project files in projects/ (all of them, or the ones named); overwrites edits made in the app
 # e.g. just projects   ·   just projects first-light
 projects *songs:
     node tools/make-projects.mjs {{songs}}
