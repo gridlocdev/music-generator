@@ -63,6 +63,7 @@ function createWindow()
     const win = new BrowserWindow({
         width: 1280, height: 800, minWidth: 800, minHeight: 500,
         title: app.name,
+        icon: path.join(ROOT, 'assets', 'icon', 'icon.png'),   // Windows and Linux; the macOS app's comes from its bundle
         backgroundColor: '#18181c',     // the page's background, so the window never flashes white
         autoHideMenuBar: true,
         show: false,

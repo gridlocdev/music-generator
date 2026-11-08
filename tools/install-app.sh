@@ -18,11 +18,13 @@ Darwin)
         -c "Set :CFBundleName $name" \
         -c "Set :CFBundleDisplayName $name" \
         -c "Set :CFBundleIdentifier dev.gridloc.music-generator" \
+        -c "Set :CFBundleIconFile icon.icns" \
         -c "Set :NSMicrophoneUsageDescription $name listens to your whistling to write it out as notes." \
         "$plist"
     # Electron runs Resources/app when it's there: a stub that loads electron/main.js from the checkout
     res="$dest/Contents/Resources"
-    rm -f "$res/default_app.asar"
+    rm -f "$res/default_app.asar" "$res/electron.icns"
+    cp "$root/assets/icon/icon.icns" "$res/icon.icns"
     mkdir -p "$res/app"
     printf '{ "name": "music-generator", "productName": "%s", "main": "main.mjs" }\n' "$name" > "$res/app/package.json"
     printf "import '%s';\n" "$root/electron/main.js" > "$res/app/main.mjs"
@@ -38,6 +40,7 @@ Type=Application
 Name=$name
 Exec="$root/node_modules/electron/dist/electron" "$root"
 Path=$root
+Icon=$root/assets/icon/icon.png
 Categories=AudioVideo;Audio;
 EOF
     echo "installed $dest"

@@ -155,6 +155,11 @@ folder through `electron/preload.cjs`. On macOS `just app` starts Electron with 
 microphone prompt is for the app and not for the terminal. If you refused it, turn on Electron (or
 Music Generator, for the installed app) under System Settings → Privacy & Security → Microphone.
 
+The app icon is drawn by hand in `assets/icon.svg`: a tile on Apple's icon grid with a white glyph.
+`just icons` (`tools/make-icons.sh`, needs Inkscape) renders it into `assets/icon/`: `icon.icns`
+for the macOS app, which `just install` copies into the bundle, and `icon.ico` and `icon.png` for
+Windows and Linux. The rendered files are committed, so only a change to the SVG needs Inkscape.
+
 Two flags help while working on it:
 
 - `--dev` (what `just dev` passes) reloads the window whenever `dist/` changes.

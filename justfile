@@ -64,6 +64,10 @@ whistle +args:
 catalog:
     node tools/sf2-catalog.mjs
 
+# render assets/icon.svg into assets/icon/ (icon.icns, icon.ico, icon.png); needs Inkscape
+icons:
+    bash tools/make-icons.sh assets/icon.svg assets/icon
+
 # download the openly licensed SoundFont libraries into soundfonts/; ones already there are skipped
 soundfonts:
     bash tools/fetch-soundfonts.sh

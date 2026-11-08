@@ -19,3 +19,6 @@ ideas/**/*.m4a
 
 # the bundled UI; `just build` makes it
 dist/
+
+# icon renders on the way to assets/icon/; `just icons` makes them
+build/

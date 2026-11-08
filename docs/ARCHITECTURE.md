@@ -47,7 +47,8 @@ The window has a transport bar at the top, a browser on the left (songs, instrum
 | `src/app/app.css` | the look: colour tokens and the panel grid |
 | `tools/compose.mjs` | composes a song in Node: prints the plan and melody, writes a `.mid` (`just compose`) |
 | `tools/build.mjs` | bundles the UI with esbuild (`just build`, `--watch` for `just dev`, `--check` for `just check`) |
-| `tools/install-app.sh` | installs the desktop app that runs this checkout (`just install`): a renamed Electron in `~/Applications` on macOS, a launcher on Linux |
+| `tools/install-app.sh` | installs the desktop app that runs this checkout (`just install`): a renamed Electron in `~/Applications` on macOS, with the icon from `assets/icon/`; a launcher on Linux |
+| `assets/icon.svg`, `tools/make-icons.sh` | the app icon's source, and the script (`just icons`) that renders it into `assets/icon/` |
 | `tools/ideas-files.mjs` | the desktop app's `ideas/` requests: `GET /ideas/` lists the sketches, `GET /ideas/<sketch>/` a sketch's files, `PUT /ideas/<sketch>/<file>` saves one |
 | `electron/main.js`, `electron/preload.cjs` | the desktop app (`just app`): serves the checkout on `app://game/`, allows the microphone for that origin only, answers `ideas/` requests, and keeps the settings in a file through the `window.appStorage` hook. `--dev` reloads the window when `dist/` changes; `--headless` runs it hidden and muted, with its own settings, for automated tests |
 | `tools/whistle.mjs` | transcribes a whistled recording into a section's `melody:` line, or with `--chords` an arpeggio take into its `progression:` (`just whistle`) |

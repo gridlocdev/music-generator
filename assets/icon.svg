@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The app icon's source. A 1024 canvas on Apple's icon grid: an 824-unit tile at (100,100) with a transparent
+     margin. scripts/make-icons.sh crops to the tile for Windows and Linux, so keep the tile there. The glyph is a
+     pair of beamed eighth notes. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="tile" gradientUnits="userSpaceOnUse" x1="0" y1="100" x2="0" y2="924">
+      <stop offset="0" stop-color="#FF9F5A" />
+      <stop offset="1" stop-color="#E2531F" />
+    </linearGradient>
+  </defs>
+
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#tile)" />
+
+  <g fill="#FFFFFF" transform="translate(-6 10)">
+    <ellipse cx="382" cy="690" rx="96" ry="72" transform="rotate(-22 382 690)" />
+    <ellipse cx="662" cy="626" rx="96" ry="72" transform="rotate(-22 662 626)" />
+    <rect x="428" y="330" width="48" height="350" />
+    <rect x="708" y="266" width="48" height="350" />
+    <path d="M 428 300 L 756 226 L 756 326 L 428 400 Z" />
+  </g>
+</svg>
