@@ -6,6 +6,7 @@ import { NOTE_KEYS, OCTAVE_KEYS, typing } from '../platform/keys.js';
 import { octaveC } from '../lib/notes.js';
 import { loadSoundFont, findPreset, createInstrument } from '../audio/soundfont.js';
 import { presetFor } from '../daw/instruments.js';
+import { audioEngine } from '../platform/audio-engine.js';
 import { settings, setSettings, selectedTrack, status } from './store.js';
 
 const KEY_VELOCITY = 100;       // computer keys have no velocity
@@ -32,6 +33,8 @@ async function load(entry)
     try
     {
         const font = await loadSoundFont(entry.url);
+        // an instrument made while exporting would belong to the offline render
+        while (audioEngine.rendering) await audioEngine.rendering.catch(()=> {});
         if (id !== loading) return;
         const preset = findPreset(font, entry.bank, entry.program);
         if (!preset) throw new Error(`no preset ${entry.bank}:${entry.program}`);
@@ -46,6 +49,7 @@ async function load(entry)
 
 export function press(key, velocity = KEY_VELOCITY)
 {
+    if (audioEngine.rendering) return;
     const n = down.get(key) ?? 0;
     if (!n) instrument?.noteOn(key, velocity);
     down.set(key, n + 1);

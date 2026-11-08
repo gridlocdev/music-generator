@@ -3,7 +3,7 @@ import { signal } from '@preact/signals';
 import { barAt } from '../daw/meter.js';
 import { makeTrack, addTrack, removeTrack, updateTrack, setMixer, moveTrack, duplicateTrack, addClip, updateClip, removeClip,
     findClip, joinClips, splitAt, newId, setLoop, quantizeNotes, humanizeNotes, scaleNotes, reverseNotes } from '../daw/project.js';
-import { project, selected, selectedClip, settings, setSettings } from './store.js';
+import { project, selected, selectedClip, settings, setSettings, picked } from './store.js';
 import { edit } from './document.js';
 import { askText } from './ask.js';
 
@@ -90,7 +90,10 @@ export function deleteClip(trackId, clipId)
 }
 
 /** splits a track's clips at a beat, or every track's with no track */
-export const splitClipsAt = (beat, trackId = null)=> edit(p => splitAt(p, beat, trackId));
+export const splitClipsAt = (beat, trackId = null)=> reorder(()=> edit(p => splitAt(p, beat, trackId)));
+
+// an edit that gives notes new clips or indexes: the picks would point at other notes
+function reorder(fn) { fn(); picked.value = new Set(); }
 
 /** the clip after this one on its track, which it can join */
 export function nextClip(trackId, clipId)
@@ -102,7 +105,7 @@ export function nextClip(trackId, clipId)
 export function joinWithNext(trackId, clipId)
 {
     const next = nextClip(trackId, clipId);
-    if (next) edit(p => joinClips(p, trackId, [clipId, next.id]));
+    if (next) reorder(()=> edit(p => joinClips(p, trackId, [clipId, next.id])));
 }
 
 /** a clip's length in bars, from its start */
@@ -114,7 +117,7 @@ export function setClipBars(trackId, clipId, bars)
 
 export function quantizeClip(trackId, clipId)
 {
-    edit(p => updateClip(p, trackId, clipId, c => ({ ...c, notes: quantizeNotes(c.notes, settings.value.grid) })));
+    reorder(()=> edit(p => updateClip(p, trackId, clipId, c => ({ ...c, notes: quantizeNotes(c.notes, settings.value.grid) }))));
 }
 
 export function transposeClip(trackId, clipId, by)
@@ -127,12 +130,12 @@ export const toggleClipMute = (trackId, clipId)=> edit(p => updateClip(p, trackI
 /** a clip moved later (or earlier) by some beats, not before the start */
 export const nudgeClip = (trackId, clipId, by)=> edit(p => updateClip(p, trackId, clipId, c => ({ ...c, start: Math.max(0, c.start + by) })), `nudge ${clipId}`);
 
-export const humanizeClip = (trackId, clipId)=> edit(p => updateClip(p, trackId, clipId, c => ({ ...c, notes: humanizeNotes(c.notes) })));
+export const humanizeClip = (trackId, clipId)=> reorder(()=> edit(p => updateClip(p, trackId, clipId, c => ({ ...c, notes: humanizeNotes(c.notes) }))));
 
 /** a clip played faster (k < 1) or slower (k > 1): its notes and its length scaled */
-export const scaleClip = (trackId, clipId, k)=> edit(p => updateClip(p, trackId, clipId, c => ({ ...c, beats: c.beats * k, notes: scaleNotes(c.notes, k) })));
+export const scaleClip = (trackId, clipId, k)=> reorder(()=> edit(p => updateClip(p, trackId, clipId, c => ({ ...c, beats: c.beats * k, notes: scaleNotes(c.notes, k) }))));
 
-export const reverseClip = (trackId, clipId)=> edit(p => updateClip(p, trackId, clipId, c => ({ ...c, notes: reverseNotes(c.notes, 0, c.beats) })));
+export const reverseClip = (trackId, clipId)=> reorder(()=> edit(p => updateClip(p, trackId, clipId, c => ({ ...c, notes: reverseNotes(c.notes, 0, c.beats) }))));
 
 /** loops playback over a stretch, or stops looping with null */
 export const loopOver = (range)=> edit(p => setLoop(p, range));

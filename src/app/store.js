@@ -63,6 +63,9 @@ export const selectedClip = signal(/** @type {{ track: string, clip: string }|nu
 /** a stretch of the chord track picked to whistle a chord for: { beat, beats } */
 export const chordRange = signal(/** @type {{ beat: number, beats: number }|null} */ (null));
 
+/** selected notes, as 'clipId:index': an edit that moves notes to other indexes clears it */
+export const picked = signal(/** @type {Set<string>} */ (new Set()));
+
 export const selectedTrack = computed(()=> project.value.tracks.find(t => t.id === selected.value) ?? null);
 
 /** the fader's bottom, which is silence */

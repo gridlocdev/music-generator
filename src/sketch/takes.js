@@ -6,7 +6,7 @@
 import { transcribe, tuningOffset, smoothPitch, noteStarts, clickGrid, guessKeys } from '../lib/transcribe.js';
 import { guessChords, nameChord } from '../lib/chord-guess.js';
 import { pitchClass } from '../lib/music-theory.js';
-import { beatsPerBar } from './sketch-spec.js';
+import { beatsPerBar } from '../daw/meter.js';
 
 const sameKey = (a, b)=> a?.tonic === b?.tonic && a?.mode === b?.mode;
 const end = (list)=> Math.max(0, ...list.map(x => x.beat + x.beats));

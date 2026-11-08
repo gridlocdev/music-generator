@@ -15,6 +15,7 @@ const FALL = 0.92;           // what's left of a meter's level a frame later
 
 export async function play()
 {
+    if (audioEngine.rendering) { status.value = 'Wait for the export to finish'; return; }
     const p = project.value;
     const id = ++starting;
     halt();
@@ -23,6 +24,8 @@ export async function play()
     {
         const instruments = await loadInstruments(p.tracks, text => { if (id === starting) status.value = text; });
         if (id !== starting) return;
+        // an edit while the instruments loaded: start again with what's there now (and its instruments)
+        if (project.value !== p) return play();
         const from = beat.value >= projectEnd(p) ? 0 : beat.value;
         heard = p;
         handle = playProject(p, instruments, { from, mix: mix.value, click: settings.value.metronome });

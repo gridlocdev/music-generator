@@ -5,7 +5,7 @@ import { emptyProject, history, commit, undo as undoStep, redo as redoStep } fro
 import { readProject, writeProject } from '../daw/project-format.js';
 import { compose } from '../composer/compose.js';
 import { toProject } from '../composer/to-project.js';
-import { hist, project, projectName, projectList, saved, dirty, selected, selectedClip, chordRange, beat, status, setSettings } from './store.js';
+import { hist, project, projectName, projectList, saved, dirty, selected, selectedClip, picked, chordRange, beat, status, setSettings } from './store.js';
 import { stop } from './player.js';
 import { askText, askYes } from './ask.js';
 
@@ -27,10 +27,11 @@ export function edit(fn, merge = null)
 export function undo() { mergeKey = null; hist.value = undoStep(hist.value); keepSelection(); }
 export function redo() { mergeKey = null; hist.value = redoStep(hist.value); keepSelection(); }
 
-// a selection the undo took away goes
+// a selection the undo took away goes; picked notes go too, as their indexes may now be other notes
 function keepSelection()
 {
     const p = project.value;
+    if (picked.value.size) picked.value = new Set();
     if (selected.value && !p.tracks.some(t => t.id === selected.value)) selected.value = p.tracks[0]?.id ?? null;
     const c = selectedClip.value;
     if (c && !p.tracks.find(t => t.id === c.track)?.clips.some(x => x.id === c.clip)) selectedClip.value = null;

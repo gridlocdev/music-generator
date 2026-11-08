@@ -1,15 +1,11 @@
 // The notes picked in the piano roll, on the selected track, and what can be done to them: delete, transpose, quantize,
 // set velocity, make legato, nudge, humanize, change speed, reverse. Each is one undo step.
-import { signal } from '@preact/signals';
 import { updateClip, quantizeNotes, humanizeNotes, scaleNotes, reverseNotes } from '../daw/project.js';
-import { selectedTrack, selectedClip, settings } from './store.js';
+import { selectedTrack, selectedClip, settings, picked } from './store.js';
 import { edit } from './document.js';
 
 /** the piano roll's snap choices: beats, name */
 export const GRIDS = [[1, '1/4'], [0.5, '1/8'], [0.25, '1/16'], [1 / 3, '1/8T'], [1 / 6, '1/16T']];
-
-/** selected notes, as 'clipId:index' */
-export const picked = signal(/** @type {Set<string>} */ (new Set()));
 
 export const noteId = (clip, i)=> `${clip}:${i}`;
 

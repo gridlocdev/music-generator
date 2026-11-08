@@ -13,7 +13,7 @@
  */
 export function trackPitch(samples, rate, opts = {})
 {
-    const { fps = 100, minHz = 300, maxHz = 4000, window = 0.02, threshold = 0.15, floor = 0.06 } = opts;
+    const { fps = 100, minHz = 300, maxHz = 4000, window = 0.02, threshold = 0.15, floor = PITCH_FLOOR } = opts;
     const hop = rate / fps, W = Math.round(rate * window);
     const tauMin = Math.max(2, Math.floor(rate / maxHz)), tauMax = Math.ceil(rate / minHz);
     const d = new Float64Array(tauMax + 2);
@@ -49,6 +49,16 @@ export function trackPitch(samples, rate, opts = {})
         }
         frames.push({ time: start / rate, midi, level, clarity: tau > 0 ? Math.max(0, 1 - d[tau]) : 0 });
     }
+    return gateFrames(frames, floor);
+}
+
+/** the quietest level trackPitch keeps by default, as a share of the loudest frame */
+export const PITCH_FLOOR = 0.06;
+
+/** frames quieter than `floor` of the loudest made silent (midi null), in place; frames tracked in pieces with floor 0
+ * and gated together come out as one trackPitch of the whole would */
+export function gateFrames(frames, floor = PITCH_FLOOR)
+{
     const peak = frames.reduce((m, fr)=> Math.max(m, fr.level), 0);
     for (const fr of frames) if (fr.level < peak * floor) fr.midi = null;
     return frames;

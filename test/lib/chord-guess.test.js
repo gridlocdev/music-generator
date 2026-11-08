@@ -97,3 +97,17 @@ test('chords: a chord whistled freely for a stretch is named from how long each 
     assert.equal(read.others.length, 3);
     assert.equal(nameChord([], { tonic: 0, mode: 'major' }), null);
 });
+
+test('chords: a bar of 7/8 or 5/8 ends between beats, and the chords still tile the take', ()=>
+{
+    for (const bpb of [3.5, 2.5])
+        for (const melody of [false, true])
+        {
+            // C E G under the first bar, F A C under the second
+            const notes = [[0, 60], [1, 64], [2, 67], [bpb, 65], [bpb + 1, 69], [bpb + 2, 72]].map(([beat, key])=> ({ beat, beats: 0.5, key }));
+            const chords = guessChords(notes, { tonic: 0, mode: 'major', beatsPerBar: bpb, melody });
+            assert.equal(chords[0].beat, 0);
+            assert.equal(chords.at(-1).beat + chords.at(-1).beats, 2 * bpb);
+            for (let i = 1; i < chords.length; i++) assert.equal(chords[i].beat, chords[i - 1].beat + chords[i - 1].beats);
+        }
+});

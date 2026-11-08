@@ -36,7 +36,7 @@ export function NewProject()
     const create = ()=> { close(); make(kind, pick, form); };
     return (
         <div class="dialog-back" onPointerDown={(e)=> e.target === e.currentTarget && close()}>
-            <div class="dialog" role="dialog" aria-label="New project" onKeyDown={(e)=> { if (e.key === 'Escape') close(); if (e.key === 'Enter') create(); }}>
+            <div class="dialog" role="dialog" aria-label="New project" onKeyDown={(e)=> { if (e.key === 'Escape') close(); if (e.key === 'Enter' && !(e.target instanceof HTMLButtonElement)) create(); }}>
                 <h2>New project</h2>
                 <div class="tabs">
                     {KINDS.map(([id, label])=> <button class={kind === id ? 'on' : ''} onClick={()=> setKind(id)}>{label}</button>)}

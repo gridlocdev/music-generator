@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { beatsPerBar, sketchSection, sketchSpec } from '../../src/sketch/sketch-spec.js';
+import { sketchSection, sketchSpec } from '../../src/sketch/sketch-spec.js';
+import { beatsPerBar } from '../../src/daw/meter.js';
 import { compose } from '../../src/composer/compose.js';
 
 const key = { key: 'G', tonic: 7, mode: 'major' };
@@ -12,7 +13,7 @@ const chords = [{ beat: 0, beats: 4, symbol: 'I' }, { beat: 4, beats: 4, symbol:
 
 test('sketch: meters count quarter-note beats', ()=>
 {
-    assert.deepEqual(['4/4', '3/4', '6/8'].map(beatsPerBar), [4, 3, 3]);
+    assert.deepEqual(['4/4', '3/4', '6/8', '2/2', '7/8'].map(beatsPerBar), [4, 3, 3, 4, 3.5]);
 });
 
 test('sketch: a melody and chords become a section, with the whistle\'s vibrato as the song\'s', ()=>

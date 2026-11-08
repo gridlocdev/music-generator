@@ -117,10 +117,12 @@ export function guessChords(notes, { tonic, mode, beatsPerBar = 4, melody = fals
 {
     if (!notes.length) return [];
     const C = CHORD_GUESS;
-    const end = Math.ceil(Math.max(...notes.map(n => n.beat + n.beats)) / beatsPerBar - 1e-6) * beatsPerBar;
+    // the DP steps in beats, or half beats when a bar ends between beats (5/8, 7/8); indexes count steps
+    const step = Number.isInteger(beatsPerBar) ? 1 : 0.5;
+    const end = Math.round(Math.ceil(Math.max(...notes.map(n => n.beat + n.beats)) / beatsPerBar - 1e-6) * beatsPerBar / step);
     const vocab = chordVocabulary(mode).filter(([symbol, kind])=> !melody || (kind === 'triad' || kind === 'borrowed') && !/\d/.test(symbol))
         .map(([symbol, kind])=> ({ symbol, kind, chord: parseChord(symbol, tonic, mode) }));
-    const maxLen = C.maxBars * beatsPerBar;
+    const maxLen = Math.round(C.maxBars * beatsPerBar / step);
     // a restart: a note starting on this beat that jumps down a 4th or more from the note before it
     const restart = new Set();
     for (let i = 1; i < notes.length; i++) if (notes[i].key <= notes[i - 1].key - 5) restart.add(Math.round(notes[i].beat * 2) / 2);
@@ -136,12 +138,12 @@ export function guessChords(notes, { tonic, mode, beatsPerBar = 4, melody = fals
     const scoreOf = (v, a, b)=>
     {
         const id = `${v},${a},${b}`;
-        if (!scores.has(id)) scores.set(id, scoreChord(vocab[v].chord, notes, a, b, { tonic, mode, beatsPerBar, kind: vocab[v].kind, melody }));
+        if (!scores.has(id)) scores.set(id, scoreChord(vocab[v].chord, notes, a * step, b * step, { tonic, mode, beatsPerBar, kind: vocab[v].kind, melody }));
         return scores.get(id);
     };
     // where a chord may change: any beat in an arpeggio take, the bar lines and half bars (of an even meter) under a tune
     const every = melody ? (beatsPerBar % 2 ? beatsPerBar : beatsPerBar / 2) : 1;
-    const may = (b)=> b === end || b % every === 0;
+    const may = (b)=> b === end || (b * step) % every === 0 || (b * step) % beatsPerBar === 0;
     for (let b = 1; b <= end; b++)
         for (let a = Math.max(0, b - maxLen); a < b; a++)
         {
@@ -158,7 +160,7 @@ export function guessChords(notes, { tonic, mode, beatsPerBar = 4, melody = fals
                 for (let u = 0; u < vocab.length; u++)
                 {
                     if (u === v || best[a][u] === -Infinity) continue;
-                    const total = best[a][u] + s - changeCost(a) - moveCost(vocab[u].chord, vocab[v].chord, tonic);
+                    const total = best[a][u] + s - changeCost(a * step) - moveCost(vocab[u].chord, vocab[v].chord, tonic);
                     if (total > best[b][v]) { best[b][v] = total; from[b][v] = { a, u }; }
                 }
             }
@@ -174,7 +176,7 @@ export function guessChords(notes, { tonic, mode, beatsPerBar = 4, melody = fals
         const { bass } = scoreOf(v, a, b);
         const ranked = vocab.map((c, i)=> ({ symbol: c.symbol, score: scoreOf(i, a, b).score })).sort((x, y)=> y.score - x.score);
         const symbol = vocab[v].symbol + (bass && !melody && !vocab[v].symbol.includes('/') ? `/${bass}` : '');
-        out.unshift({ beat: a, beats: b - a, symbol, score: scoreOf(v, a, b).score, others: ranked.filter(r => r.symbol !== vocab[v].symbol).slice(0, 3) });
+        out.unshift({ beat: a * step, beats: (b - a) * step, symbol, score: scoreOf(v, a, b).score, others: ranked.filter(r => r.symbol !== vocab[v].symbol).slice(0, 3) });
         b = a; v = u;
     }
     return out;

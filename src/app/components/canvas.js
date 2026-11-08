@@ -32,7 +32,8 @@ export function useCanvas(draw)
             rendered.value;
             if (!w || !h) return;
             const dpr = devicePixelRatio || 1;
-            if (canvas.width !== w * dpr || canvas.height !== h * dpr) { canvas.width = w * dpr; canvas.height = h * dpr; }
+            const W = Math.round(w * dpr), H = Math.round(h * dpr);     // a fractional density (1.25) would resize every time
+            if (canvas.width !== W || canvas.height !== H) { canvas.width = W; canvas.height = H; }
             const g = /** @type {CanvasRenderingContext2D} */ (canvas.getContext('2d'));
             g.setTransform(dpr, 0, 0, dpr, 0, 0);
             g.clearRect(0, 0, w, h);

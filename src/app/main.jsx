@@ -28,9 +28,9 @@ function Split()
         e.currentTarget.setPointerCapture(e.pointerId);
         const startY = e.clientY, startH = settings.value.editorHeight;
         const move = (m)=> setSettings({ editorHeight: Math.round(Math.max(EDITOR_H[0], Math.min(innerHeight * EDITOR_H[1], startH - (m.clientY - startY)))) });
-        const up = ()=> { removeEventListener('pointermove', move); removeEventListener('pointerup', up); };
+        const up = ()=> { removeEventListener('pointermove', move); removeEventListener('pointerup', up); removeEventListener('pointercancel', up); };
         addEventListener('pointermove', move);
-        addEventListener('pointerup', up);
+        addEventListener('pointerup', up); addEventListener('pointercancel', up);
     };
     return <div class="split" onPointerDown={down} title="Drag to resize" />;
 }
@@ -62,6 +62,8 @@ addEventListener('contextmenu', (e)=>
 });
 
 effect(()=> { document.title = `${project.value.title}${dirty.value ? ' *' : ''} · Music Generator`; });
+// closing the window with changes unsaved: the app asks first
+addEventListener('beforeunload', (e)=> { if (dirty.value) { e.preventDefault(); e.returnValue = ''; } });
 
 registerFx(HUMANIZE, humanizeFx);
 await loadSettings();

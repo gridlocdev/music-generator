@@ -3,10 +3,10 @@
 // A chord take is whistled freely, with no click: only which notes are heard matters.
 import { mic } from '../platform/mic.js';
 import { audioEngine } from '../platform/audio-engine.js';
-import { trackPitch } from '../lib/pitch-track.js';
+import { trackPitch, gateFrames } from '../lib/pitch-track.js';
 import { transcribe, tuningOffset, smoothPitch, noteStarts, clickGrid } from '../lib/transcribe.js';
 import { RECORD, CLICK, LIVE } from './sketchpad-data.js';
-import { beatsPerBar } from './sketch-spec.js';
+import { beatsPerBar } from '../daw/meter.js';
 
 /**
  * Starts a take a moment from now. The mic must be on, sending its blocks to takeBlock.
@@ -22,7 +22,7 @@ export function startRecording({ kind, tempo, meter, click })
         // beat 0 is the first bar line after the count-in, as heard: the click reaches the ear late, the whistle the take
         origin: countBeats * beatSec + mic.latency,
         buffer: new Float32Array(rate * RECORD.maxSeconds), length: 0,
-        frames: [], nextFrame: 0, peak: 0, offset: 0, seconds: 0, playhead: 0, countIn: countBeats, nextBeat: 0,
+        frames: [], raw: [], nextFrame: 0, peak: 0, offset: 0, seconds: 0, playhead: 0, countIn: countBeats, nextBeat: 0,
         notes: [], gridOrigin: null, firmedAt: 0, live: null,
     };
 }
@@ -52,25 +52,36 @@ export function updateRecording(r)
         if (i < r.countBeats || r.click) tick(r.start + i * r.beatSec, i % r.bpb === 0);
     }
 
-    // the pitch of the frames recorded since last time, gated by the take's loudest so far
-    const hop = r.rate / 100, need = Math.round(r.rate * 0.02) + Math.ceil(r.rate / 300) + 2;
-    const from = Math.round(r.nextFrame * hop);
-    if (r.length - from >= need + hop)
+    // the pitch of the frames recorded since last time, gated by the take's loudest so far; kept ungated too, for the end
+    const need = Math.round(r.rate * 0.02) + Math.ceil(r.rate / 300) + 2;
+    if (r.length - Math.round(r.nextFrame * HOP * r.rate) >= need + HOP * r.rate)
     {
-        const frames = trackPitch(r.buffer.subarray(from, r.length), r.rate, { floor: 0 });
+        const frames = newFrames(r);
         for (const f of frames)
         {
-            f.time += from / r.rate;
+            r.raw.push({ ...f });
             r.peak = Math.max(r.peak, f.level);
             if (f.level < Math.max(LIVE.gate, r.peak * LIVE.gateOfPeak)) f.midi = null;
             r.frames.push(f);
             follow(r, f);
         }
-        r.nextFrame += frames.length;
         if (r.frames.length % 50 < frames.length) r.offset = tuningOffset(r.frames);
     }
-    if (r.kind === 'melody' && r.seconds - r.firmedAt >= LIVE.firmEvery) firm(r);
+    // each reading reads the whole take so far, so a long take is read less often: the work grows with its length, not its square
+    if (r.kind === 'melody' && r.seconds - r.firmedAt >= Math.max(LIVE.firmEvery, r.seconds / LIVE.readings)) firm(r);
     return r.length < r.buffer.length;
+}
+
+const HOP = 1 / 100;    // seconds between pitch frames: trackPitch's default rate
+
+/** the pitch frames (ungated) of the take recorded since the last ones, at their times in the take */
+function newFrames(r)
+{
+    const from = Math.round(r.nextFrame * HOP * r.rate);
+    const frames = trackPitch(r.buffer.subarray(from, r.length), r.rate, { floor: 0 });
+    for (const f of frames) f.time += from / r.rate;
+    r.nextFrame += frames.length;
+    return frames;
 }
 
 /** the semitone being whistled now, and since when: a faint note at the playhead until it's firmed up */
@@ -114,7 +125,9 @@ export function stopRecording(r)
 {
     const samples = r.buffer.slice(0, r.length);
     if (samples.length < r.rate * (r.origin + 0.5)) return null;
-    const take = { kind: r.kind, source: 'mic', samples, rate: r.rate, frames: trackPitch(samples, r.rate), tempo: r.tempo, meter: r.meter };
+    // the frames tracked while recording, and the last few since, gated as one: no second pass over the whole take
+    const frames = gateFrames([...r.raw, ...newFrames(r)]);
+    const take = { kind: r.kind, source: 'mic', samples, rate: r.rate, frames, tempo: r.tempo, meter: r.meter };
     return r.kind === 'melody' ? { ...take, downbeat: r.origin } : take;
 }
 

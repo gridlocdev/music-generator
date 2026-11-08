@@ -3,10 +3,10 @@
 import { signal } from '@preact/signals';
 import { barAt } from '../daw/meter.js';
 import { addClip, updateClip, findClip, newId } from '../daw/project.js';
-import { project, selected, selectedClip, selectedTrack, beat, settings } from './store.js';
+import { project, selected, selectedClip, selectedTrack, beat, settings, picked } from './store.js';
 import { edit } from './document.js';
 import { focus } from './focus.js';
-import { picked, pickedNotes, deletePicked, noteId } from './notes.js';
+import { pickedNotes, deletePicked, noteId } from './notes.js';
 import { deleteClip } from './tracks.js';
 
 /** { kind: 'clip', clip } or { kind: 'notes', notes, beats } */

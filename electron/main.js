@@ -94,8 +94,19 @@ function createWindow()
     });
     if (HEADLESS) win.webContents.setAudioMuted(true);
     else win.once('ready-to-show', ()=> win.show());
-    // links open in the browser, never in the app's window
-    win.webContents.setWindowOpenHandler(({ url })=> { shell.openExternal(url); return { action: 'deny' }; });
+    // web links open in the browser, never in the app's window; nothing else (file:, custom schemes) is opened
+    win.webContents.setWindowOpenHandler(({ url })=>
+    {
+        if (/^https?:\/\//i.test(url)) shell.openExternal(url);
+        return { action: 'deny' };
+    });
+    // the page holds the close while the project has unsaved changes: ask
+    win.webContents.on('will-prevent-unload', (e)=>
+    {
+        const choice = dialog.showMessageBoxSync(win, { type: 'warning', buttons: ['Close Without Saving', 'Cancel'], defaultId: 1, cancelId: 1,
+            message: 'Close without saving?', detail: 'The project has changes that are not saved.' });
+        if (choice === 0) e.preventDefault();
+    });
     win.webContents.on('will-navigate', (e, url)=> { if (!url.startsWith(ORIGIN + '/')) e.preventDefault(); });
     // F11 (and Ctrl+Cmd+F on macOS) toggles fullscreen
     win.webContents.on('before-input-event', (e, input)=>

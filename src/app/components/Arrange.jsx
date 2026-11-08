@@ -100,11 +100,11 @@ function Ruler({ beats, ppb })
         };
         const up = ()=>
         {
-            el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up);
+            el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', up);
             if (!looping) seek(from);
         };
         el.addEventListener('pointermove', move);
-        el.addEventListener('pointerup', up);
+        el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
     };
     return (
         <div class="bars" style={{ width: px(beats * ppb) }} onPointerDown={down}
@@ -150,9 +150,9 @@ function ChordLane({ beats, ppb })
             chordRange.value = { beat: a, beats: Math.max(b - a, m.shiftKey ? 1 : bar.beatsPerBar) };
         };
         pick(e);
-        const up = ()=> { removeEventListener('pointermove', pick); removeEventListener('pointerup', up); };
+        const up = ()=> { removeEventListener('pointermove', pick); removeEventListener('pointerup', up); removeEventListener('pointercancel', up); };
         addEventListener('pointermove', pick);
-        addEventListener('pointerup', up);
+        addEventListener('pointerup', up); addEventListener('pointercancel', up);
     };
     const menu = (e)=> { e.preventDefault(); chordMenu((e.clientX - e.currentTarget.getBoundingClientRect().left) / ppb); };
     return <div class="lane" style={{ width: px(beats * ppb) }} onPointerDown={down} onContextMenu={menu}><canvas ref={ref} /></div>;
@@ -237,7 +237,7 @@ function Lane({ track, beats, ppb })
         const up = ()=>
         {
             removeEventListener('pointermove', move);
-            removeEventListener('pointerup', up);
+            removeEventListener('pointerup', up); removeEventListener('pointercancel', up);
             const d = drag.value;
             drag.value = null;
             if (!d) return;
@@ -249,7 +249,7 @@ function Lane({ track, beats, ppb })
             selectedClip.value = { track: d.to, clip: id };
         };
         addEventListener('pointermove', move);
-        addEventListener('pointerup', up);
+        addEventListener('pointerup', up); addEventListener('pointercancel', up);
     };
 
     const dblclick = (e)=>
@@ -312,11 +312,35 @@ function TrackRow({ track, beats, ppb })
     );
 }
 
-/** px per beat: the zoom, or the project fitted to the window; a canvas wider than ~32k px doesn't draw */
+// The parts that move with the playhead read `beat` in components of their own, so a frame of playback re-renders
+// them and not the lanes.
+
+/** the marker the playhead is in */
+function MarkerName()
+{
+    const now = beat.value;
+    return project.value.markers.findLast(m => m.beat <= now + 1e-9)?.name ?? '';
+}
+
+/** the playhead; while playing, one that runs off the right (or is left of the view) brings the view along a page */
+function Playhead({ ppb, scroller })
+{
+    const now = beat.value;
+    useEffect(()=>
+    {
+        const el = scroller.current;
+        if (!el || !playing.value || !settings.value.follow) return;
+        const x = now * ppb, view = el.clientWidth - HEAD_W;
+        if (x > el.scrollLeft + view - 20 || x < el.scrollLeft) el.scrollLeft = Math.max(0, x - 20);
+    }, [now, ppb]);
+    return <div class="playhead" style={{ left: px(HEAD_W + now * ppb) }} />;
+}
+
+/** px per beat: the zoom, or the project fitted to the window; a canvas wider than ~32k device px doesn't draw */
 function fitted()
 {
     const beats = span();
-    return Math.min(zoom.value || Math.max(ZOOM[0], width.value / beats) || 8, 30000 / beats);
+    return Math.min(zoom.value || Math.max(ZOOM[0], width.value / beats) || 8, 30000 / beats / (devicePixelRatio || 1));
 }
 
 export function Arrange()
@@ -355,23 +379,13 @@ export function Arrange()
     }, []);
     const ppb = fitted();
     useEffect(()=> { arrangePpb.value = ppb; }, [ppb]);
-    // while playing, a playhead that runs off the right (or is left of the view) brings the view along a page
-    const now = beat.value;
-    useEffect(()=>
-    {
-        const el = scroller.current;
-        if (!el || !playing.value || !settings.value.follow) return;
-        const x = now * ppb, view = el.clientWidth - HEAD_W;
-        if (x > el.scrollLeft + view - 20 || x < el.scrollLeft) el.scrollLeft = Math.max(0, x - 20);
-    }, [now, ppb]);
-    const marker = p.markers.findLast(m => m.beat <= beat.value + 1e-9);
     const range = chordRange.value;
     return (
         <div class="arrange">
             <div class="scroll" ref={scroller}>
                 <div class="rows" style={{ width: px(HEAD_W + beats * ppb) }}>
                     <div class="ruler">
-                        <div class="head">{marker?.name ?? ''}</div>
+                        <div class="head"><MarkerName /></div>
                         <Ruler beats={beats} ppb={ppb} />
                     </div>
                     <div class="track chords">
@@ -383,7 +397,7 @@ export function Arrange()
                     </div>
                     {p.tracks.map(t => <TrackRow key={t.id} track={t} beats={beats} ppb={ppb} />)}
                     <div class="add-track"><button onClick={()=> addNewTrack()} title="Add a track">+ Track</button></div>
-                    <div class="playhead" style={{ left: px(HEAD_W + beat.value * ppb) }} />
+                    <Playhead ppb={ppb} scroller={scroller} />
                 </div>
             </div>
         </div>

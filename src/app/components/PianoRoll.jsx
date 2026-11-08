@@ -6,16 +6,16 @@
 // ↑ ↓ transpose (Shift: an octave), Cmd+A selects the clip's notes. Drag in the velocity strip to set velocity.
 // Right-click a note or the background for more. Everything snaps to the grid picked in the toolbar; hold Alt to place freely. The wheel scrolls (Shift: across),
 // Cmd/Ctrl + wheel zooms.
-import { useEffect } from 'preact/hooks';
+import { useEffect, useRef } from 'preact/hooks';
 import { signal } from '@preact/signals';
 import { barLines, barAt, meterAt } from '../../daw/meter.js';
 import { findClip, addClip, newId } from '../../daw/project.js';
-import { project, selected, selectedClip, selectedTrack, beat, playing, settings, setSettings } from '../store.js';
+import { project, selected, selectedClip, selectedTrack, beat, playing, settings, setSettings, picked } from '../store.js';
 import { edit } from '../document.js';
 import { seek } from '../player.js';
 import { press, release } from '../live.js';
 import { focus } from '../focus.js';
-import { picked, noteId, notesOf, changeNotes, GRIDS } from '../notes.js';
+import { noteId, notesOf, changeNotes, GRIDS } from '../notes.js';
 import { newFromMelody } from '../recording.js';
 import { noteMenu, rollMenu } from '../context-menus.js';
 import { useCanvas, rgba } from './canvas.js';
@@ -70,6 +70,22 @@ function Toolbar()
     );
 }
 
+/** the playhead over the roll, apart from the canvas so a frame of playback doesn't redraw the notes; while playing
+ * (and following), the view turns the page when it reaches an edge */
+function RollPlayhead()
+{
+    const ref = useRef(/** @type {HTMLDivElement|null} */ (null));
+    const now = beat.value, { from, ppb } = view.value;
+    const w = ref.current?.parentElement?.clientWidth ?? 0;
+    useEffect(()=>
+    {
+        if (!playing.value || !settings.value.follow || !w) return;
+        if (now < from || now > from + (w - GUTTER) / ppb) view.value = { ...view.value, from: now };
+    }, [now, w]);
+    const x = GUTTER + (now - from) * ppb;
+    return <div ref={ref} class="playhead" style={{ left: `${x}px`, display: x < GUTTER || (w && x > w) ? 'none' : '' }} />;
+}
+
 function Roll()
 {
     const p = project.value;
@@ -86,9 +102,7 @@ function Roll()
     const ref = useCanvas((g, w, h)=>
     {
         const G = geometry(w, h);
-        const now = beat.value, shown = (w - GUTTER) / G.ppb;
-        // while playing, the view turns the page when the playhead reaches its edge
-        if (playing.value && (now < G.from || now > G.from + shown)) queueMicrotask(()=> { view.value = { ...view.value, from: now }; });
+        const shown = (w - GUTTER) / G.ppb;
         lanes(g, G.L, p.key, w);
         if (!track) { text(g, 'Select a track to see its notes', w / 2, h / 2, 14, C.label, 'center'); return; }
         g.save();
@@ -165,8 +179,6 @@ function Roll()
             g.fillStyle = 'rgba(140,190,255,.12)'; g.fillRect(x0, y0, x1 - x0, y1 - y0);
             g.strokeStyle = 'rgba(140,190,255,.8)'; g.lineWidth = 1; g.strokeRect(x0 + 0.5, y0 + 0.5, x1 - x0, y1 - y0);
         }
-        g.fillStyle = C.playhead;
-        g.fillRect(G.x(now), 0, 1, h);
         g.restore();
         text(g, 'vel', GUTTER - 6, G.bottom + VEL_H / 2, 10, C.label, 'right');
     });
@@ -210,9 +222,9 @@ function Roll()
                 changeNotes(track.id, new Map([...new Set(near.map(o => o.clip.id))].map(c => [c, (notes)=> notes.map((n, i)=> ids.has(noteId(c, i)) ? { ...n, vel } : n)])), 'velocity');
             };
             setVel(e);
-            const up = ()=> { el.removeEventListener('pointermove', setVel); el.removeEventListener('pointerup', up); };
+            const up = ()=> { el.removeEventListener('pointermove', setVel); el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', up); };
             el.addEventListener('pointermove', setVel);
-            el.addEventListener('pointerup', up);
+            el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
             return;
         }
 
@@ -240,9 +252,9 @@ function Roll()
                 const [b0, b1] = [Math.min(a.beat, c.beat), Math.max(a.beat, c.beat)], [k0, k1] = [Math.min(a.key, c.key), Math.max(a.key, c.key)];
                 picked.value = new Set([...was, ...all.filter(o => o.n.key >= k0 && o.n.key <= k1 && o.at < b1 && o.at + o.n.beats > b0).map(o => noteId(o.clip.id, o.i))]);
             };
-            const done = ()=> { band.value = null; el.removeEventListener('pointermove', drag); el.removeEventListener('pointerup', done); };
+            const done = ()=> { band.value = null; el.removeEventListener('pointermove', drag); el.removeEventListener('pointerup', done); el.removeEventListener('pointercancel', done); };
             el.addEventListener('pointermove', drag);
-            el.addEventListener('pointerup', done);
+            el.addEventListener('pointerup', done); el.addEventListener('pointercancel', done);
             return;
         }
         else
@@ -294,9 +306,9 @@ function Roll()
             const now = grabbed.n.key + (mode === 'move' ? dk : 0);
             if (now !== sounding) { release(sounding); press(now); sounding = now; }
         };
-        const up = ()=> { release(sounding); el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up); };
+        const up = ()=> { release(sounding); el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', up); };
         el.addEventListener('pointermove', move);
-        el.addEventListener('pointerup', up);
+        el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
     };
 
     const hover = (e)=>
@@ -324,7 +336,7 @@ function Roll()
         noteMenu();
     };
 
-    return <div class="roll" onWheel={wheel} onPointerDown={down} onPointerMove={hover} onContextMenu={menu}><canvas ref={ref} /></div>;
+    return <div class="roll" onWheel={wheel} onPointerDown={down} onPointerMove={hover} onContextMenu={menu}><canvas ref={ref} /><RollPlayhead /></div>;
 }
 
 export function PianoRoll()

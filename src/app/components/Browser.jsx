@@ -4,10 +4,10 @@ import { useEffect, useMemo } from 'preact/hooks';
 import { signal } from '@preact/signals';
 import { soundfontLibrary } from '../../audio/soundfont-library.js';
 import { projectFiles } from '../../platform/project-files.js';
-import { settings, setSettings, selectedTrack, projectName, projectList, project, beat, status } from '../store.js';
+import { settings, setSettings, selectedTrack, projectName, projectList, beat, status } from '../store.js';
 import { openProject } from '../document.js';
 import { reload } from '../player.js';
-import { dropTake } from '../recording.js';
+import { dropTake, takesKept } from '../recording.js';
 import { liveName } from '../live.js';
 import { assignPreset } from '../tracks.js';
 import { dialog } from './NewProject.jsx';
@@ -75,7 +75,9 @@ function Instruments()
 function Takes()
 {
     const name = projectName.value;
-    useEffect(()=> { takes.value = []; if (name) projectFiles.takes(name).then(t => { takes.value = t; }); }, [name, project.value]);
+    const kept = takesKept.value;
+    // a late answer for a project no longer shown is dropped
+    useEffect(()=> { let live = true; if (name) projectFiles.takes(name).then(t => { if (live) takes.value = t; }, ()=> {}); else takes.value = []; return ()=> { live = false; }; }, [name, kept]);
     const track = selectedTrack.value;
     if (!name) return <div class="list"><div class="empty">Save the project to keep its whistled takes.</div></div>;
     return (

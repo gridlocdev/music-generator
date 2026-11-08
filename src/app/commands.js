@@ -14,23 +14,24 @@ import { beatsPerBar } from '../daw/meter.js';
 import { bpmAt } from '../lib/tempo-map.js';
 import { cut as cutChord } from '../sketch/takes.js';
 import { project, projectName, projectList, dirty, hist, selected, selectedClip, selectedTrack, chordRange, beat, playing,
-    settings, setSettings, status } from './store.js';
+    settings, setSettings, status, picked } from './store.js';
 import { edit, undo, redo, save, saveAs, openProject, refreshProjects } from './document.js';
 import { toggle, seek } from './player.js';
 import { record, recording, newFromMelody } from './recording.js';
 import { focus } from './focus.js';
 import { asking, askText } from './ask.js';
-import { picked, pickedNotes, deletePicked, transposePicked, quantizePicked, pickAll, clearPicked, GRIDS, nudgePicked, humanizePicked,
+import { pickedNotes, deletePicked, transposePicked, quantizePicked, pickAll, clearPicked, GRIDS, nudgePicked, humanizePicked,
     scalePicked, reversePicked } from './notes.js';
 import { cut, copy, paste, duplicate, canCopy, clipboard } from './clipboard.js';
 import { addNewTrack, renameTrack, deleteTrack, duplicateTheTrack, moveTrackBy, toggleMute, toggleSolo, chooseInstrument,
     deleteClip, splitClipsAt, joinWithNext, nextClip, quantizeClip, loopOver, clipRange, arrangeZoom, arrangePpb, toggleClipMute, nudgeClip,
     humanizeClip, scaleClip, reverseClip } from './tracks.js';
 import { bounce } from './bounce.js';
+import { audioEngine } from '../platform/audio-engine.js';
 import { dialog } from './components/NewProject.jsx';
 
 /** a dialog is open: commands wait */
-const busy = ()=> !!(dialog.value || asking.value);
+const busy = ()=> !!(dialog.value || asking.value || audioEngine.rendering);
 
 // ── what the commands act on ─────────────────────────────────────────────────────────────────────────────────────────
 

@@ -148,10 +148,13 @@ export function playProject(project, instrumentsOf, { from = 0, mix = null, clic
         osc.connect(env).connect(audioEngine.output);
         osc.start(at);
         osc.stop(at + CLICK.seconds);
-        osc.onended = ()=> env.disconnect();
+        clicks.add(osc);
+        osc.onended = ()=> { env.disconnect(); clicks.delete(osc); };
     };
+    const clicks = new Set();         // metronome clicks scheduled and not yet over, so a seek can take them back
 
     const sounding = new Map();       // `${track}:${key}` → { i, key }, notes on and not yet off
+    const carried = new Set();        // notes a seek restarted mid-way: their note-off is still this segment's to play
     let next = 0, nextDuck = 0, nextFx = 0, nextClick = 0, stopped = false;
     const indexFrom = (list, beat, get)=> { const k = list.findIndex(x => get(x) >= beat - 1e-9); return k < 0 ? list.length : k; };
     const begin = (s)=>
@@ -179,10 +182,13 @@ export function playProject(project, instrumentsOf, { from = 0, mix = null, clic
             for (; next < data.events.length; next++)
             {
                 const e = data.events[next];
-                if (e.beat > seg.until + 1e-9) break;
-                if (e.n.grid < seg.from - 1e-9 || e.n.grid > seg.until - 1e-9) continue;    // another segment's note
+                // round a loop the next pass takes over at its end; without one, the last notes' tails still end
+                if (project.loop && e.beat > seg.until + 1e-9) break;
+                const mine = !e.on && carried.has(e.n);
+                if (!mine && (e.n.grid < seg.from - 1e-9 || e.n.grid > seg.until - 1e-9)) continue;    // another segment's note
                 const at = timeOf(seg, e.beat);
                 if (at >= limit) break;
+                if (mine) carried.delete(e.n);
                 const inst = instruments[e.i], id = `${e.i}:${e.n.key}`;
                 if (!e.on) { inst.noteOff(e.n.key, false, at); sounding.delete(id); continue; }
                 if (e.n.glideFrom === undefined || !inst.glide(e.n.glideFrom, e.n.key, at, GLIDE_SECONDS)) inst.noteOn(e.n.key, e.n.vel, at, e.n);
@@ -224,7 +230,16 @@ export function playProject(project, instrumentsOf, { from = 0, mix = null, clic
             for (const inst of instruments) inst.dispose();
             instruments = makeInstruments();
             sounding.clear();
+            carried.clear();
             const now = ctx.currentTime;
+            for (const osc of clicks) osc.stop(now);
+            // a delay swell under way goes back to the track's send, where no automation lane sets it
+            strips.forEach((s, i)=>
+            {
+                if (tracks[i].automation.delay?.length) return;
+                s.delaySend.gain.cancelScheduledValues(0);
+                s.delaySend.gain.setValueAtTime(tracks[i].mixer.sends.delay, now);
+            });
             seg = { at: now, from: beat, until: end, pass: current().pass };
             segments.length = 0;
             segments.push(seg);
@@ -234,7 +249,12 @@ export function playProject(project, instrumentsOf, { from = 0, mix = null, clic
             {
                 if (isDrums(tracks[i])) return;     // a hit restarted mid-ring would sound like a new one
                 for (const n of notes)
-                    if (n.grid < beat && n.beat < beat && n.beat + n.beats > beat) { instruments[i].noteOn(n.key, n.vel, now, n); sounding.set(`${i}:${n.key}`, { i, key: n.key }); }
+                    if (n.grid < beat && n.beat < beat && n.beat + n.beats > beat)
+                    {
+                        instruments[i].noteOn(n.key, n.vel, now, n);
+                        sounding.set(`${i}:${n.key}`, { i, key: n.key });
+                        if (!n.held) carried.add(n);
+                    }
             });
             schedule();
         },

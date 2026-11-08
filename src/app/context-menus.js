@@ -5,13 +5,13 @@ import { TRACK_COLORS, findClip, renameMarker, removeMarker, markerRange } from 
 import { barAt } from '../daw/meter.js';
 import { appMenu } from '../platform/app-menu.js';
 import { cut as cutChord } from '../sketch/takes.js';
-import { project, projectName, selected, selectedClip, chordRange, settings, setSettings } from './store.js';
+import { project, projectName, selected, selectedClip, chordRange, settings, setSettings, picked } from './store.js';
 import { edit, openProject } from './document.js';
 import { seek } from './player.js';
 import { record, dropTake } from './recording.js';
 import { focus } from './focus.js';
 import { askText } from './ask.js';
-import { picked, pickedNotes, setVelocity, legatoPicked, pickKey, transposePicked, humanizePicked, scalePicked, reversePicked } from './notes.js';
+import { pickedNotes, setVelocity, legatoPicked, pickKey, transposePicked, humanizePicked, scalePicked, reversePicked } from './notes.js';
 import { paste, clipboard } from './clipboard.js';
 import { trackOf, addNewTrack, assignPreset, chooseInstrument, renameTrack, deleteTrack, duplicateTheTrack, moveTrackBy, setTrackColor,
     toggleMute, toggleSolo, setMix, newClipAt, deleteClip, splitClipsAt, joinWithNext, nextClip, setClipBars, quantizeClip,

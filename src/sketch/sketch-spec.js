@@ -1,11 +1,10 @@
 // A sketch (the melody take's notes and the chords over it) as the composer reads it: a section's `melody:` and
 // `progression:`, a playable spec to hear it with, and text to paste into a song. Pure.
 import { toNotation, vibratoSummary } from '../lib/transcribe.js';
+import { beatsPerBar } from '../daw/meter.js';
 import { toProgression } from '../lib/chord-guess.js';
 import { SKETCH_BAND, SKETCH_EMOTION } from './sketchpad-data.js';
 
-/** quarter-note beats per bar: 6/8 is three */
-export const beatsPerBar = (meter)=> Number(meter.split('/')[0]) * (meter.endsWith('/8') ? 0.5 : 1);
 
 const end = (list)=> Math.max(0, ...list.map(x => x.beat + x.beats));
 

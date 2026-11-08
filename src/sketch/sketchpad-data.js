@@ -13,6 +13,7 @@ export const LIVE = {
     gateOfPeak: 0.06,
     follow: 5,              // voiced frames the note at the playhead is the median of
     firmEvery: 0.25,        // seconds between readings of the notes so far
+    readings: 120,          // at most this many readings in a take: a long one is read less often
     behindBeats: 1,         // notes are read up to this many beats behind the playhead: the smoothing needs 1/6 s past a note
 };
 

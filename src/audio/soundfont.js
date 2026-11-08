@@ -161,7 +161,7 @@ export function createInstrument(font, preset, destination = audioEngine.output)
 
 function startVoice(font, p, output, when = 0, moves = {})
 {
-    const ctx = audioEngine.context;
+    const ctx = output.context;     // the instrument's own context: not the engine's, which is offline during a render
     const t = Math.max(ctx.currentTime, when);
     const source = ctx.createBufferSource();
     source.buffer = sampleBuffer(font, p.start, p.end, p.sampleRate);

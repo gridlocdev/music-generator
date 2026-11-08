@@ -26,9 +26,13 @@ import { stop } from './player.js';
 const WHISTLE = { name: 'Whistle', instrument: { bank: 0, program: 73 } };    // a flute
 const VELOCITY = 90;
 
-/** the take being recorded: { kind, track, start (beat), rec }, for the views to show */
+/** the take being recorded: { kind, track, start (beat), range (a chord's stretch), rec }, for the views to show. It
+ * changes only as a take starts and stops: `rec` fills in place, and the lane redraws as the playhead moves. */
 export const recording = signal(/** @type {any} */ (null));
 let frame = 0;
+
+/** counts the takes kept, so the list of them knows to look again */
+export const takesKept = signal(0);
 
 /** the key the project is in, or the likeliest for some notes */
 function keyFor(notes)
@@ -69,6 +73,7 @@ async function keepAudio(take)
     const files = await projectFiles.takes(name).catch(()=> []);
     const n = Math.max(0, ...files.map(f => Number(/^take-(\d+)\.wav$/.exec(f)?.[1] ?? 0))) + 1;
     await projectFiles.writeTake(name, `take-${n}.wav`, encodeWav(take.samples, take.rate));
+    takesKept.value++;
     return `take-${n}.wav`;
 }
 
@@ -96,7 +101,7 @@ export async function record()
     const at = range ? range.beat : barAt(p.meters, beat.value).start;
     const track = kind === 'melody' ? targetTrack() : null;
     const rec = startRecording({ kind, tempo: Math.round(bpmAt(p.tempoMap, at)), meter: meterAt(p.meters, at).sig, click: settings.value.click });
-    recording.value = { kind, track, start: at, rec };
+    recording.value = { kind, track, start: at, range, rec };
     status.value = kind === 'chord' ? 'Whistle the chord as an arpeggio, then press ● again' : 'Recording…';
     const step = ()=>
     {
@@ -106,7 +111,6 @@ export async function record()
         // the playhead follows the take as heard, from its bar once the count-in is over
         if (r.kind === 'melody') beat.value = r.start + Math.max(0, (r.rec.playhead - r.rec.origin) / r.rec.beatSec);
         status.value = r.rec.countIn ? `Count-in: ${r.rec.countIn}` : r.kind === 'chord' ? status.value : 'Recording…';
-        recording.value = { ...r };
         frame = requestAnimationFrame(step);
     };
     step();
@@ -121,16 +125,15 @@ export async function finish()
     recording.value = null;
     const take = stopRecording(r.rec);
     if (!take) { status.value = 'That take was too short to read.'; return; }
-    if (r.kind === 'chord') chordTake(take);
+    if (r.kind === 'chord') chordTake(take, r.range);
     else placeTake(r.track, r.start, analyse({ ...take }), 'the take');
     const file = await keepAudio(take).catch(e => { status.value = e.message; return ''; });
     if (file) status.value += ` · audio kept in takes/${file}`;
 }
 
-/** a chord whistled over the stretch picked: named in the project's key and put on the chord track there */
-function chordTake(take)
+/** a chord whistled over the stretch picked as it started: named in the project's key and put on the chord track there */
+function chordTake(take, range)
 {
-    const range = chordRange.value;
     const notes = freeNotes(take.frames);
     const key = keyFor(notes.map(n => ({ beat: n.time, beats: n.seconds, key: n.key })));
     const named = nameChord(notes, key);

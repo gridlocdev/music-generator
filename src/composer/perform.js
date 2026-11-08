@@ -12,6 +12,7 @@ import { DRUM_KEYS } from './patterns-data.js';
 import { beatToSeconds, bpmAt } from '../lib/tempo-map.js';
 import { clamp, compound, swingTime, swingAmount, sectionAt as sectionOf } from './meter.js';
 import { meterOf } from './meter-patterns.js';
+import { METERS } from './patterns-data.js';
 import { planEarCandy } from './ear-candy.js';
 import { EAR_CANDY } from './ear-candy-data.js';
 
@@ -216,7 +217,8 @@ function swing(notes, score, sectionAt)
     for (const n of notes)
     {
         const s = sectionAt(n.beat);
-        if (compound(meterOf(s.meter))) continue;
+        // a meter the composer has no pattern for (one set by hand, like 9/8) plays straight
+        if (!METERS[s.meter] || compound(meterOf(s.meter))) continue;
         const start = s.beat + swingTime(n.beat - s.beat, amount, score.swingSub);
         const end = s.beat + swingTime(n.beat + n.beats - s.beat, amount, score.swingSub);
         n.beat = start;
