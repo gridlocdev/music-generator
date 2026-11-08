@@ -13,9 +13,9 @@ soundfonts/
 # reference music for tools/nsf (not ours to redistribute)
 reference/
 
-# whistled takes: the audio stays local, the notes read from it are kept in the projects
-ideas/**/*.wav
-ideas/**/*.m4a
+# your own files (sketches, takes, notes): kept on this machine, never committed
+scratch/
+# a project's takes: the audio stays local, the notes read from it are kept in the project
 projects/**/*.wav
 
 # the bundled UI; `just build` makes it

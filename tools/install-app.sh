@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Installs Music Generator as a desktop app that runs this checkout (its code, soundfonts/ and ideas/), so
+# Installs Music Generator as a desktop app that runs this checkout (its code, soundfonts/ and scratch/), so
 # changes here show up the next time it opens. On macOS: ~/Applications/Music Generator.app, a renamed copy of
 # the Electron in node_modules with its own name and bundle id, so macOS asks for the microphone for it.
 # On Linux: a launcher in ~/.local/share/applications. Run it again after moving the checkout or updating Electron.

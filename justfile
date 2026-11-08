@@ -56,7 +56,7 @@ audio +files:
     node tools/audio-report.mjs {{files}}
 
 # transcribe a whistled melody into a section's `melody:` notation (any file ffmpeg reads, or a folder of them)
-# e.g. just whistle ideas/hook.m4a --tempo 60 --meter 3/4   ·   --key Eb --mode major to skip the key guess
+# e.g. just whistle scratch/hook.m4a --tempo 60 --meter 3/4   ·   --key Eb --mode major to skip the key guess
 whistle +args:
     node tools/whistle.mjs {{args}}
 
