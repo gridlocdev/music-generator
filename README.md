@@ -37,7 +37,7 @@ It's laid out like a DAW: a transport, a browser, an arrangement, a piano roll a
 ## Download
 
 Get the latest version for your system from the [Releases](../../releases) page: macOS, Windows,
-or Linux as an AppImage, `.deb` or Flatpak. Nothing else needs installing. The first time you
+or Linux as a Flatpak. Nothing else needs installing. The first time you
 open it, macOS or Windows may ask you to confirm; the [installing guide](docs/Installing.md) shows
 how, and how to build it yourself.
 

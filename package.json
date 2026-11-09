@@ -102,13 +102,10 @@
     },
     "linux": {
       "target": [
-        "AppImage",
-        "deb",
         "flatpak"
       ],
       "category": "Audio",
-      "icon": "assets/icon/icon.png",
-      "maintainer": "gridlocdev <gridlocdev@users.noreply.github.com>"
+      "icon": "assets/icon/icon.png"
     },
     "flatpak": {
       "runtimeVersion": "25.08",

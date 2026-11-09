@@ -68,7 +68,7 @@ catalog:
 icons:
     bash tools/make-icons.sh assets/icon.svg assets/icon
 
-# build the installable app for this OS into release/ (macOS: .dmg and .zip; Windows: installer; Linux: AppImage, .deb)
+# build the installable app for this OS into release/ (macOS: .dmg and .zip; Windows: installer; Linux: .flatpak)
 # it comes with GeneralUser GS (downloaded first if missing); the other libraries are downloaded in the app
 package: build
     bash tools/fetch-soundfonts.sh generaluser

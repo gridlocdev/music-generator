@@ -12,13 +12,13 @@ page. Pick the file for your system:
 | macOS, Apple silicon | `Music Generator-<version>-mac-arm64.dmg` | Open it and drag **Music Generator** into **Applications** |
 | macOS, Intel | `Music Generator-<version>-mac-x64.dmg` | Open it and drag **Music Generator** into **Applications** |
 | Windows 10/11 (x64) | `Music Generator-<version>-win-x64.exe` | Run the installer, then open Music Generator from the Start menu |
-| Linux (x64), any distribution | `Music Generator-<version>-linux-x86_64.AppImage` | `chmod +x` it, then run it |
-| Ubuntu, Debian, Mint and others | `Music Generator-<version>-linux-amd64.deb` | `sudo apt install ./Music*.deb`, then open it from your apps menu |
-| Linux, as a Flatpak | `Music Generator-<version>-linux-x86_64.flatpak` | `flatpak install --user Music*.flatpak`, then open it from your apps menu |
+| Linux (x64), any distribution with Flatpak | `Music Generator-<version>-linux-x86_64.flatpak` | `flatpak install --user Music*.flatpak`, then open it from your apps menu |
 
 A `.zip` of each Mac app is there too, for when you'd rather not use the disk image.
 
-The Flatpak isn't on Flathub, so it doesn't update itself: download a newer one and install it the
+On Linux you need Flatpak itself first: most distributions have it, and
+[flatpak.org/setup](https://flatpak.org/setup/) shows how to add it to the rest. The Flatpak isn't
+on Flathub, so it doesn't update itself: download a newer one and install it the
 same way. It can use your microphone, the network and your Documents folder, and nothing else in
 your home folder.
 
