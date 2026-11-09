@@ -103,11 +103,25 @@
     "linux": {
       "target": [
         "AppImage",
-        "deb"
+        "deb",
+        "flatpak"
       ],
       "category": "Audio",
       "icon": "assets/icon/icon.png",
       "maintainer": "gridlocdev <gridlocdev@users.noreply.github.com>"
+    },
+    "flatpak": {
+      "runtimeVersion": "25.08",
+      "baseVersion": "25.08",
+      "finishArgs": [
+        "--socket=wayland",
+        "--socket=x11",
+        "--share=ipc",
+        "--device=dri",
+        "--socket=pulseaudio",
+        "--share=network",
+        "--filesystem=xdg-documents"
+      ]
     },
     "artifactName": "${productName}-${version}-${os}-${arch}.${ext}"
   }

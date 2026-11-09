@@ -184,7 +184,13 @@ Two flags help while working on it:
 
 `just package` builds the installable app for this OS into `release/` with electron-builder (its
 config is `build` in `package.json`): on macOS a `.dmg` and a `.zip` for Apple silicon and for Intel,
-ad-hoc signed and not notarized; on Windows an NSIS installer; on Linux an AppImage and a `.deb`. It
+ad-hoc signed and not notarized; on Windows an NSIS installer; on Linux an AppImage, a `.deb` and
+a `.flatpak` bundle. The Flatpak needs `flatpak` and `flatpak-builder` and the Flathub remote
+(`flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo`),
+from which it installs the freedesktop runtime and the Electron base app it's built on (version
+`flatpak.runtimeVersion`). It may use Wayland or X11, the GPU, the network (downloads), PulseAudio or
+PipeWire (sound and the microphone) and `~/Documents`, and nothing else of the home folder; its
+settings and downloaded libraries go in `~/.var/app/dev.gridloc.music-generator/`. It
 carries `dist/`, `src/`, `electron/`, the docs and the two tools the main process uses, unpacked (no
 asar), plus, as resources, every `projects/*/project.json` and `soundfonts/GeneralUser-GS/`
 (downloaded first if it's missing).

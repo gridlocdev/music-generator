@@ -45,7 +45,9 @@ Download the build for your computer from the
   `xattr -dr com.apple.quarantine "/Applications/Music Generator.app"` in Terminal.
 - **Windows**: the `.exe` installer. Windows SmartScreen may warn about an unknown publisher:
   choose **More info**, then **Run anyway**.
-- **Linux**: the `.AppImage` (make it executable and run it) or the `.deb`.
+- **Linux**: the `.AppImage` (make it executable and run it), the `.deb`, or the `.flatpak`
+  (`flatpak install --user Music*.flatpak`, then run it from your apps menu). The Flatpak
+  isn't on Flathub, so it doesn't update itself: install a newer one the same way.
 
 Projects are kept in `Documents/Music Generator/projects`, where the 38 songs are put the first
 time it opens. It comes with GeneralUser GS; the other two sound libraries can be downloaded from
