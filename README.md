@@ -34,38 +34,12 @@ It's laid out like a DAW: a transport, a browser, an arrangement, a piano roll a
 - **Plays like an instrument.** Your computer keys or a MIDI keyboard, with velocity and a sustain
   pedal, play the selected track's instrument.
 
-## Installing it
+## Download
 
-Download the build for your computer from the
-[releases page](https://github.com/gridlocdev/music-generator/releases):
-
-- **macOS**: the `.dmg` (`arm64` for Apple silicon, `x64` for Intel). Drag Music Generator into
-  Applications. The app isn't notarized by Apple, so the first time, right-click it and choose
-  **Open**, then **Open** again. If macOS says it's damaged, run
-  `xattr -dr com.apple.quarantine "/Applications/Music Generator.app"` in Terminal.
-- **Windows**: the `.exe` installer. Windows SmartScreen may warn about an unknown publisher:
-  choose **More info**, then **Run anyway**.
-- **Linux**: the `.AppImage` (make it executable and run it), the `.deb`, or the `.flatpak`
-  (`flatpak install --user Music*.flatpak`, then run it from your apps menu). The Flatpak
-  isn't on Flathub, so it doesn't update itself: install a newer one the same way.
-
-Projects are kept in `Documents/Music Generator/projects`, where the 38 songs are put the first
-time it opens. It comes with GeneralUser GS; the other two sound libraries can be downloaded from
-the Instruments tab.
-
-## Running it from source
-
-You need Node.js and [just](https://github.com/casey/just):
-
-```bash
-just soundfonts  # download the three libraries, about 400 MB
-just install     # install it as an app: ~/Applications/Music Generator.app on macOS
-just app         # or just open it in its own window, without installing
-```
-
-The installed app runs this folder, so it uses its sound libraries and its `projects/` folder, and
-picks up your changes the next time it opens (run `just build` first). The first time you record,
-macOS asks whether it may use the microphone.
+Get the latest version for your system from the [Releases](../../releases) page: macOS, Windows,
+or Linux as an AppImage, `.deb` or Flatpak. Nothing else needs installing. The first time you
+open it, macOS or Windows may ask you to confirm; the [installing guide](docs/Installing.md) shows
+how, and how to build it yourself.
 
 ## Controls
 
@@ -118,6 +92,9 @@ The app comes with GeneralUser GS and downloads the others when you press **Down
 They aren't stored in this repository: `just soundfonts` downloads them, each with its license.
 
 ## Documentation
+
+**[Installing](docs/Installing.md)**: which file to download, getting past the first-launch
+warnings, the microphone, and where your projects go.
 
 **[Read how it composes](docs/COMPOSING.md)**: the rules the composer follows and how to write
 a song, for example:
