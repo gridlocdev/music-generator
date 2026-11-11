@@ -1,5 +1,5 @@
 // The project files in the checkout's projects/ folder, through the desktop app (tools/project-files.mjs): listing
-// them, reading one's text, writing it back, and the whistled takes kept beside it.
+// them, reading one's text, writing it back, the whistled takes kept beside it, and hearing when the folder changes.
 async function ok(res, what)
 {
     if (!res.ok) throw new Error(`${what}: ${res.status}`);
@@ -18,4 +18,6 @@ export const projectFiles = {
     takes: async (name)=> { const res = await fetch(`projects/${name}/takes/`); return res.ok ? res.json() : []; },
     readTake: async (name, file)=> (await ok(await fetch(`projects/${name}/takes/${file}`), file)).arrayBuffer(),
     writeTake: async (name, file, bytes)=> { await ok(await fetch(`projects/${name}/takes/${file}`, { method: 'PUT', body: bytes }), `saving ${file}`); },
+    /** calls fn when anything in projects/ changes on disk (the desktop app only; in a browser, never) */
+    onChange: (fn)=> { globalThis.projectFolder?.onChange(fn); },
 };

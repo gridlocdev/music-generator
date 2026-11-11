@@ -10,6 +10,8 @@ import { stop } from './player.js';
 import { askText, askYes } from './ask.js';
 
 let mergeKey = null;
+/** the open project's file as last read or written, to tell when it changes on disk */
+let onDisk = null;
 
 /**
  * Changes the project. Edits with the same merge key one after another (a fader dragged) are one undo step.
@@ -59,6 +61,26 @@ export async function refreshProjects()
     projectList.value = await projectFiles.list().catch(e => { status.value = e.message; return []; });
 }
 
+/**
+ * Keeps the Projects tab in step with projects/: lists it now, and again whenever it changes on disk, so projects
+ * written by `just projects` or copied into the folder show up without a restart. The open project, when it has no
+ * unsaved changes and its file now holds something else, is read again: a regenerated song plays as regenerated.
+ */
+export function watchProjects()
+{
+    refreshProjects();
+    projectFiles.onChange(async ()=>
+    {
+        await refreshProjects();
+        const name = projectName.value;
+        if (!name || dirty.value || !projectList.value.some(p => p.name === name)) return;
+        const text = await projectFiles.read(name).catch(()=> null);
+        if (!text || text === onDisk) return;
+        try { show(readProject(text), name); onDisk = text; status.value = `Reloaded projects/${name}/: it changed on disk`; }
+        catch (e) { status.value = `Couldn't read projects/${name} again: ${e.message}`; }
+    });
+}
+
 const discardOk = async ()=> !dirty.value || askYes(`Discard the changes to “${project.value.title}”?`, 'Discard');
 
 export async function openProject(name)
@@ -66,7 +88,9 @@ export async function openProject(name)
     if (!await discardOk()) return false;
     try
     {
-        show(readProject(await projectFiles.read(name)), name);
+        const text = await projectFiles.read(name);
+        show(readProject(text), name);
+        onDisk = text;
         return true;
     }
     catch (e) { status.value = `Couldn't open projects/${name}: ${e.message}`; return false; }
@@ -95,7 +119,9 @@ export async function save()
     const p = project.value;
     try
     {
-        await projectFiles.write(projectName.value, writeProject(p));
+        const text = writeProject(p);
+        await projectFiles.write(projectName.value, text);
+        onDisk = text;
         saved.value = p;
         status.value = `Saved projects/${projectName.value}/`;
         refreshProjects();

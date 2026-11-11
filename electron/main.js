@@ -2,7 +2,7 @@
 // and the mic's worklet load. It may use the microphone without asking each time (macOS asks once, for the app), and
 // the settings are kept in a file in the app's data folder. Run from this checkout (`just app`), projects save
 // straight into projects/ and the SoundFonts are those in soundfonts/; with --dev (`just dev`) the window reloads
-// whenever dist/ is rebuilt. Installed from a release build, projects live in Documents/Music Generator/projects
+// whenever dist/ is rebuilt. Either way the window hears when projects/ changes on disk, and lists it again. Installed from a release build, projects live in Documents/Music Generator/projects
 // (the written songs copied there on the first run), GeneralUser GS comes with the app and the other SoundFont
 // libraries are downloaded into the app's data folder.
 import { app, BrowserWindow, dialog, ipcMain, net, protocol, session, shell, systemPreferences } from 'electron';
@@ -203,6 +203,24 @@ function createWindow()
     });
     win.loadURL(`${ORIGIN}/index.html`);
     if (process.argv.includes('--dev')) reloadOnBuild(win);
+    tellProjectChanges(win);
+}
+
+// projects/ changed on disk (`just projects`, a save, a folder copied in): the window lists it again, once it settles
+function tellProjectChanges(win)
+{
+    let timer = 0, watcher = null;
+    fs.mkdir(path.join(DATA(), 'projects'), { recursive: true }).then(()=>
+    {
+        if (win.isDestroyed()) return;
+        watcher = watch(path.join(DATA(), 'projects'), { recursive: true }, ()=>
+        {
+            clearTimeout(timer);
+            timer = setTimeout(()=> { if (!win.isDestroyed()) win.webContents.send('projects:changed'); }, 300);
+        });
+        watcher.on('error', (e)=> console.error('could not watch projects/', e));
+    }, (e)=> console.error('could not watch projects/', e));
+    win.on('closed', ()=> { clearTimeout(timer); watcher?.close(); });
 }
 
 // `just dev`: esbuild rewrites dist/ on every change; reload once it settles

@@ -2,6 +2,9 @@
 // Finder (src/platform/app-menu.js). Nothing else is exposed.
 const { contextBridge, ipcRenderer } = require('electron');
 
+contextBridge.exposeInMainWorld('projectFolder', {
+    onChange: (fn)=> { ipcRenderer.on('projects:changed', ()=> fn()); },
+});
 contextBridge.exposeInMainWorld('appStorage', {
     load: ()=> ipcRenderer.invoke('save:load'),
     write: (all)=> ipcRenderer.invoke('save:write', all),

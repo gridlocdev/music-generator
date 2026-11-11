@@ -4,7 +4,7 @@ import { effect } from '@preact/signals';
 import { appMenu } from '../platform/app-menu.js';
 import { typing } from '../platform/keys.js';
 import { projectName, projectList } from './store.js';
-import { openProject, refreshProjects } from './document.js';
+import { openProject, watchProjects } from './document.js';
 import { item, snapItems } from './commands.js';
 
 function menuBar()
@@ -42,5 +42,5 @@ export function startMenus()
     const focusChanged = ()=> appMenu.typing(typing());
     addEventListener('focusin', focusChanged);
     addEventListener('focusout', ()=> setTimeout(focusChanged));
-    refreshProjects();
+    watchProjects();
 }
