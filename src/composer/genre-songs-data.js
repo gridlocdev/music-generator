@@ -318,6 +318,59 @@ export const GENRE_SONGS = [
         },
     },
     {
+        id: 'blue-lantern-late-set', title: 'The Late Set at the Blue Lantern', genre: 'Jazz',
+        story: 'Sunday, 1:40 a.m. Five players, a bartender counting the till, and a couple who came in out of the rain. The quintet plays one more tune for nobody in particular.',
+        // a medium-swing standard as a 1950s quintet plays it: an AABA head in two horns, a tenor solo over the same
+        // changes, the head again, a tag. The time is the ride and the walking bass; the piano comps on the
+        // Charleston; the head walks chord tones on the beat with chromatic notes leaning into them between
+        emotion: 'nostalgic', key: 'Bb', mode: 'major', tempo: 138, groove: 'swing', swing: 0.67, comp: 'charleston', legato: 0.85, dynamics: 0.65,
+        style: { swing: 0.67, dim7: 0, secondary: 0, twoFive: 0, tritone: 0.08, sus: 0, borrowed: 0, mediant: 0,
+            scoops: 0.3, ghosts: 0.5, syncopation: 0.3, earCandy: 0.1, stab: 0, rubato: 0, ornaments: 0, swell: 1 },
+        band: { lead: 66, counter: 59, chords: 0, pad: null, arp: null, bass: 32, drums: 32 },   // tenor, harmon-muted trumpet, piano, upright bass, kit
+        push: 0,
+        form: ['intro', 'A', 'A', 'B', 'A', 'solo', 'solo', 'C', 'solo', 'A', 'A', 'B', 'A', 'outro'],
+        names: { A: 'Head (A)', B: 'Head (bridge)', solo: 'Tenor solo', C: 'Tenor solo (bridge)', outro: 'Tag' },
+        sections: {
+            // piano, bass and drums set the tempo with the turnaround
+            intro: { bars: 4, progression: 'iii7 VI7 ii7 V7', melody: false, mute: ['counter'], energy: 0.4, endOn: null },
+            A: {
+                bars: 8, progression: 'Imaj7 VI7 ii7 V7 Imaj7 IV7 iii7:0.5 VI7:0.5 ii7:0.5 V7:0.5', energy: 0.6, endOn: null, counter: 'harmony',
+                melody: 'r:0.5 5,:0.5 1 3:0.5 #4:0.5 5 | #8:1.5 6:0.5 3 5 | 4:0.5 3:0.5 2 6:0.5 5:0.5 4 | 5:1.5 4:0.5 2 7, | '
+                    + '1:2 r:0.5 3:0.5 5:0.5 7:0.5 | 8:1.5 6:0.5 4 b3 | 3:0.5 5:0.5 7:0.5 5:0.5 #8:0.5 6:0.5 5 | 4:0.5 2:0.5 6, 7,:0.5 2:0.5 5',
+            },
+            // the bridge goes to IV through its own ii–V, then home by the backdoor (iv7–bVII7) and a ii–V
+            B: {
+                bars: 8, progression: 'v7 I7 IVmaj7 IVmaj7 iv7 bVII7 ii7 V7', energy: 0.7, endOn: null, counter: 'guide',
+                melody: '5:1.5 b7:0.5 9:2 | 8:1.5 b7:0.5 5 3 | 6:2.5 4:0.5 6:0.5 8:0.5 | 10:2 8 6 | '
+                    + '8:1.5 b6:0.5 4 b6 | b7:1.5 4:0.5 2 b6, | 2:2 4:0.5 6:0.5 8:0.5 6:0.5 | 7,:1.5 5,:0.5 2 b2',
+            },
+            // one chorus of tenor over the head's changes, the trumpet laying down backgrounds
+            solo: { bars: 8, progression: 'Imaj7 VI7 ii7 V7 Imaj7 IV7 iii7:0.5 VI7:0.5 ii7:0.5 V7:0.5', energy: 0.8, endOn: null, density: 1.4, contour: 'wave', register: 1 },
+            C: { bars: 8, progression: 'v7 I7 IVmaj7 IVmaj7 iv7 bVII7 ii7 V7', energy: 0.85, endOn: null, density: 1.5, contour: 'rise', register: 2, counter: 'guide' },
+            // the tag: the turnaround once more, then the tonic held with the cymbal ringing
+            outro: {
+                bars: 6, progression: 'iii7 VI7 ii7 V7 Imaj7:2', energy: 0.45, endOn: 'tonic',
+                melody: '3:2 5:2 | #8:2 6:2 | 4:2 6:2 | 7,:2 2:2 | 1:8',
+            },
+        },
+        scenes: {
+            intro: 'The drummer counts it off with the brushes still in his lap.',
+            'A 1': 'The tenor states the tune; the trumpet slides in under it.',
+            'A 2': 'Again, a little looser.',
+            'B 1': 'The bridge. The bartender stops counting.',
+            'A 3': 'Back home, and the room is listening now.',
+            'solo 1': 'The tenor stretches out.',
+            'solo 2': 'He finds the thing he was looking for.',
+            C: 'Up through the bridge, the drummer pushing him.',
+            'solo 3': 'He brings it down and hands it back.',
+            'A 4': 'The head again, as if they never left.',
+            'A 5': 'The couple from the rain are dancing by the door.',
+            'B 2': 'The bridge, softer this time.',
+            'A 6': 'Last eight bars of the night.',
+            outro: 'The tag: the turnaround once more, then the last chord, the cymbal ringing over the chairs going up on the tables.',
+        },
+    },
+    {
         id: 'pawnshop-blues', title: 'Pawnshop Watch Blues', genre: 'Blues',
         story: 'Rent is due Friday. The only thing worth selling is the gold watch his father wore to every gig.',
         style: 'jazzy',

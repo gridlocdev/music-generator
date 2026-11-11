@@ -34,7 +34,7 @@ export function planMix(score)
         tracks: score.tracks.map(t =>
         {
             const plain = MIX[t.role] ?? MIX.chords;
-            const strip = { ...plain, reverb: plain.reverb * (G.reverb ?? 1), delay: plain.delay * (G.delay ?? 1) };
+            const strip = { ...plain, volumeDb: plain.volumeDb + (G.level?.[t.role] ?? 0), reverb: plain.reverb * (G.reverb ?? 1), delay: plain.delay * (G.delay ?? 1) };
             const scale = MOVEMENT.swell.roles.includes(t.role) ? swells : reverb;
             return {
                 strip,

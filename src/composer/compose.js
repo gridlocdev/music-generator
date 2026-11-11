@@ -12,7 +12,7 @@ import { degreeToKey, chordName, chordPitchClasses, pitchName } from '../lib/mus
 import { beatToSeconds, bpmAt } from '../lib/tempo-map.js';
 import { ARRANGEMENT, ROLES, ROLE_NAMES, MELODY_OCTAVE } from './composer-data.js';
 import { velocity, mod } from './meter.js';
-import { planSong, energyShape } from './plan.js';
+import { planSong, energyShape, genreProfile } from './plan.js';
 import { sectionChords, callAndResponse, cadenceChord } from './harmony.js';
 import { writeMelody, songMotif } from './melody.js';
 import { varyMelody, repeatPhrases } from './melody-repeats.js';
@@ -138,6 +138,9 @@ export function compose(spec)
 
     syncopate(tracks, plan.sections, song);
     for (const t of tracks) t.notes.sort((a, b)=> a.beat - b.beat || a.key - b.key);
+    // a part the genre (or the spec) plays octaves away from where it's written: a jazz tenor an octave below a voice
+    const octaves = { ...genreProfile(spec.genre).octaves, ...spec.octaves };
+    for (const t of tracks) if (octaves[t.role]) for (const n of t.notes) n.key += 12 * octaves[t.role];
     const echo = song.sound === 'chip' ? echoTrack(tracks, plan.beats, plan.tempoMap) : null;
     if (echo) tracks.push(echo);
 

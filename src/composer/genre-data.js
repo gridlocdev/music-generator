@@ -9,6 +9,8 @@
 //   keys       the genre's usual keys (a guitar's E, A, G, D; a horn's Bb, Eb, F), one picked by the song's seed
 //   band       instruments over the emotion's, as a spec's band: a program per part, null leaves the part out. Every
 //              profile names all seven, so a jazz song never plays the emotion's band
+//   octaves    parts played octaves away from where they're written, per role: { lead: -1 } puts a tenor sax in a
+//              tenor's range (the lead is written for a voice or a flute, up to D6, where a tenor only shrieks)
 //   arrange    ARRANGEMENT thresholds of its own: { arp: 0 } has the arpeggio (a piano's left hand) play throughout
 //   form       FORMS' name: head (jazz: head, solos, head), tune (celtic AABB), vamp (gospel), dub (reggae), swell (film)
 // Performance:
@@ -27,7 +29,8 @@
 //   cadences   cadence chords over CADENCES', per cadence { bright, dark }; a modal mode's own cadence still wins
 // Mix:
 //   mix        { reverb, delay }: every part's sends, as multiples of MIX's (a dry funk band 0.35, a church 1.7, dub's
-//              delay 2.5); tone: a ceiling in Hz on every part's filter (lo-fi's muffled tape)
+//              delay 2.5); tone: a ceiling in Hz on every part's filter (lo-fi's muffled tape); level: dB added to
+//              a part's fader, per role (jazz: the horns a step back, the ride cymbal up front)
 // Accompaniment:
 //   voicing    the chord part's voicing: close (the default), shell (3rd and 7th, the root left to the bass) or
 //              drop2 (the second voice from the top an octave down: open, orchestral)
@@ -62,14 +65,22 @@ export const GENRES = {
         cadences: { tonic: { bright: ['V7', 'I7'] }, dominant: { bright: ['V7'] } },
         rules: { strongNonChord: 3.5, blue: 0.4 },
     },
+    // a quintet as on a 1950s Blue Note record: tenor and muted trumpet up front, piano, upright bass, drums. The time
+    // is the ride cymbal and the walking bass; the kick is feathered, the hi-hat closes on 2 and 4, the piano comps
+    // sparse rootless voicings on the Charleston rhythm, and the horns sit a step back
     'jazz': {
-        mix: { reverb: 0.7, delay: 0 },
+        mix: { reverb: 0.7, delay: 0, level: { lead: -4, counter: -3, chords: 3, bass: 0, drums: 7 } },
         tempo: [72, 190], keys: ['Bb', 'Eb', 'F', 'C', 'Ab'],
-        band: { lead: 66, counter: 56, arp: 11, chords: 0, pad: null, bass: 32, drums: 32 },   // tenor sax, trumpet, vibes, piano, upright bass, jazz kit
+        band: { lead: 66, counter: 59, arp: null, chords: 0, pad: null, bass: 32, drums: 32 },   // tenor sax, muted trumpet, piano, upright bass, jazz kit
+        octaves: { lead: -1 },   // a tenor's range: Ab2–E5 sounding
         feel: { pocket: { lead: 18, counter: 12, bass: -6 } }, ornaments: { grace: 0.3, slide: 0.3 },   // horns lay back, the bass walks on top
         counter: { A: 'harmony', solo: 'guide', B: 'guide' },   // the head in two horns, backgrounds under the solos
-        groove: 'swing', swing: 0.67, comp: 'offbeat', style: 'jazzy', form: 'head',
-        arrange: { chords: 0.2, bass: 0.2, drums: 0.3, arp: 0.7 },   // the rhythm section from the first bar, the vibes for the solos
+        groove: 'swing', swing: 0.67, comp: 'charleston', form: 'head',
+        // the changes as written, now and then a ii–V or a tritone sub into a chord; passing diminished chords in
+        // every bar are a stride pianist's, not a quintet's
+        style: { swing: 0.67, dim7: 0.03, secondary: 0.05, twoFive: 0.12, tritone: 0.1, sus: 0, borrowed: 0, mediant: 0,
+            scoops: 0.3, ghosts: 0.5, syncopation: 0.4, earCandy: 0.15, stab: 0, rubato: 0, ornaments: 0, swell: 1 },
+        arrange: { chords: 0.2, bass: 0.2, drums: 0.3 },   // the rhythm section from the first bar
         // ii–V–I and turnarounds, rhythm changes' I–vi–ii–V, the IV to #iv° walk-up, the minor iiø–V–i
         progressions: {
             bright: {

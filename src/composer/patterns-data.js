@@ -79,8 +79,8 @@ export const GROOVES = {
         beats: 4, kit: 32, swing: 0.6,
         low:  { ride: 'x...x.x.x...x.x.', pedal: '....x.......x...' },
         mid:  { ride: 'x...x.x.x...x.x.', pedal: '....x.......x...', kick: 'o...o...o...o...' },
-        high: { ride: 'X...x.x.X...x.x.', pedal: '....x.......x...', kick: 'o...o...o...o...', snare: '......o.......o.' },
-        fill: { ride: 'x...............', snare: '..o.x.o.x.x.X.X.', kick: 'X...........X...' },
+        high: { ride: 'x...X.x.x...X.x.', pedal: '....x.......x...', kick: 'o...o...o...o...', snare: '......o.......o.' },   // the ride leans on 2 and 4, with the hi-hat
+        fill: { ride: 'x...............', snare: '..o.x.o.x.x.X.X.', kick: 'o...........x...' },   // fills on the snare; the kick stays feathered
     },
     bounce: {
         beats: 4, kit: 0, swing: 0.5,
@@ -195,6 +195,7 @@ export const COMPING = {
     pulse:   [[0, 2], [4, 2], [8, 2], [12, 2]],
     eighths: [[0, 2], [2, 2], [4, 2], [6, 2], [8, 2], [10, 2], [12, 2], [14, 2]],
     offbeat: [[4, 2], [12, 2]],
+    charleston: [[0, 3], [6, 2, 0.85]],                          // jazz piano: on 1 and short on the and of 2, room for the horns
     march:   [[0, 3], [4, 3], [8, 3], [12, 3]],
     waltz:   [[4, 3], [8, 3]],
     skank:   [[4, 1], [12, 1]],                                  // reggae: short chops on 2 and 4
