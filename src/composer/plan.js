@@ -1,7 +1,7 @@
 // The song plan, made before any note: the form as a list of sections, each with its key, mode, meter, energy,
 // cadence, harmonic rhythm, texture and arrangement; the energy curve with one clear climax; the tempo map; the loop.
 // Later passes only read it. Pure and deterministic, like compose().
-import { pitchClass, MODES } from '../lib/music-theory.js';
+import { pitchClass, MODES, isMinorMode, hash } from '../lib/music-theory.js';
 import { EMOTIONS, FORMS, SECTIONS, REPEAT_LIFT } from './composer-data.js';
 import { GROOVES, ARPS, COMPING } from './patterns-data.js';
 import { STYLES, VARIATION, CURVE, TEMPO, METER_CHANGE } from './song-craft-data.js';
@@ -45,6 +45,9 @@ export function planSong(spec)
         power: choose('power') ?? false,
         sound: choose('sound') ?? 'gm',
         arp, groove, grooveName, style, genre,
+        // chord colour: the spec's, else its genre's, else its emotion's (null or false: plain triads)
+        extend: 'extend' in spec ? spec.extend || null : 'extend' in genre ? genre.extend || null : feel.extend ?? null,
+        feelCadences: feel.cadences,
         swing: choose('swing') ?? groove.swing ?? style.swing ?? 0,
         swingSub: spec.swingSub ?? 0.5,
         seed: String(spec.seed ?? spec.title ?? spec.id ?? 'song'),
@@ -66,14 +69,18 @@ export function planSong(spec)
         const meter = meterOf(over.meter ?? base.meter ?? songMeter);
         const bars = over.bars ?? base.bars;
         const from = base.progressionFrom;
-        const progressions = genre.progressions ?? feel.progressions;
-        const progression = over.progression ?? progressions[type] ?? base.progression
-            ?? spec.sections?.[from]?.progression ?? progressions[from] ?? progressions.verse;
+        const progressions = progressionsFor(genre, feel, over.mode ?? mode);
+        const progression = over.progression ?? pickOne(progressions[type], song.seed, type) ?? base.progression
+            ?? spec.sections?.[from]?.progression ?? pickOne(progressions[from], song.seed, from) ?? pickOne(progressions.verse, song.seed, 'verse');
         const s = {
             ...song, type, n, index, base, over, bars, beat, meter, beatsPerBar: meter.beats, beats: bars * meter.beats,
             energy: clamp((over.energy ?? base.energy) + REPEAT_LIFT * n, 0, 1),
             tonic: song.tonic + transpose + (over.transpose ?? 0), mode: over.mode ?? mode, lifted, progression,
             comp: over.comp ?? choose('comp'),
+            // a hand-written tune sings its own thirds, so its chords keep them: no suspensions under it
+            // ...and ends on the cadence it was written over, not the emotion's own
+            feelCadences: typeof over.melody === 'string' ? null : song.feelCadences,
+            extend: noSus('extend' in over ? over.extend || null : song.extend, typeof over.melody === 'string'),
             // a section may pick its own arpeggio: a sonata's left hand changes figure with the theme
             arp: over.arp ? ARPS[over.arp] : arp,
         };
@@ -192,3 +199,24 @@ function label(type, n, form, own = {})
     const count = form.filter(t => t === type).length;
     return (own[type] ?? SECTIONS[type].name ?? `Section ${type}`) + (count > 1 ? ` ${n + 1}` : '');
 }
+
+// a section's colour without its suspensions, when it has a hand-written melody
+function noSus(extend, written)
+{
+    if (!written || !Array.isArray(extend)) return extend;
+    const kept = extend.filter(w => !w.how.startsWith('sus'));
+    return kept.length ? kept : null;
+}
+
+// A genre's progressions for the mode: written per section type, or split { bright, dark } when the genre leaves the
+// mode to the emotion; a genre with none for this side plays the emotion's
+function progressionsFor(genre, feel, mode)
+{
+    const p = genre.progressions;
+    if (!p) return feel.progressions;
+    if (!p.bright && !p.dark) return p;
+    return (isMinorMode(mode) ? p.dark : p.bright) ?? feel.progressions;
+}
+
+// one of a section's progressions, by the song's seed: a list gives every song in the genre its own
+const pickOne = (choices, seed, type)=> Array.isArray(choices) ? choices[hash(seed, 'progression', type) % choices.length] : choices;

@@ -58,6 +58,11 @@ just compose first-light --midi first-light.mid        # and a Standard MIDI Fil
 just compose feel:tender
 ```
 
+`just harmony` (`tools/harmony-report.mjs`) checks that songs don't all share the same chords. It
+composes every genre bright and dark, then the catalog, and prints each one's share of plain
+triads, its chord colours and cadences, the 4-chord progressions shared across songs and the most
+alike pairs. Name songs to see only those (`just harmony spook-swing feel:tender`).
+
 ### Transcribing a whistled melody
 
 **In the app.** Select a track (or none, and a Whistle track is added) and press **●** (or `R`).

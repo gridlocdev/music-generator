@@ -219,8 +219,11 @@ export function parseProgression(text, tonic, mode)
  *   ninths    sevenths plus the 9th, when the key has it (no b9 on iii)
  *   dominant  every major chord a dominant 7th, every minor one m7: the blues and funk
  *   add9      major and minor triads with an added 9th, when the key has it: pop shimmer
+ *   sixths    major and minor triads with an added 6th, when the key has it: C6, Dm6 in dorian; swing and lounge
+ *   sus2      the 3rd swapped for the 2nd, when the key has it: open, unresolved, neither major nor minor
+ *   sus4      the 3rd swapped for the 4th, when the key has it: a fanfare's lift, waiting to land
  * @param {ReturnType<typeof parseChord>} chord
- * @param {'sevenths' | 'ninths' | 'dominant' | 'add9' | null} how
+ * @param {'sevenths' | 'ninths' | 'dominant' | 'add9' | 'sixths' | 'sus2' | 'sus4' | null} how
  */
 export function extendChord(chord, how, tonic, mode)
 {
@@ -229,6 +232,9 @@ export function extendChord(chord, how, tonic, mode)
     const fits = (n)=> inScale(tonic, mode, chord.root + n);
     const ninth = fits(2) ? [14] : [];
     if (how === 'add9') return t[2] === 7 ? { ...chord, tones: [...t, ...ninth] } : chord;
+    if (how === 'sixths') return t[2] === 7 && fits(9) ? { ...chord, tones: [...t, 9] } : chord;
+    if (how === 'sus2') return t[2] === 7 && fits(2) ? { ...chord, tones: [0, 2, 7] } : chord;
+    if (how === 'sus4') return t[2] === 7 && fits(5) ? { ...chord, tones: [0, 5, 7] } : chord;
     let seventh;
     if (how === 'dominant') seventh = t[2] === 7 ? 10 : null;
     else if (t[2] === 6) seventh = fits(10) ? 10 : 9;

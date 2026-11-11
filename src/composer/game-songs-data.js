@@ -7,11 +7,11 @@ export const GAME_SONGS = [
         story: 'The hero’s theme on the open road: four notes that climb and turn, in bold mixolydian.',
         emotion: 'heroic', key: 'D', mode: 'mixolydian', tempo: 112, motif: 'hero', form: 'verseChorus', style: 'cinematic', lift: 1,
         sections: {
-            verse: { progression: 'I VII IV I' },
-            pre: { progression: 'IV V' },
-            chorus: { progression: 'I VII IV I IV V I I' },
-            bridge: { progression: 'vi IV VII V', contour: 'rise' },
-            outro: { progression: 'IV VII I:2' },
+            verse: { progression: 'I VII IVadd9 I' },
+            pre: { progression: 'IV Vsus4:0.5 V:0.5' },
+            chorus: { progression: 'I VII IV I bVI VII I I' },     // bVI–bVII–I: the fanfare home
+            bridge: { progression: 'vi7 IV bVI VII', contour: 'rise' },
+            outro: { progression: 'IV iv I:2' },
         },
         scenes: {
             intro: 'Dawn over the hills. The theme, half-heard.',
@@ -27,10 +27,10 @@ export const GAME_SONGS = [
         emotion: 'melancholy', key: 'D', mode: 'aeolian', tempo: 72, meter: '6/8', motif: 'hero', form: 'ballad', style: 'cinematic',
         band: { lead: 42, counter: 40, arp: 46, chords: null, pad: 49, bass: 32, drums: 48 },
         sections: {
-            verse: { progression: 'i VI III VII' },
-            chorus: { progression: 'iv i VI V' },
+            verse: { progression: 'i7 VImaj7 III VII' },
+            chorus: { progression: 'iv7 i VImaj7 V7' },
             bridge: { progression: 'VI VII i i', texture: 'solo' },     // the cello alone
-            outro: { progression: 'iv V I:2' },                          // a Picardy third: hope, at the very end
+            outro: { progression: 'iv7 V7 I:2' },                        // a Picardy third: hope, at the very end
         },
         scenes: {
             intro: 'Rain on the battlefield.',
@@ -47,10 +47,10 @@ export const GAME_SONGS = [
         names: { verse: 'Phase one', pre: 'Shield cracks', chorus: 'Phase two', link: 'Stagger', bridge: 'Shield down' },
         sections: {
             intro: { progression: 'i i', entries: false },
-            verse: { progression: 'i VI iv V' },
-            pre: { progression: 'iv V' },
-            chorus: { meter: '7/4', progression: 'i bII', energy: 0.9 },    // the Neapolitan, over 4 + 3
-            bridge: { progression: 'VI bII V V', feel: 'half' },
+            verse: { progression: 'i VI iv7 V7' },
+            pre: { progression: 'iv V7' },
+            chorus: { meter: '7/4', progression: 'i bIImaj7', energy: 0.9 },    // the Neapolitan, over 4 + 3
+            bridge: { progression: 'VI bII V7sus4 V7', feel: 'half' },
         },
     },
     {
@@ -61,9 +61,9 @@ export const GAME_SONGS = [
         sections: {
             // offbeat chords alone, so the ear hears them as the beat; then the kick lands on the true one
             intro: { progression: 'i VI', mute: ['drums', 'bass'], entries: false, bars: 8, energy: 0.35 },
-            build: { progression: 'iv VI VII VII' },
+            build: { progression: 'iv VI VII Vsus4' },
             drop: { progression: 'i VI III VII' },
-            breakdown: { progression: 'VI VII', counter: 'contrary' },
+            breakdown: { progression: 'VImaj7 VII', counter: 'contrary' },
             outro: { progression: 'VI VII i:2' },
         },
     },
@@ -83,8 +83,8 @@ export const GAME_SONGS = [
         emotion: 'mysterious', key: 'C', mode: 'dorian', tempo: 92, loop: true, arp: 'threes', motif: 'village',
         form: ['intro', 'verse', 'chorus', 'verse', 'bridge', 'chorus'],
         sections: {
-            verse: { progression: 'i IV i IV' },
-            chorus: { progression: 'III IV i i' },
+            verse: { progression: 'i7 IV i7 IVadd9' },
+            chorus: { progression: 'III IVmaj7 i7 i7' },
         },
     },
 ];

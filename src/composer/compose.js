@@ -87,7 +87,7 @@ export function compose(spec)
             type, label: sec.label, beat: sec.beat, beats: sec.beats, energy: sec.energy, scene: sec.scene,
             beatsPerBar: sec.beatsPerBar, meter: sec.meter.name, tonic: mod(sec.tonic, 12), mode: sec.mode, climax: sec.climax,
         });
-        for (const c of timeline) chords.push({ beat: c.beat, beats: c.beats, name: chordName(c.chord, song.flats), tones: chordPitchClasses(c.chord) });
+        for (const c of timeline) chords.push({ beat: c.beat, beats: c.beats, name: chordName(c.chord, c.chord.flat ?? (/^b[IV]/.test(c.chord.symbol) || song.flats)), tones: chordPitchClasses(c.chord) });
         const marks = tracks.map(t => t.notes.length);
 
         // melody: written once per section type (and variant), then replayed; a composed one varies on repeats,

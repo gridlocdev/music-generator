@@ -84,6 +84,11 @@ soundfonts *ids:
 compose *args:
     node tools/compose.mjs {{args}}
 
+# report how alike the harmony is: each genre's triads, colours and cadences, then the written songs' shared progressions
+# e.g. just harmony   ·   just harmony first-light lighthouse
+harmony *songs:
+    node tools/harmony-report.mjs {{songs}}
+
 # write the written songs as project files in projects/ (all of them, or the ones named); overwrites edits made in the app
 # e.g. just projects   ·   just projects first-light
 projects *songs:

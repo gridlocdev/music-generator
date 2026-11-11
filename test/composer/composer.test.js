@@ -279,7 +279,7 @@ test('modal cadences use the mode\'s own chords: bVII–I in mixolydian, bII–i
     // every section ends away from the tonic, so each cadence has to be written in
     const ends = (mode, i = mode === 'phrygian' ? 'i VI' : 'I vi')=>
     {
-        const s = compose({ title: 'Modal', emotion: 'heroic', mode, form: ['verse', 'pre', 'chorus', 'outro'],
+        const s = compose({ title: 'Modal', emotion: 'heroic', mode, extend: null, form: ['verse', 'pre', 'chorus', 'outro'],
             sections: { verse: { progression: i }, pre: { progression: i }, chorus: { progression: i }, outro: { progression: i } } });
         return s.sections.map(sec => s.chords.filter(c => c.beat < sec.beat + sec.beats).slice(-2).map(c => c.name).join(' '));
     };
@@ -357,7 +357,8 @@ test('a genre alone sets the groove, comping, mode, form and progressions; the s
     const s = compose({ title: 'Just blues', genre: 'Blues', emotion: 'melancholy', key: 'E' });
     assert.equal(s.mode, 'major');
     assert.deepEqual(s.sections.map(x => x.type), ['intro', 'blues', 'blues', 'blues', 'outro']);
-    const chorus = s.chords.filter(c => c.beat >= s.sections[1].beat && c.beat < s.sections[1].beat + s.sections[1].beats).map(c => c.name);
+    // each bar's chord (a passing chord may take a bar's last beat)
+    const chorus = s.chords.filter(c => c.beat >= s.sections[1].beat && c.beat < s.sections[1].beat + s.sections[1].beats && c.beat % 4 === 0).map(c => c.name);
     assert.deepEqual(chorus, ['E7', 'A7', 'E7', 'E7', 'A7', 'A7', 'E7', 'E7', 'B7', 'A7', 'E7', 'B7']);
     assert.equal(compose({ title: 'Own mode', genre: 'Blues', emotion: 'melancholy', mode: 'minor' }).mode, 'minor');
     assert.equal(compose({ title: 'No such genre', genre: 'Polka', emotion: 'joyful' }).mode, 'major');
@@ -367,7 +368,7 @@ test('genres extend triads and voice them their way: jazz shells without the roo
 {
     const chordsOf = (genre)=> compose({ title: 'Voicing', genre, emotion: 'joyful', key: 'C', form: ['verse'], sections: { verse: { progression: 'I vi ii V', endOn: null } } });
     const jazz = chordsOf('Jazz');
-    assert.deepEqual(jazz.chords.map(c => c.name).slice(0, 4), ['Cmaj9', 'Am9', 'Dm9', 'G9']);
+    assert.deepEqual(jazz.chords.filter(c => c.beat % 4 === 0).map(c => c.name).slice(0, 4), ['Cmaj9', 'Am9', 'Dm9', 'G9']);
     const first = jazz.tracks.find(t => t.role === 'chords').notes.filter(n => n.beat < 4).map(n => n.key % 12);
     assert.ok(first.length && !first.includes(0), `no root C in the shell: ${first}`);
     assert.deepEqual(chordsOf('Rock').chords.map(c => c.name).slice(0, 4), ['C', 'Am', 'Dm', 'G'], 'power chords stay triads');
@@ -375,7 +376,9 @@ test('genres extend triads and voice them their way: jazz shells without the roo
 
 test('blues lines: the second 4 bars repeat the first over IV, the chord\'s 7th turning the 3rd blue', ()=>
 {
-    const s = compose({ title: 'Twelve bars', genre: 'Blues', emotion: 'melancholy', key: 'E', form: ['blues'], sections: { blues: { melody: undefined } } });
+    const s = compose({ title: 'Twelve bars', genre: 'Blues', emotion: 'melancholy', key: 'E', form: ['blues'], sections: { blues: { melody: undefined } },
+        // no passing chords, which would bend a note of one line and not the other
+        style: { dim7: 0, secondary: 0, twoFive: 0, tritone: 0, sus: 0, borrowed: 0, mediant: 0 } });
     const lead = s.tracks.find(t => t.role === 'lead').notes;
     const line = (n)=> lead.filter(x => x.beat >= n * 16 && x.beat < n * 16 + 16).map(x => [x.beat - n * 16, x.key]);
     const [a1, a2] = [line(0), line(1)];

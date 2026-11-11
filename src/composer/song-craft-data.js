@@ -6,7 +6,9 @@
 // One setting per pass, so one name sets a whole feel. A spec's `style` names one, or gives some of the values
 // over the emotion's style.
 //   swing        0 straight … 1 triplet, when neither the song, the emotion nor the groove sets one
-//   dim7         chance of a passing diminished seventh before a chord change
+//   dim7, secondary, twoFive, tritone, sus, borrowed, mediant
+//                chance of each kind of passing chord before a chord change (PASSING; harmony.js approach() says what
+//                each one is); together they are how often a change gets one, at most 90%
 //   scoops       chance of the +1 slide into a phrase's last note and a section's last chord
 //   ghosts       how many ghost notes the drums and bass get
 //   syncopation  anticipations, offbeat accents, echo-rhythm notes and rotated arpeggios
@@ -15,17 +17,29 @@
 //   rubato       how far the tempo breathes with each phrase: up toward its high point, back into its cadence (TEMPO.rubato)
 //   ornaments    chance of a trill, turn, mordent or grace note on a melody note that suits one (ORNAMENTS)
 //   swell        times EXPRESSION.phrase.swell: how much louder a phrase grows; above 1 the left hand follows it too
+export const PASSING = ['dim7', 'secondary', 'twoFive', 'tritone', 'sus', 'borrowed', 'mediant'];
+const NONE = { secondary: 0, twoFive: 0, tritone: 0, sus: 0, borrowed: 0, mediant: 0 };
 export const STYLES = {
-    plain:      { swing: 0,   dim7: 0,    scoops: 0.1, ghosts: 0.25, syncopation: 0.15, earCandy: 0.25, stab: 0, rubato: 0, ornaments: 0, swell: 1 },
-    jazzy:      { swing: 0.7, dim7: 0.3,  scoops: 0.4, ghosts: 0.5,  syncopation: 0.4,  earCandy: 0.25, stab: 0, rubato: 0, ornaments: 0, swell: 1 },
-    funky:      { swing: 0,   dim7: 0.1,  scoops: 0.2, ghosts: 0.9,  syncopation: 0.7,  earCandy: 0.3,  stab: 0.125, rubato: 0, ornaments: 0, swell: 1 },
-    gentle:     { swing: 0,   dim7: 0.15, scoops: 0.3, ghosts: 0,    syncopation: 0.1,  earCandy: 0.2,  stab: 0, rubato: 0, ornaments: 0, swell: 1 },
-    cinematic:  { swing: 0,   dim7: 0.15, scoops: 0.2, ghosts: 0.1,  syncopation: 0.1,  earCandy: 0.45, stab: 0, rubato: 0, ornaments: 0, swell: 1 },
-    electronic: { swing: 0,   dim7: 0,    scoops: 0.1, ghosts: 0.2,  syncopation: 0.45, earCandy: 0.6,  stab: 0.25, rubato: 0, ornaments: 0, swell: 1 },
+    // pop: now and then a chord's own dominant, a floating V7sus4, or the minor iv before home
+    plain:      { swing: 0,   dim7: 0,    ...NONE, secondary: 0.08, sus: 0.06, borrowed: 0.04,
+        scoops: 0.1, ghosts: 0.25, syncopation: 0.15, earCandy: 0.25, stab: 0, rubato: 0, ornaments: 0, swell: 1 },
+    // jazz: every target gets its ii–V, its tritone substitute, or a diminished chord climbing into it
+    jazzy:      { swing: 0.7, dim7: 0.15, ...NONE, twoFive: 0.2, tritone: 0.12, secondary: 0.08,
+        scoops: 0.4, ghosts: 0.5,  syncopation: 0.4,  earCandy: 0.25, stab: 0, rubato: 0, ornaments: 0, swell: 1 },
+    // funk: chromatic slides into the chord a semitone above (tritone substitutes)
+    funky:      { swing: 0,   dim7: 0.05, ...NONE, tritone: 0.1, secondary: 0.05,
+        scoops: 0.2, ghosts: 0.9,  syncopation: 0.7,  earCandy: 0.3,  stab: 0.125, rubato: 0, ornaments: 0, swell: 1 },
+    gentle:     { swing: 0,   dim7: 0.08, ...NONE, sus: 0.08, borrowed: 0.08, secondary: 0.05,
+        scoops: 0.3, ghosts: 0,    syncopation: 0.1,  earCandy: 0.2,  stab: 0, rubato: 0, ornaments: 0, swell: 1 },
+    // film: chromatic mediants (a major chord a third away), the borrowed iv, suspensions
+    cinematic:  { swing: 0,   dim7: 0.05, ...NONE, mediant: 0.12, borrowed: 0.08, sus: 0.06,
+        scoops: 0.2, ghosts: 0.1,  syncopation: 0.1,  earCandy: 0.45, stab: 0, rubato: 0, ornaments: 0, swell: 1 },
+    electronic: { swing: 0,   dim7: 0,    ...NONE, sus: 0.1,
+        scoops: 0.1, ghosts: 0.2,  syncopation: 0.45, earCandy: 0.6,  stab: 0.25, rubato: 0, ornaments: 0, swell: 1 },
     // the piano of Mozart (classical) and Chopin (romantic): the tempo breathes with each phrase (TEMPO.rubato), the
     // melody is ornamented (ORNAMENTS), and nothing a band adds: no ghosts, slides or risers
-    classical:  { swing: 0,   dim7: 0.1,  scoops: 0,   ghosts: 0,    syncopation: 0.05, earCandy: 0,    stab: 0, rubato: 0.35, ornaments: 0.35, swell: 2 },
-    romantic:   { swing: 0,   dim7: 0.15, scoops: 0,   ghosts: 0,    syncopation: 0.05, earCandy: 0,    stab: 0, rubato: 1,    ornaments: 0.6, swell: 3 },
+    classical:  { swing: 0,   dim7: 0.06, ...NONE, secondary: 0.14, scoops: 0,   ghosts: 0,    syncopation: 0.05, earCandy: 0,    stab: 0, rubato: 0.35, ornaments: 0.35, swell: 2 },
+    romantic:   { swing: 0,   dim7: 0.1,  ...NONE, secondary: 0.1, borrowed: 0.08, mediant: 0.03, scoops: 0,   ghosts: 0,    syncopation: 0.05, earCandy: 0,    stab: 0, rubato: 1,    ornaments: 0.6, swell: 3 },
 };
 
 // ---- Repetition with variation ------------------------------------------------------------------------

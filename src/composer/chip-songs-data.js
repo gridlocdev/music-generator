@@ -13,10 +13,10 @@ export const CHIP_SONGS = [
         band: { lead: 86, counter: 87, arp: 87, chords: null, pad: null, bass: 38, drums: 1 },   // the bare 2A03
         form: ['intro', 'verse', 'chorus', 'verse', 'chorus', 'bridge'],
         sections: {
-            intro: { progression: 'I IV V I' },
-            verse: { progression: 'I vi IV V', contour: 'plateau', density: 1.3 },
-            chorus: { progression: 'IV V iii vi IV V I I', answer: true },
-            bridge: { progression: 'vi IV ii V', energy: 0.55, contour: 'rise' },
+            intro: { progression: 'I IVadd9 V I' },
+            verse: { progression: 'I vi7 IV V7sus4', contour: 'plateau', density: 1.3 },
+            chorus: { progression: 'IV V iii7 vi IV iv I I', answer: true },   // the minor iv, a sigh before home
+            bridge: { progression: 'vi IV II7 V', energy: 0.55, contour: 'rise' },
         },
         scenes: {
             intro: 'PRESS START.',
@@ -33,10 +33,10 @@ export const CHIP_SONGS = [
         band: { lead: 82, counter: 85, arp: 46, chords: null, pad: 90, bass: 38, drums: 1 },
         form: ['intro', 'verse', 'chorus', 'verse', 'bridge', 'chorus'],
         sections: {
-            intro: { progression: 'i II i II', mute: ['drums'] },
+            intro: { progression: 'i IImaj7 i IImaj7', mute: ['drums'] },
             verse: { progression: 'i II VII i', contour: 'valley', density: 0.8 },
-            chorus: { progression: 'iv II i VII', counter: 'contrary' },
-            bridge: { progression: 'VI VII i i', energy: 0.35, texture: 'solo' },
+            chorus: { progression: 'iv7 II i VII', counter: 'contrary' },
+            bridge: { progression: 'VImaj7 VII i i', energy: 0.35, texture: 'solo' },
         },
         scenes: {
             intro: 'The torch gutters out. The crystals glow on their own.',
@@ -52,9 +52,9 @@ export const CHIP_SONGS = [
         form: 'AABA',
         sections: {
             intro: { progression: 'I IV I V' },
-            A: { progression: 'I vi IV V', contour: 'arch' },
-            B: { progression: 'IV iii ii V', counter: 'harmony' },
-            outro: { progression: 'IV V I:2' },
+            A: { progression: 'Imaj7 vi7 IVmaj7 V', contour: 'arch' },
+            B: { progression: 'IVmaj7 iii7 ii7 V7sus4', counter: 'harmony' },
+            outro: { progression: 'IVmaj7 iv I:2' },
         },
         scenes: {
             intro: 'HP restored.',
@@ -66,14 +66,15 @@ export const CHIP_SONGS = [
         id: 'neon-skyway', title: 'Neon Skyway', genre: 'Shoot-’em-up',
         story: 'Stage 4: a city of light at full throttle. Enemy waves from every side, and the boss is somewhere ahead.',
         sound: 'chip', emotion: 'tense', key: 'A', mode: 'minor', tempo: 168, groove: 'dance', comp: 'upbeats', arp: 'tracker',
+        extend: [{ how: 'sus4', chance: 0.2 }],
         legato: 0.7, dynamics: 0.85, push: 4,
         band: { lead: 84, counter: 81, arp: 80, chords: null, pad: null, bass: 39, drums: 0 },  // PWM and saw over the modern kit
         form: ['intro', 'verse', 'chorus', 'verse', 'chorus', 'breakdown', 'chorus', 'outro'],
         sections: {
             intro: { progression: 'i i VI VII', energy: 0.65 },
-            verse: { progression: 'i VII VI VII', density: 1.5, contour: 'plateau' },
-            chorus: { progression: 'VI VII i i VI VII V V' },
-            breakdown: { progression: 'iv iv VI V', energy: 0.45 },
+            verse: { progression: 'i VII VI V', density: 1.5, contour: 'plateau' },
+            chorus: { progression: 'VI VII i III VI bII V V' },        // the Neapolitan before the turn
+            breakdown: { progression: 'iv7 iv7 VImaj7 V7sus4', energy: 0.45 },
             outro: { progression: 'VI VII i:2', energy: 0.8 },
         },
         scenes: {
@@ -93,9 +94,9 @@ export const CHIP_SONGS = [
         form: ['intro', 'verse', 'chorus', 'verse', 'chorus', 'bridge'],
         sections: {
             intro: { progression: 'I vi ii V' },
-            verse: { progression: 'I vi ii V', answer: true },
-            chorus: { progression: 'IV iv I vi ii V I I' },
-            bridge: { progression: 'iii vi ii V', energy: 0.5 },
+            verse: { progression: 'I VI7 ii7 V7', answer: true },
+            chorus: { progression: 'IVmaj7 iv6 Imaj7 VI7 ii7 V7 I I' },
+            bridge: { progression: 'iii7 VI7 ii7 V7', energy: 0.5 },
         },
         scenes: {
             intro: 'Welcome! Buy something, will ya?',
@@ -111,8 +112,8 @@ export const CHIP_SONGS = [
         form: ['intro', 'verse', 'chorus', 'outro'],
         sections: {
             intro: { progression: 'i iv V i', texture: 'solo' },
-            verse: { progression: 'i VI iv V', contour: 'fall' },
-            chorus: { progression: 'iv i VI V', energy: 0.6 },
+            verse: { progression: 'i VImaj7 iv7 V7', contour: 'fall' },
+            chorus: { progression: 'iv7 i/3 VI V7sus4', energy: 0.6 },
             outro: { progression: 'iv V I:2', energy: 0.3 },
         },
         scenes: {
@@ -136,19 +137,19 @@ export const CHIP_SONGS = [
         sections: {
             // five beats to the bar: a clock that doesn't tick evenly, over a tolling tonic and the Neapolitan
             intro: { meter: '5/4', progression: 'i bII i bII', pedal: 1, mute: ['drums'], energy: 0.45 },
-            verse: { progression: 'i VI iv V', counter: 'contrary', density: 1.2 },
+            verse: { progression: 'i VI iv7 V7', counter: 'contrary', density: 1.2 },
             // the gears slip a half beat every bar, and the chords come twice as fast
             pre: { meter: '7/8', progression: 'iv V bVI V', energy: 0.7 },
-            chorus: { progression: 'i VI III VII i VI iv V', endOn: 'dominant', energy: 0.88,
+            chorus: { progression: 'i VI III VII7 i VImaj7 iv V7', endOn: 'dominant', energy: 0.88,
                 melody: '1:0.5 3:0.5 5 3:0.5 5:0.5 8 | 8:0.5 6:0.5 8 6:0.5 8:0.5 10 | 10:0.5 9:0.5 10:0.5 12:0.5 10 7 | 9:1.5 7:0.5 9:2 | 1:0.5 3:0.5 5 3:0.5 5:0.5 8 | 8:0.5 6:0.5 8 6:0.5 8:0.5 10 | 11:0.5 10:0.5 8:0.5 6:0.5 8 4 | 5:0.5 #7:0.5 9:0.5 #7:0.5 5:2' },
-            post: { progression: 'bVI bVII i i', counter: 'harmony' },
+            post: { progression: 'bVImaj7 bVII7 i i', counter: 'harmony' },
             // a minor third up and into phrygian: 2 + 3 + 2, the escapement catching
             A: { meter: '7/4c', transpose: 3, mode: 'phrygian', progression: 'i bII i VII', answer: true, energy: 0.8 },
             // the pendulum stops mid-swing: a music-box waltz, alone
             breakdown: { meter: '3/4', transpose: 3, progression: 'VI bII VI V', texture: 'solo', energy: 0.35 },
             build: { progression: 'iv V', bars: 4, tempo: 164 },
             // the hook again, a whole step up and at full speed
-            drop: { progression: 'i VI III VII i VI V i', transpose: 2, tempo: 176, feel: 'double', bars: 8,
+            drop: { progression: 'i VImaj7 III VII7 i VI V7 i', transpose: 2, tempo: 176, feel: 'double', bars: 8,
                 melody: '1:0.5 3:0.5 5 3:0.5 5:0.5 8 | 8:0.5 6:0.5 8 6:0.5 8:0.5 10 | 10:0.5 9:0.5 10:0.5 12:0.5 10 7 | 9:1.5 7:0.5 9:2 | 1:0.5 3:0.5 5 3:0.5 5:0.5 8 | 8:0.5 6:0.5 8 6:0.5 8:0.5 10 | 9:0.5 #7:0.5 5 #7:0.5 9:0.5 12 | 8:3 r' },
             outro: { meter: '5/4', transpose: 2, tempo: 176, progression: 'iv V i:2' },
         },
@@ -207,20 +208,20 @@ export const CHIP_SONGS = [
         story: 'A mansion on the hill, every window glowing amber at midnight. Nobody has lived there for a century, '
             + 'and someone is still dancing in the ballroom. The door is open. Go in.',
         sound: 'chip', emotion: 'mysterious', key: 'E', mode: 'harmonicMinor', tempo: 108, groove: 'waltz', comp: 'waltz', arp: 'updown',
-        style: { scoops: 0.3, earCandy: 0.45 },   // the ghosts glide into their notes
+        style: { scoops: 0.3, earCandy: 0.45, dim7: 0.12, secondary: 0.1 },   // the ghosts glide into their notes; a ballroom's chromatic steps
         legato: 0.85, dynamics: 0.55, loop: true,
         band: { lead: 85, counter: 83, arp: 46, chords: null, pad: 90, bass: 38, drums: 0 },   // soft triangle and hollow square, a music-box pluck, a PWM mist
         form: ['intro', 'verse', 'chorus', 'verse', 'bridge', 'chorus'],
         names: { verse: 'The open door', chorus: 'The dance', bridge: 'The floor tilts' },
         sections: {
             // the music box alone, over a tonic that won't move
-            intro: { progression: 'i iv i V', pedal: 1, mute: ['drums', 'lead'], energy: 0.35 },
-            verse: { progression: 'i VI iv V', contour: 'valley', counter: 'contrary', energy: 0.5 },
+            intro: { progression: 'i iv7 i V7', pedal: 1, mute: ['drums', 'lead'], energy: 0.35 },
+            verse: { progression: 'i VImaj7 iv7 V7', contour: 'valley', counter: 'contrary', energy: 0.5 },
             // the waltz itself: harmonic minor's raised seventh pulls hard at every V
-            chorus: { progression: 'i iv V i VI iv V i', counter: 'harmony', energy: 0.7,
+            chorus: { progression: 'i iv V7 i VImaj7 iv V7 i', counter: 'harmony', energy: 0.7,
                 melody: '5:1.5 4:0.5 3 | 4 6 8 | 7:1.5 6:0.5 5 | 3:2 r | 8:1.5 6:0.5 3 | 4:0.5 6:0.5 8 11 | 9:0.5 7:0.5 5 2 | 1:3' },
             // five beats to the bar: a step that shouldn't be there, as if the room leans
-            bridge: { meter: '5/4', progression: 'VI bII VI V', answer: true, energy: 0.4, mute: ['drums'], endOn: 'dominant' },
+            bridge: { meter: '5/4', progression: 'VImaj7 bIImaj7 VI V7', answer: true, energy: 0.4, mute: ['drums'], endOn: 'dominant' },
         },
         scenes: {
             intro: 'Midnight. Every window is lit.',
@@ -236,6 +237,7 @@ export const CHIP_SONGS = [
         story: 'The upstairs corridors of the same mansion, candles out. Every board creaks, and something is walking '
             + 'a few steps behind, stopping when you stop.',
         sound: 'chip', emotion: 'tense', key: 'E', mode: 'phrygian', meter: '7/8', tempo: 96, groove: 'halftime', comp: 'sustain', arp: 'threes',
+        extend: [{ how: 'sevenths', chance: 0.3 }],   // dark minor sevenths in the dust
         legato: 0.6, dynamics: 0.6, loop: true,
         band: { lead: 82, counter: 85, arp: 46, chords: null, pad: 90, bass: 38, drums: 1 },   // a thin 12.5% pulse, the NES triangle and kit
         form: ['intro', 'verse', 'chorus', 'verse', 'bridge', 'chorus'],
@@ -243,10 +245,10 @@ export const CHIP_SONGS = [
         sections: {
             // a tolling tonic and the flat second: seven beats that trip on the last one, like a step that isn't yours
             intro: { progression: 'i bII i bII', pedal: 1, mute: ['drums'], energy: 0.35 },
-            verse: { progression: 'i bII vii i', contour: 'valley', density: 0.8, energy: 0.5 },
-            chorus: { progression: 'iv bII i vii', counter: 'contrary', energy: 0.72 },
+            verse: { progression: 'i bIImaj7 vii i', contour: 'valley', density: 0.8, energy: 0.5 },
+            chorus: { progression: 'iv7 bII i vii7', counter: 'contrary', energy: 0.72 },
             // everything stops but the pulse, alone over the pedal
-            bridge: { progression: 'VI VI bII bII', pedal: 1, texture: 'solo', energy: 0.3, endOn: 'dominant' },
+            bridge: { progression: 'VImaj7 VI bIImaj7 bII', pedal: 1, texture: 'solo', energy: 0.3, endOn: 'dominant' },
         },
         scenes: {
             intro: 'The candles go out.',
@@ -267,11 +269,11 @@ export const CHIP_SONGS = [
         form: ['intro', 'verse', 'chorus', 'verse', 'chorus', 'bridge'],
         names: { verse: 'Trick', chorus: 'Treat', bridge: 'The skeleton’s solo' },
         sections: {
-            intro: { progression: 'i iv V i', energy: 0.5 },
-            verse: { progression: 'i iv i V', answer: true, energy: 0.6 },
-            chorus: { progression: 'VI VII i i iv V i V', energy: 0.8 },
+            intro: { progression: 'i6 iv6 V7 i6', energy: 0.5 },
+            verse: { progression: 'i6 iv6 i6 V7', answer: true, energy: 0.6 },
+            chorus: { progression: 'VI7 V7 i6 i6 iv6 V7 i6 V7', energy: 0.8 },
             // a walking bass under a chromatic turn, and the pulse showing off
-            bridge: { progression: 'iv iv i i bII bII V V', energy: 0.65, counter: 'contrary', endOn: 'dominant' },
+            bridge: { progression: 'iv6 iv6 i6 i6 bII7 bII7 V7 V7', energy: 0.65, counter: 'contrary', endOn: 'dominant' },
         },
         scenes: {
             intro: 'Knock, knock.',

@@ -27,7 +27,7 @@ The tables in `composer-data.js` and `patterns-data.js` are this document in dat
 **The pipeline.** `compose()` works top down, and each stage only fills in what the one above left open:
 
 1. **Song plan** (`plan.js`): the form as sections, each with its key, mode, meter, energy, cadence, harmonic rhythm and texture; the energy curve with one climax; the tempo map; the loop; and the motif (`melody.js`).
-2. **Section plan** (`harmony.js`): the chords at the section's harmonic rhythm, ending on its cadence, with passing chords.
+2. **Section plan** (`harmony.js`): the chords at the section's harmonic rhythm, ending on its cadence, with passing chords and the song's chord colour.
 3. **Phrases**: the melody from the motif's development, call and response, harmony voices, then the accompaniment (`parts.js`, `meter-patterns.js`).
 4. **Arrangement and rhythm passes** (`arrange.js`, `syncopation.js`): entries, exits, the breath before a payoff, anticipations, offbeat accents, echo rhythms.
 5. **Performance and mix** (`perform.js`, `ear-candy.js`, `mix-plan.js`): ghost notes, scoops, ear candy, swing, timing and mix automation.
@@ -239,11 +239,43 @@ Cadences are punctuation, and each section ends with the one its job needs (`end
 
 Major, minor, harmonic and melodic minor keep V. A progression written with a major V in a modal song plays as written: borrowing it is the author's choice.
 
+**Cadences by emotion and genre.** V–I everywhere is the loudest way songs sound alike, so emotions and genres bring their own (`cadences` in `EMOTIONS` and `GENRES`, the same shape as `CADENCES`; the genre's beats the emotion's, and a modal mode's own beats both). A section with a hand-written melody keeps the default, since the tune was written over it.
+
+| Who | Ends on | Why |
+|---|---|---|
+| tender | ii7 V7sus4 Imaj7 | a soft landing with the 4th still hanging on |
+| nostalgic | IV iv I | the minor iv: the past, slightly sad |
+| melancholy | iv i | the minor plagal: no leading tone, no hope |
+| tense | bII V i, deceptive V bII | the Neapolitan, dread before the dominant |
+| angry | bVI bVII i | the metal run home |
+| playful | ii7 V7 I | a jazz turnaround |
+| hopeful | plagal IV Isus4 I | the amen with a held breath |
+| heroic | deceptive V bVI | the film-score swerve |
+| cinematic | bVI bVII I · iv V i | the fanfare; the minor iv before the dominant |
+| chiptune, rock (dark), synthwave | VI VII i | the consoles' fanfare in minor |
+| lo-fi | iv7 Imaj7 · v7 i7 | never a V7: it doesn't want to resolve hard |
+| reggae | IV I · v i | the plagal vamp |
+| disco, funk | (VII) IV7 i7 | dorian: the major IV7 is the pull |
+
 The planner makes the section's last bar the cadence chord. If the bar before doesn't already lead in (IV, V or bVII before I), the approach chord takes its second half. A progression that already ends right is left alone, including `Imaj7` for I and a Picardy major I for i. A cadence of three chords or more always plays in full: the Classical genre's **cadential 6/4**, `I/5 V7 I`, gives I/5 and V7 half of the bar before the last each, or a bar each in an odd meter like 3/4, where halves would fall off the beat. A hand-written melody keeps its own ending: if its last note isn't in the cadence chord, there's no cadence. The melody's last phrase lands on the matching degrees: 2 or 5 on a half cadence, 1 on a full one, 1 or 3 on a deceptive one.
 
 **Harmonic rhythm** follows the section: a pre-chorus or build changes chords twice as fast as written (urgency), and an intro or breakdown half as fast (space). It applies to the emotion's default progressions; a progression written in a spec keeps its timing unless the section sets `harmonicRhythm`.
 
-**Passing diminished sevenths.** A dim7 is stacked minor thirds, so only three exist. With the style's `dim7` chance, one takes the last beat of a chord before a change of root: whichever of the three has the most notes a semitone below the next chord's notes. That's usually the one on the next root's leading tone (C#dim7 before Dm, F#dim7 before G), and sometimes the common-tone dim7 (Cdim7 before C). A cadence's final V–I is never interrupted.
+**Passing and approach chords.** Before a change of root, a chord can borrow the last beat (half a beat in a short chord; a ii–V takes the last two) to lead into the next. Which kinds, and how often, is the style's (section 10): each kind has a chance, and together they say how often a change gets one, at most 90%. A cadence's final chord is never approached, so its V–I stays clean. `approach()` in `harmony.js` builds them:
+
+| Kind | Before Dm in C | What it does | Styles |
+|---|---|---|---|
+| `dim7` | C#dim7 | stacked minor thirds, only three exist; the one with most notes a semitone under the next chord (usually its leading tone, sometimes the common-tone dim7) | jazzy, romantic, gentle |
+| `secondary` | A7 | the chord's own dominant (V7/ii) | classical, romantic, plain |
+| `twoFive` | Em7b5 A7 | its ii and V: the jazz approach to any chord (a half-diminished ii before a minor one) | jazzy |
+| `tritone` | Eb7 | the dominant a semitone above, the tritone substitute: the bass slides down by half step | jazzy, funky |
+| `sus` | A7sus4 | the dominant with the 4th suspended: modern, floating | electronic, gentle, plain, cinematic |
+| `borrowed` | (before I) Fm · (before V) Ab | from the parallel key: the minor iv before a major tonic (IV in minor), bVI before a major V, the Neapolitan bII before a minor song's V | gentle, cinematic, romantic, plain |
+| `mediant` | F or A | a major chord a major third away: the film-score shift | cinematic, romantic |
+
+Approach chords outside the key are spelled with flats (Bb7 before Am in C, not A#7).
+
+**Chord colour.** A song's `extend` turns plain triads into richer chords: `sevenths` (the key's own: Cmaj7, Dm7, G7), `ninths`, `dominant` (every major chord a dominant 7th), `add9`, `sixths`, `sus2` or `sus4`. One name colours every chord; a list of `{ how, chance }` colours some, each chord taking the first whose roll comes up. The spec's wins, then the genre's (`false`: triads as written), then the emotion's: joyful and serene add 9ths, tender and nostalgic play sevenths, melancholy sevenths and some 9ths, mysterious sus2, heroic sus4, playful sixths and sevenths; tense and angry stay bare. Colour comes after the passing chords, so a borrowed iv takes it too. A suspension never lands on a cadence or a section's last chord, which have to resolve, nor under a hand-written melody, which sings its own thirds. Written chords (`Imaj7`, `V7sus4`) stay as written.
 
 **Inversions and pedals.** The bass plays each chord's bass note: its root, or the degree written after a slash. That's what makes a bass line move by step under chords that don't: the line cliché `I V/7 vi vi/5` walks C–B–A–G, `I I/3 IV` climbs C–E–F, and the cadential six-four `I/5 V I` holds G in the bass while the upper parts resolve. Over an inversion the bass pattern's 3rd stays on the bass note and its 5th takes the chord's root (E and C under C/E). A section's `pedal` holds one degree under every chord: `pedal: 5` is the dominant pedal that makes a build or a bridge's last bars ache for the tonic, `pedal: 1` a drone for folk or a dreamy intro. A pedal note outside the chord is held, never decorated. The melody's parallel-fifths rule counts against the bass note, not the root.
 
@@ -557,18 +589,29 @@ Most of what makes a performance feel alive are passes over the score, run in a 
 4. **Feel**: swing, then per-part timing drift on top.
 5. **Mix movement** (`mix-plan.js`, `audio/mixer.js`): the tone filter following energy and sweeping into builds; reverb that grows in bridges and outros and swells across each of the pad's phrases; **delay throws**, where the lead's delay send opens only on the last note of each phrase, so only it echoes; a slowly wobbling (modulated) delay time; and an auto-pan on the arpeggio.
 
-A **style** (`STYLES` in `song-craft-data.js`) sets every pass's intensity with one name. Each emotion has one, and a spec's `style` names another or overrides values:
+A **style** (`STYLES` in `song-craft-data.js`) sets every pass's intensity with one name, and which passing chords it plays (section 4; the chances are in the second table). Each emotion has one, and a spec's `style` names another or overrides values:
 
-| Style | swing | dim7 | scoops | ghosts | syncopation | earCandy | stab | rubato | ornaments | swell |
-|---|---|---|---|---|---|---|---|---|---|---|
-| plain | 0 | 0 | .1 | .25 | .15 | .25 | — | 0 | 0 | 1 |
-| jazzy | .7 | .3 | .4 | .5 | .4 | .25 | — | 0 | 0 | 1 |
-| funky | 0 | .1 | .2 | .9 | .7 | .3 | 1/32 | 0 | 0 | 1 |
-| gentle | 0 | .15 | .3 | 0 | .1 | .2 | — | 0 | 0 | 1 |
-| cinematic | 0 | .15 | .2 | .1 | .1 | .45 | — | 0 | 0 | 1 |
-| electronic | 0 | 0 | .1 | .2 | .45 | .6 | 1/16 | 0 | 0 | 1 |
-| classical | 0 | .1 | 0 | 0 | .05 | 0 | — | .35 | .35 | 2 |
-| romantic | 0 | .15 | 0 | 0 | .05 | 0 | — | 1 | .6 | 3 |
+| Style | swing | scoops | ghosts | syncopation | earCandy | stab | rubato | ornaments | swell |
+|---|---|---|---|---|---|---|---|---|---|
+| plain | 0 | .1 | .25 | .15 | .25 | — | 0 | 0 | 1 |
+| jazzy | .7 | .4 | .5 | .4 | .25 | — | 0 | 0 | 1 |
+| funky | 0 | .2 | .9 | .7 | .3 | 1/32 | 0 | 0 | 1 |
+| gentle | 0 | .3 | 0 | .1 | .2 | — | 0 | 0 | 1 |
+| cinematic | 0 | .2 | .1 | .1 | .45 | — | 0 | 0 | 1 |
+| electronic | 0 | .1 | .2 | .45 | .6 | 1/16 | 0 | 0 | 1 |
+| classical | 0 | 0 | 0 | .05 | 0 | — | .35 | .35 | 2 |
+| romantic | 0 | 0 | 0 | .05 | 0 | — | 1 | .6 | 3 |
+
+| Passing chords | dim7 | secondary | twoFive | tritone | sus | borrowed | mediant |
+|---|---|---|---|---|---|---|---|
+| plain | | .08 | | | .06 | .04 | |
+| jazzy | .15 | .08 | .2 | .12 | | | |
+| funky | .05 | .05 | | .1 | | | |
+| gentle | .08 | .05 | | | .08 | .08 | |
+| cinematic | .05 | | | | .06 | .08 | .12 |
+| electronic | | | | | .1 | | |
+| classical | .06 | .14 | | | | | |
+| romantic | .1 | .1 | | | | .08 | .03 |
 
 `stab` is the longest a comped chord sounds, in beats, so chord stabs groove like percussion. A style's swing applies only when neither the spec, the emotion nor the groove sets one. Comping patterns can mark a hit as a ghost (`chop`: a quiet downstroke on the beat, then the offbeat), and `upbeats` puts stabs on every offbeat eighth. An intro of offbeat chords alone, with the drums muted, makes the ear hear them as the beat until the kick lands on the true one (*Neon Drop*).
 
@@ -639,6 +682,8 @@ A song is a plain object. Only `title` (or `id`) and `emotion` are needed; every
     lift: true,                     // last chorus up a whole step (or a number of semitones)
     meter: '4/4',                   // a key of METERS; default from the groove
     style: 'jazzy',                 // a key of STYLES, or { dim7: 0.5, … } over the emotion's style
+    extend: [{ how: 'sevenths', chance: 0.4 }],   // chord colour (section 4): a kind, a list of { how, chance },
+                                    // or null for triads; a section's own `extend` wins for it
     motif: 'hero',                  // a LEITMOTIFS name, or degree notation; default: the hand-written chorus, or invented
     loop: false,                    // game loop: no outro, the intro once, the rest repeats
     push: 2,                        // bpm added from the climax on
@@ -721,10 +766,10 @@ The recipes above are songs: the genre lives in what was written for them. A **p
 | `mode`, `groove`, `comp`, `arp`, `style`, `swing`, `legato`, `form`, `power`, `tempo` | defaults in place of the emotion's | every profile |
 | `band` | programs per part over the emotion's band, as a spec's `band`; null leaves a part out (the spec's own band wins) | classical: piano melody and left hand, nothing else |
 | `arrange` | `ARRANGEMENT` thresholds of its own: `{ arp: 0 }` has the arpeggio play in every section, whatever its fullness | classical: the left hand never stops |
-| `progressions` | per section type, in place of the emotion's whole set; a profile that sets its mode brings them, so the chords are written for that mode | blues, funk, celtic, tango, synthwave |
-| `extend` | plain triads played as `sevenths` (the key's own: Cmaj7, Dm7, G7, Bm7b5), `ninths` (no b9 on iii), `dominant` (every major chord a dominant 7th) or `add9`; written chords stay as written | jazz, bossa, lo-fi, gospel: ninths · blues, funk: dominant · synthwave, EDM: add9 |
+| `progressions` | per section type, in place of the emotion's whole set. A profile that sets its mode writes them for that mode; one that leaves the mode to the emotion splits them `{ bright, dark }` (a side it leaves out plays the emotion's). A section's value can be a list, and each song picks one by its seed, so two songs in a genre don't share every chord: jazz's ii–V–I and rhythm changes, bossa's slides a half step down, lo-fi's IVmaj7–iii7 loops, gospel's walk-ups (I I/3 IV #iv°), country's II7 and I7, reggae's two-chord vamps, rock's bVII and bVI riffs, cinematic mediants, chiptune fanfares, disco's dorian vamps, classical periods with secondary dominants, EDM's vi–IV–I–V | every profile |
+| `extend` | plain triads played as `sevenths` (the key's own: Cmaj7, Dm7, G7, Bm7b5), `ninths` (no b9 on iii), `dominant` (every major chord a dominant 7th), `add9`, `sixths`, `sus2` or `sus4`, or a list of `{ how, chance }` (section 4); `false` keeps triads whatever the emotion's colour; written chords stay as written | jazz, bossa, lo-fi, gospel: ninths · blues, funk: dominant · synthwave, EDM: add9 · classical: false |
 | `voicing` | the chord part: `shell` (3rd and 7th, the root left to the bass), `drop2` (the second voice from the top an octave down, where the range allows) | jazz, bossa: shell · gospel, cinematic: drop2 |
-| `cadences` | the cadence chords, over `CADENCES`: V7–I7 in the blues, V7–Imaj7 in jazz, the minor plagal iv–I "amen" in gospel, bVII–I in rock; a modal mode's own cadence still wins | blues, jazz, bossa, gospel, country, rock, tango |
+| `cadences` | the cadence chords, over `CADENCES` and the emotion's: V7–I7 in the blues, V7–Imaj7 in jazz, the minor plagal iv–I "amen" in gospel, bVII–I in rock, bVI–bVII–I in cinematic and chiptune (section 4 lists them); a modal mode's own cadence still wins | all but EDM |
 | `avoid` | scale steps the melody leaves out except in passing (`MELODY_RULES.avoid`), by brightness: `{ bright: [4, 7], dark: [2, 6] }` is pentatonic | country, rock, reggae, funk: pentatonic · celtic: the gapped hexatonic · blues: no major 7th |
 | `blue` | steps the melody may flatten (`MELODY_RULES.blue`), outside cadences; a step the chord already flattens (the b7 of I7) is just a chord tone | blues: 3 and 7 |
 | `phrases` | which 4-bar phrases of a composed section repeat an earlier one: `'aab'` repeats line one over IV, then answers it. A repeated note the old chord altered takes the new chord's accidental, so the G# of E7 becomes the G of A7: the blue third, for free. A blue step the old chord flattened stays flat where the new chord leaves it alone: E7's D is A7's blue 7th, not D#. The copy moves an octave where that joins it more closely to the note before | blues |
@@ -791,6 +836,7 @@ Checklist before calling it done:
 
 - [ ] The chorus is higher, louder and fuller than the verse.
 - [ ] Verse and chorus progressions differ, at least in starting chord.
+- [ ] The chords aren't only triads and V–I: `just harmony <id>` shows the song's share of plain triads, its colours, and which progressions it shares with other songs.
 - [ ] The pre-chorus or bridge ends on V, or another chord that pulls forward.
 - [ ] Strong-beat melody notes are chord tones (a test checks more than 80%).
 - [ ] Phrases end on cadences: 2 or 5 for questions, 1 for answers.

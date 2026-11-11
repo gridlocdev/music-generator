@@ -7,10 +7,13 @@
 // valence (sad ↔ happy) mostly sets mode and harmony; arousal (calm ↔ excited) sets tempo, density,
 // loudness, register and articulation. Band values are General MIDI program numbers (0-based);
 // drums is a kit program on bank 128, null for no drums. style names the STYLES preset for the detail passes.
+// extend is the emotion's chord colour when the genre sets none ({ how, chance }: extendChord's kinds, on that share
+// of the chords); cadences are its own endings (CADENCES' shape), which a genre's own and a modal mode's still beat.
 export const EMOTIONS = {
     joyful: {
         valence: 0.9, arousal: 0.8, mode: 'major', key: 'D', tempo: 126, groove: 'pop', form: 'pop',
         style: 'plain', legato: 0.8, dynamics: 0.75, comp: 'push', arp: 'up',
+        extend: [{ how: 'add9', chance: 0.25 }],
         progressions: {
             intro: 'I IV I V', verse: 'vi IV I V', pre: 'ii IV V:2', chorus: 'I V vi IV',
             post: 'I IV I V', bridge: 'IV V iii vi', outro: 'IV V I:2',
@@ -21,6 +24,8 @@ export const EMOTIONS = {
     hopeful: {
         valence: 0.7, arousal: 0.55, mode: 'major', key: 'G', tempo: 100, groove: 'pop', form: 'pop',
         style: 'plain', legato: 0.9, dynamics: 0.65, comp: 'push', arp: 'updown',
+        extend: [{ how: 'add9', chance: 0.3 }, { how: 'sus2', chance: 0.1 }],
+        cadences: { plagal: { bright: ['IV', 'Isus4', 'I'] } },
         progressions: {
             intro: 'Isus4 I Isus4 I', verse: 'I V vi IV', pre: 'IV V iii vi', chorus: 'IV I V vi',
             post: 'IV I', bridge: 'vi V IV V', outro: 'IV I:3',
@@ -31,6 +36,8 @@ export const EMOTIONS = {
     tender: {
         valence: 0.6, arousal: 0.2, mode: 'major', key: 'F', tempo: 76, groove: 'waltz', form: 'ballad',
         style: 'gentle', legato: 1, dynamics: 0.4, comp: 'waltz', arp: 'broken',
+        extend: [{ how: 'sevenths', chance: 0.5 }],
+        cadences: { tonic: { bright: ['ii7', 'V7sus4', 'Imaj7'] } },
         progressions: {
             intro: 'Imaj7 IVmaj7', verse: 'Imaj7 vi7 ii7 V7', pre: 'IVmaj7 iii7 vi7 V', chorus: 'IVmaj7 V iii7 vi7 ii7 V7 Imaj7 Imaj7',
             post: 'IVmaj7 Imaj7', bridge: 'vi7 iii7 IVmaj7 V', outro: 'IVmaj7 Imaj7:2',
@@ -41,6 +48,8 @@ export const EMOTIONS = {
     nostalgic: {
         valence: 0.4, arousal: 0.4, mode: 'major', key: 'Eb', tempo: 86, groove: 'ballad', form: 'pop',
         style: 'gentle', legato: 0.95, dynamics: 0.55, comp: 'sustain', arp: 'broken',
+        extend: [{ how: 'sevenths', chance: 0.45 }],
+        cadences: { tonic: { bright: ['IV', 'iv', 'I'] } },
         progressions: {
             intro: 'I iii IV iv', verse: 'I iii IV iv', pre: 'vi V IV V', chorus: 'I V vi iii IV I IV V',
             post: 'IV iv I', bridge: 'bVI bVII I I', outro: 'IV iv I:2',
@@ -51,6 +60,8 @@ export const EMOTIONS = {
     melancholy: {
         valence: 0.15, arousal: 0.3, mode: 'minor', key: 'A', tempo: 72, groove: 'ballad', form: 'pop',
         style: 'cinematic', legato: 1, dynamics: 0.45, comp: 'sustain', arp: 'updown',
+        extend: [{ how: 'sevenths', chance: 0.35 }, { how: 'add9', chance: 0.15 }],
+        cadences: { tonic: { dark: ['iv', 'i'] } },
         progressions: {
             intro: 'i VI', verse: 'i VI III VII', pre: 'iv VI VII VII', chorus: 'VI VII i i VI VII III V',
             post: 'VI VII i', bridge: 'iv i VI V', outro: 'iv V i:2',
@@ -61,6 +72,7 @@ export const EMOTIONS = {
     mysterious: {
         valence: 0.4, arousal: 0.35, mode: 'dorian', key: 'D', tempo: 88, groove: 'halftime', form: 'pop',
         style: 'cinematic', legato: 0.9, dynamics: 0.5, comp: 'sustain', arp: 'alberti',
+        extend: [{ how: 'sus2', chance: 0.3 }, { how: 'add9', chance: 0.15 }],
         progressions: {
             intro: 'isus2 IV', verse: 'i IV i IV', pre: 'III IV v v', chorus: 'i III IV i',
             post: 'IV i', bridge: 'v VII i i', outro: 'IV i:3',
@@ -71,6 +83,7 @@ export const EMOTIONS = {
     tense: {
         valence: 0.15, arousal: 0.85, mode: 'harmonicMinor', key: 'C', tempo: 132, groove: 'halftime', form: 'pop',
         style: 'cinematic', legato: 0.7, dynamics: 0.75, comp: 'pulse', arp: 'ostinato',
+        cadences: { tonic: { dark: ['bII', 'V', 'i'] }, deceptive: { dark: ['V', 'bII'] } },
         progressions: {
             intro: 'i i', verse: 'i i iv i', pre: 'VI VI V V', chorus: 'i VI iv V',
             post: 'i V', bridge: 'bII bII V V', outro: 'iv V i:2',
@@ -81,6 +94,8 @@ export const EMOTIONS = {
     heroic: {
         valence: 0.75, arousal: 0.85, mode: 'major', key: 'Bb', tempo: 116, groove: 'march', form: 'pop',
         style: 'cinematic', legato: 0.85, dynamics: 0.8, comp: 'march', arp: 'up',
+        extend: [{ how: 'sus4', chance: 0.2 }, { how: 'add9', chance: 0.1 }],
+        cadences: { deceptive: { bright: ['V', 'bVI'] } },
         progressions: {
             intro: 'I bVII IV I', verse: 'I bVII IV I', pre: 'vi IV V V', chorus: 'I V vi IV I bVII IV V',
             post: 'I bVII', bridge: 'vi iii IV V', outro: 'bVI bVII I:2',
@@ -91,6 +106,7 @@ export const EMOTIONS = {
     serene: {
         valence: 0.65, arousal: 0.1, mode: 'lydian', key: 'E', tempo: 66, groove: 'none', form: 'AABA',
         style: 'gentle', legato: 1, dynamics: 0.35, comp: 'sustain', arp: 'updown',
+        extend: [{ how: 'add9', chance: 0.4 }],
         progressions: {
             intro: 'Imaj7 II', A: 'Imaj7 II Imaj7 II', B: 'vi7 II Imaj7 V', verse: 'Imaj7 II Imaj7 II',
             chorus: 'vi7 II Imaj7 Imaj7', bridge: 'iii vi II II', outro: 'II Imaj7:3',
@@ -101,6 +117,7 @@ export const EMOTIONS = {
     angry: {
         valence: 0.1, arousal: 0.95, mode: 'minor', key: 'E', tempo: 144, groove: 'rock', form: 'pop',
         style: 'plain', legato: 0.75, dynamics: 0.9, comp: 'eighths', arp: 'ostinato', power: true,
+        cadences: { tonic: { dark: ['bVI', 'bVII', 'i'] } },
         progressions: {
             intro: 'i i VI VII', verse: 'i i VI VII', pre: 'iv iv V V', chorus: 'i VI III VII',
             post: 'i VII', bridge: 'iv iv VI V', outro: 'VI VII i:2',
@@ -111,6 +128,8 @@ export const EMOTIONS = {
     playful: {
         valence: 0.85, arousal: 0.65, mode: 'major', key: 'C', tempo: 112, groove: 'bounce', form: 'ABAC',
         style: 'jazzy', legato: 0.55, dynamics: 0.6, comp: 'offbeat', arp: 'alberti', swing: 0.6,
+        extend: [{ how: 'sixths', chance: 0.3 }, { how: 'sevenths', chance: 0.2 }],
+        cadences: { tonic: { bright: ['ii7', 'V7', 'I'] } },
         progressions: {
             intro: 'I vi ii V7', A: 'I vi ii V7', B: 'IV V7 iii vi ii7 V7 I I', C: 'III7 vi II7 V7',
             verse: 'I vi ii V7', chorus: 'IV V7 iii vi ii7 V7 I I', bridge: 'III7 vi II7 V7', outro: 'ii7 V7 I:2',
