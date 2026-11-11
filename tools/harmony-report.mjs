@@ -42,6 +42,18 @@ if (!ids.length)
     console.log('Nearest melodies:');
     for (const [x, a, b] of near.slice(0, 6)) console.log(`  ${x.toFixed(2)}  ${a} ~ ${b}`);
     console.log(`Mean distance ${(near.reduce((t, p)=> t + p[0], 0) / near.length).toFixed(2)}`);
+
+    console.log('\nSound and shape (tempo joyful/melancholy, key, form, lead program, sends, the pocket in ms)\n');
+    for (const [genre, g] of Object.entries(GENRES))
+    {
+        const [up, down] = ['joyful', 'melancholy'].map(emotion => compose({ title: `Report ${genre}`, genre, emotion }));
+        const lead = up.tracks.find(t => t.role === 'lead');
+        const band = `lead ${lead ? `${lead.bank ? 'chip ' : ''}${lead.program}` : '-'}, ${up.tracks.length} parts`;
+        const pocket = Object.entries(g.feel?.pocket ?? {}).map(([k, v])=> `${k} ${v}`).join(' ');
+        console.log(`${genre.padEnd(16)} ${`${up.tempo}/${down.tempo}`.padEnd(8)} ${up.key.padEnd(3)} ${(g.form ?? '-').padEnd(7)} `
+            + `${band.padEnd(18)} rev ${String(g.mix?.reverb ?? 1).padEnd(4)} del ${String(g.mix?.delay ?? 1).padEnd(4)} `
+            + `tight ${String(g.feel?.tight ?? 1).padEnd(4)} ${pocket}`);
+    }
 }
 
 const songs = CATALOG.filter(c => !ids.length || ids.includes(c.id));

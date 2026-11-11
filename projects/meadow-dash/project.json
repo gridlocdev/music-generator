@@ -130,7 +130,8 @@
     },
     "seed": "Meadow Dash",
     "sound": "chip",
-    "salt": "Meadow Dash"
+    "salt": "Meadow Dash",
+    "genre": "Overworld"
   },
   "chords": [
     {

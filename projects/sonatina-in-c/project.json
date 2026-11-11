@@ -233,7 +233,8 @@
     },
     "seed": "Sonatina in C",
     "sound": "gm",
-    "salt": "Sonatina in C"
+    "salt": "Sonatina in C",
+    "genre": "Classical"
   },
   "chords": [
     {
@@ -839,8 +840,8 @@
         "solo": false,
         "lowCut": 150,
         "sends": {
-          "reverb": 0.25,
-          "delay": 0.16
+          "reverb": 0.35,
+          "delay": 0
         },
         "autoPan": null,
         "duck": null
@@ -862,209 +863,37 @@
         "reverb": [
           {
             "beat": 0,
-            "value": 0.25,
+            "value": 0.35,
             "curve": "set"
           },
           {
             "beat": 32,
-            "value": 0.25,
+            "value": 0.35,
             "curve": "set"
           },
           {
             "beat": 36,
-            "value": 0.3125,
+            "value": 0.4375,
             "curve": "linear"
           },
           {
             "beat": 64,
-            "value": 0.3125,
+            "value": 0.4375,
             "curve": "set"
           },
           {
             "beat": 68,
-            "value": 0.25,
+            "value": 0.35,
             "curve": "linear"
           },
           {
             "beat": 160,
-            "value": 0.25,
+            "value": 0.35,
             "curve": "set"
           },
           {
             "beat": 164,
-            "value": 0.4,
-            "curve": "linear"
-          }
-        ],
-        "delay": [
-          {
-            "beat": 0,
-            "value": 0.064,
-            "curve": "set"
-          },
-          {
-            "beat": 14,
-            "value": 0.48,
-            "curve": "set"
-          },
-          {
-            "beat": 16,
-            "value": 0.48,
-            "curve": "set"
-          },
-          {
-            "beat": 16.5,
-            "value": 0.064,
-            "curve": "linear"
-          },
-          {
-            "beat": 28,
-            "value": 0.48,
-            "curve": "set"
-          },
-          {
-            "beat": 30,
-            "value": 0.48,
-            "curve": "set"
-          },
-          {
-            "beat": 30.5,
-            "value": 0.064,
-            "curve": "linear"
-          },
-          {
-            "beat": 46,
-            "value": 0.48,
-            "curve": "set"
-          },
-          {
-            "beat": 48,
-            "value": 0.48,
-            "curve": "set"
-          },
-          {
-            "beat": 48.5,
-            "value": 0.064,
-            "curve": "linear"
-          },
-          {
-            "beat": 60,
-            "value": 0.48,
-            "curve": "set"
-          },
-          {
-            "beat": 64,
-            "value": 0.48,
-            "curve": "set"
-          },
-          {
-            "beat": 64.5,
-            "value": 0.064,
-            "curve": "linear"
-          },
-          {
-            "beat": 78.75,
-            "value": 0.48,
-            "curve": "set"
-          },
-          {
-            "beat": 80,
-            "value": 0.48,
-            "curve": "set"
-          },
-          {
-            "beat": 80.5,
-            "value": 0.064,
-            "curve": "linear"
-          },
-          {
-            "beat": 92,
-            "value": 0.48,
-            "curve": "set"
-          },
-          {
-            "beat": 94,
-            "value": 0.48,
-            "curve": "set"
-          },
-          {
-            "beat": 94.5,
-            "value": 0.064,
-            "curve": "linear"
-          },
-          {
-            "beat": 110,
-            "value": 0.48,
-            "curve": "set"
-          },
-          {
-            "beat": 112,
-            "value": 0.48,
-            "curve": "set"
-          },
-          {
-            "beat": 112.5,
-            "value": 0.064,
-            "curve": "linear"
-          },
-          {
-            "beat": 126,
-            "value": 0.48,
-            "curve": "set"
-          },
-          {
-            "beat": 128,
-            "value": 0.48,
-            "curve": "set"
-          },
-          {
-            "beat": 128.5,
-            "value": 0.064,
-            "curve": "linear"
-          },
-          {
-            "beat": 142,
-            "value": 0.48,
-            "curve": "set"
-          },
-          {
-            "beat": 144,
-            "value": 0.48,
-            "curve": "set"
-          },
-          {
-            "beat": 144.5,
-            "value": 0.064,
-            "curve": "linear"
-          },
-          {
-            "beat": 156,
-            "value": 0.48,
-            "curve": "set"
-          },
-          {
-            "beat": 158,
-            "value": 0.48,
-            "curve": "set"
-          },
-          {
-            "beat": 158.5,
-            "value": 0.064,
-            "curve": "linear"
-          },
-          {
-            "beat": 174,
-            "value": 0.48,
-            "curve": "set"
-          },
-          {
-            "beat": 176,
-            "value": 0.48,
-            "curve": "set"
-          },
-          {
-            "beat": 176.5,
-            "value": 0.064,
+            "value": 0.5599999999999999,
             "curve": "linear"
           }
         ]
@@ -1083,7 +912,7 @@
             [5.75,0.25,64,83],
             [6,2,62,101],
             [8,0.25,71,106,{"ornament":true}],
-            [8.25,0.75,72,96],
+            [8.25,0.75,72,96,{"written":8}],
             [9,0.5,71,96],
             [9.5,0.5,69,89],
             [10,1,67,101],
@@ -1108,7 +937,7 @@
             [26.25,0.25,62,91,{"ornament":true}],
             [26.5,0.25,64,91,{"ornament":true}],
             [26.75,0.25,62,91,{"ornament":true}],
-            [27,1,62,91],
+            [27,1,62,91,{"written":26}],
             [28,2,60,106]
           ]
         },
@@ -1119,7 +948,7 @@
           "notes": [
             [0,0.25,67,114,{"ornament":true}],
             [0.25,0.25,66,104,{"ornament":true}],
-            [0.5,1.5,67,104],
+            [0.5,1.5,67,104,{"written":32}],
             [2,1,62,109],
             [3,1,62,104],
             [4,2,64,114],
@@ -1133,7 +962,7 @@
             [12,2,67,114],
             [14,2,62,109],
             [16,0.25,66,114,{"ornament":true}],
-            [16.25,1.75,67,104],
+            [16.25,1.75,67,104,{"written":48}],
             [18,1,62,109],
             [19,1,62,104],
             [20,2,64,114],
@@ -1146,7 +975,7 @@
             [26,1,66,109],
             [27,0.25,67,104,{"ornament":true}],
             [27.25,0.25,66,94,{"ornament":true}],
-            [27.5,0.5,66,94],
+            [27.5,0.5,66,94,{"written":59}],
             [28,4,67,114]
           ]
         },
@@ -1157,7 +986,7 @@
           "notes": [
             [0,0.25,60,110,{"ornament":true}],
             [0.25,0.25,59,100,{"ornament":true}],
-            [0.5,1.5,60,100],
+            [0.5,1.5,60,100,{"written":64}],
             [2,1,64,105],
             [3,1,67,100],
             [4,1.5,62,110],
@@ -1174,7 +1003,7 @@
             [14,0.25,57,105,{"ornament":true}],
             [14.25,0.25,55,95,{"ornament":true}],
             [14.5,0.25,53,95,{"ornament":true}],
-            [14.75,1.25,55,95],
+            [14.75,1.25,55,95,{"written":78}],
             [16,0.5,64,110],
             [16.5,0.5,65,93],
             [17,0.5,67,100],
@@ -1191,7 +1020,7 @@
             [26,0.25,64,105,{"ornament":true}],
             [26.25,0.25,62,95,{"ornament":true}],
             [26.5,0.25,60,95,{"ornament":true}],
-            [26.75,1.25,62,95],
+            [26.75,1.25,62,95,{"written":90}],
             [28,2,60,110]
           ]
         },
@@ -1202,7 +1031,7 @@
           "notes": [
             [0,0.25,63,117,{"ornament":true}],
             [0.25,0.25,62,107,{"ornament":true}],
-            [0.5,1.5,63,107],
+            [0.5,1.5,63,107,{"written":96}],
             [2,1,67,112],
             [3,1,67,107],
             [4,2,68,117],
@@ -1219,7 +1048,7 @@
             [12,0.25,77,117,{"ornament":true}],
             [12.25,0.25,75,107,{"ornament":true}],
             [12.5,0.25,74,107,{"ornament":true}],
-            [12.75,1.25,75,107],
+            [12.75,1.25,75,107,{"written":108}],
             [14,2,67,112],
             [16,1,72,117],
             [17,0.5,75,107],
@@ -1236,7 +1065,7 @@
             [25,1,74,107],
             [26,1,74,112],
             [27,0.25,77,107,{"ornament":true}],
-            [27.25,0.75,79,97],
+            [27.25,0.75,79,97,{"written":123}],
             [28,2,74,117],
             [30,2,74,112]
           ]
@@ -1248,7 +1077,7 @@
           "notes": [
             [0,0.25,60,114,{"ornament":true}],
             [0.25,0.25,59,104,{"ornament":true}],
-            [0.5,1.5,60,104],
+            [0.5,1.5,60,104,{"written":128}],
             [2,1,64,109],
             [3,1,67,103],
             [4,1.5,62,114],
@@ -1322,8 +1151,8 @@
         "solo": false,
         "lowCut": 150,
         "sends": {
-          "reverb": 0.3,
-          "delay": 0.1
+          "reverb": 0.42,
+          "delay": 0
         },
         "autoPan": {
           "rate": 0.11,
@@ -1398,37 +1227,37 @@
         "reverb": [
           {
             "beat": 0,
-            "value": 0.3,
+            "value": 0.42,
             "curve": "set"
           },
           {
             "beat": 32,
-            "value": 0.3,
+            "value": 0.42,
             "curve": "set"
           },
           {
             "beat": 36,
-            "value": 0.375,
+            "value": 0.525,
             "curve": "linear"
           },
           {
             "beat": 64,
-            "value": 0.375,
+            "value": 0.525,
             "curve": "set"
           },
           {
             "beat": 68,
-            "value": 0.3,
+            "value": 0.42,
             "curve": "linear"
           },
           {
             "beat": 160,
-            "value": 0.3,
+            "value": 0.42,
             "curve": "set"
           },
           {
             "beat": 164,
-            "value": 0.48,
+            "value": 0.672,
             "curve": "linear"
           }
         ]

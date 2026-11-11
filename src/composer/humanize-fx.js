@@ -32,7 +32,7 @@ export function scoreOf(project)
         return [{ id: t.id, role: fx.role ?? 'lead', name: t.name, bank: t.instrument.bank, program: t.instrument.program, notes }];
     });
     return { title: g.salt ?? project.title, tempoMap: project.tempoMap, sections, tracks, chords: project.chords ?? [], beats: project.length, loop: project.loop,
-        swing: g.swing ?? 0, swingSub: g.swingSub ?? 0.5, style: g.style ?? {}, seed: g.seed ?? project.title, sound: g.sound ?? 'gm' };
+        swing: g.swing ?? 0, swingSub: g.swingSub ?? 0.5, style: g.style ?? {}, seed: g.seed ?? project.title, sound: g.sound ?? 'gm', genre: g.genre ?? '' };
 }
 
 /** @type {import('../daw/fx.js').FxType} */

@@ -1,11 +1,13 @@
 // How a song's mix is set up and how it moves: each part's channel strip, automation keyframes (a tone filter that
 // follows energy and sweeps into builds, reverb that grows in quiet sections and swells across phrases, delay throws
-// on the lead's phrase endings), and the kick hits the bass and pad duck under.
+// on the lead's phrase endings), and the kick hits the bass and pad duck under. A genre's `mix` (genre-data.js) sets
+// how wet it is and how dark: a dry funk band, a gospel choir in a church, dub's delay, lo-fi's muffled tape.
 // Pure, like compose(); to-project.js bakes it into a project's channel strips and automation lanes.
 import { beatToSeconds } from '../lib/tempo-map.js';
 import { valueAt } from '../daw/automation.js';
 import { SECTIONS } from './composer-data.js';
 import { MIX, DUCK, MOVEMENT, EXPRESSION } from './performance-data.js';
+import { genreProfile } from './plan.js';
 
 /** @typedef {import('../daw/project.js').Keyframe} Keyframe */
 
@@ -24,18 +26,22 @@ export function planMix(score)
     /** @type {Keyframe[]} */
     const open = [{ beat: 0, value: MOVEMENT.sweep.open, curve: 'set' }];
     const lead = score.tracks.find(t => t.role === 'lead');
+    const G = genreProfile(score.genre).mix ?? {};
+    // a genre's tone is a ceiling on every part's filter: lo-fi's tape never opens all the way
+    const capped = (frames)=> G.tone ? frames.map(f => ({ ...f, value: Math.min(f.value, G.tone) })) : frames;
     return {
         ducks,
         tracks: score.tracks.map(t =>
         {
-            const strip = MIX[t.role] ?? MIX.chords;
+            const plain = MIX[t.role] ?? MIX.chords;
+            const strip = { ...plain, reverb: plain.reverb * (G.reverb ?? 1), delay: plain.delay * (G.delay ?? 1) };
             const scale = MOVEMENT.swell.roles.includes(t.role) ? swells : reverb;
             return {
                 strip,
                 duck: ducks.length ? DUCK.db[t.role] ?? 0 : 0,
                 /** @type {{ tone: Keyframe[], reverb: Keyframe[], delay: Keyframe[] | null }} */
                 frames: {
-                    tone: MOVEMENT.sweep.roles.includes(t.role) ? swept : MOVEMENT.brightness.roles.includes(t.role) ? bright : open,
+                    tone: capped(MOVEMENT.sweep.roles.includes(t.role) ? swept : MOVEMENT.brightness.roles.includes(t.role) ? bright : open),
                     reverb: scale.map(f => ({ ...f, value: f.value * strip.reverb })),
                     delay: MOVEMENT.throw.roles.includes(t.role) && strip.delay > 0 && lead ? throwFrames(score, t, strip.delay) : null,
                 },

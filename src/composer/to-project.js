@@ -49,7 +49,7 @@ export function toProject(score)
         key: { tonic: first.tonic, mode: first.mode },
         markers: score.sections.map(s => ({ beat: s.beat, name: s.label, meta: Object.fromEntries(SECTION_META.map(k => [k, s[k]])) })),
         loop: score.loop,
-        groove: { swing: score.swing, swingSub: score.swingSub, style: score.style, seed: score.seed, sound: score.sound, salt: score.title },
+        groove: { swing: score.swing, swingSub: score.swingSub, style: score.style, seed: score.seed, sound: score.sound, salt: score.title, genre: score.genre },
         chords: score.chords,
         tracks,
     };

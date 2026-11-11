@@ -23,7 +23,8 @@ export function planSong(spec)
     const choose = (field)=> spec[field] ?? genre[field] ?? feel[field];
     const mode = choose('mode');
     if (!MODES[mode]) throw new Error(`unknown mode: ${mode}`);
-    const keyName = spec.key ?? feel.key;
+    // the genre's usual keys (guitar keys for country, flat keys for horns), one picked by the song's seed
+    const keyName = spec.key ?? (genre.keys ? genre.keys[hash(String(spec.seed ?? spec.title ?? spec.id ?? 'song'), 'key') % genre.keys.length] : feel.key);
     const grooveName = choose('groove');
     const groove = GROOVES[grooveName];
     if (!groove) throw new Error(`unknown groove: ${grooveName}`);
@@ -39,7 +40,7 @@ export function planSong(spec)
     if (band.drums !== null && grooveName === 'none') band.drums = null;
 
     const song = {
-        tonic: pitchClass(keyName), mode, tempo: spec.tempo ?? genre.tempo ?? feel.tempo, arousal: feel.arousal,
+        tonic: pitchClass(keyName), mode, tempo: spec.tempo ?? genreTempo(genre.tempo, feel) ?? feel.tempo, arousal: feel.arousal,
         legato: choose('legato'),
         dynamics: spec.dynamics ?? feel.dynamics,
         power: choose('power') ?? false,
@@ -111,14 +112,15 @@ export function planSong(spec)
         s.fullness = over.fullness ?? base.fullness ?? s.energy;
         s.mute = [...(base.mute ?? []), ...(over.mute ?? [])].filter(r => !over.unmute?.includes(r));
         s.breath = next && over.breath !== false ? over.breath ?? base.breath ?? null : null;
-        s.answer = over.answer ?? base.answer ?? false;
+        // a genre's call and response (the blues' harmonica answering each line, the gospel choir) and its counter lines
+        s.answer = over.answer ?? (genre.answer?.includes(s.type) || null) ?? base.answer ?? false;
         s.feel = over.feel ?? base.feel ?? null;
         s.texture = over.texture ?? 'homophonic';
         s.pedal = over.pedal ?? null;
         s.entries = i === 0 && (over.entries ?? base.entries ?? false);
         s.exits = s.ending && (over.exits ?? base.exits ?? false);
         s.vary = { lastBar: !!v.lastBar, octave: !!v.octave };
-        s.counter = over.counter ?? (s.climax ? 'harmony' : v.counter ?? 'guide');
+        s.counter = over.counter ?? genre.counter?.[s.type] ?? (s.climax ? 'harmony' : v.counter ?? 'guide');
         s.label = label(s.type, s.n, form, spec.names);
         s.scene = spec.scenes?.[s.label.toLowerCase()] ?? spec.scenes?.[`${s.type} ${s.n + 1}`] ?? spec.scenes?.[s.type] ?? '';
     });
@@ -220,3 +222,11 @@ function progressionsFor(genre, feel, mode)
 
 // one of a section's progressions, by the song's seed: a list gives every song in the genre its own
 const pickOne = (choices, seed, type)=> Array.isArray(choices) ? choices[hash(seed, 'progression', type) % choices.length] : choices;
+
+// a genre's tempo: one number, or its range [slow, fast], where the emotion's arousal places the song (a calm reggae
+// song at the slow end, an excited one at the fast)
+function genreTempo(tempo, feel)
+{
+    if (!Array.isArray(tempo)) return tempo;
+    return Math.round(tempo[0] + (tempo[1] - tempo[0]) * feel.arousal);
+}

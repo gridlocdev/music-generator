@@ -130,7 +130,8 @@
     },
     "seed": "Creaking Halls",
     "sound": "chip",
-    "salt": "Creaking Halls"
+    "salt": "Creaking Halls",
+    "genre": "Haunted house"
   },
   "chords": [
     {

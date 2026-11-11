@@ -78,3 +78,36 @@ test('genres sing different melodies: pace, steps and leaps, syncopation, range'
     assert.ok(by.chiptune.pace > by.cinematic.pace * 1.5);
     assert.ok(by.celtic.steps > by.synthwave.steps + 0.3, 'a reel steps, a synth hook leaps');
 });
+
+test('genres differ in sound and shape: tempo, key, band, mix, form and feel', ()=>
+{
+    const songs = Object.fromEntries(Object.keys(GENRES).map(g => [g, compose({ title: `Report ${g}`, genre: g, emotion: 'joyful' })]));
+    // every genre names its whole band, its tempo range and its mix
+    for (const [name, g] of Object.entries(GENRES))
+    {
+        assert.ok(g.tempo && g.mix, `${name}: tempo and mix`);
+        assert.deepEqual(Object.keys(g.band ?? {}).sort(), ['arp', 'bass', 'chords', 'counter', 'drums', 'lead', 'pad'], `${name}: the whole band`);
+        const [lo, hi] = Array.isArray(g.tempo) ? g.tempo : [g.tempo, g.tempo];
+        assert.ok(songs[name].tempo >= lo && songs[name].tempo <= hi, `${name} at ${songs[name].tempo}`);
+        if (g.keys) assert.ok(g.keys.includes(songs[name].key), `${name} in ${songs[name].key}`);
+    }
+    // no two genres share a lead instrument, a band and a tempo range all at once
+    const sound = (g)=> JSON.stringify([GENRES[g].band, GENRES[g].tempo]);
+    assert.equal(new Set(Object.keys(GENRES).map(sound)).size, Object.keys(GENRES).length);
+    assert.ok(songs.reggae.tempo < songs.edm.tempo && songs['lo-fi-hip-hop'].tempo < songs.chiptune.tempo);
+    assert.ok(GENRES.gospel.mix.reverb > 1 && GENRES.funk.mix.reverb < 0.5 && GENRES.reggae.mix.delay > 2);
+    // their own forms: jazz solos between heads, reggae's dub is drums and bass, a film score adds a layer each section
+    const types = (g)=> songs[g].sections.map(s => s.type);
+    assert.ok(types('jazz').includes('solo') && types('gospel').at(-2) === 'vamp' && types('celtic').join().includes('A,A,B,B'));
+    const playing = (score, type)=>
+    {
+        const s = score.sections.find(x => x.type === type);
+        return score.tracks.filter(t => t.notes.some(n => n.beat >= s.beat && n.beat < s.beat + s.beats)).map(t => t.role).sort();
+    };
+    assert.deepEqual(playing(songs.reggae, 'dub'), ['bass', 'drums']);
+    const film = ['A', 'B', 'C', 'E'].map(t => playing(songs.cinematic, t).length);
+    assert.ok(film.every((n, i)=> !i || n >= film[i - 1]) && film.at(-1) > film[0], `film layers ${film}`);
+    assert.ok(!playing(songs.edm, 'build').includes('bass') && playing(songs.edm, 'drop').includes('bass'), 'the drop brings the bass');
+    // and their own ornaments: celtic rolls and cuts
+    assert.ok(songs.celtic.tracks.find(t => t.role === 'lead').notes.filter(n => n.ornament).length > 10);
+});

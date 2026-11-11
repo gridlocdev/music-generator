@@ -36,7 +36,7 @@ test('a performance is deterministic and keeps every note playable', ()=>
 
 test('drums and bass stay on the grid; melodic parts drift by no more than their jitter', ()=>
 {
-    const score = compose(GENRE_SONGS[0]);
+    const score = compose({ ...GENRE_SONGS[0], genre: '' });       // no genre: no pocket, the plain jitter
     const spb = 60 / Math.max(...score.tempoMap.map(t => t.bpm));       // the fastest tempo: the most beats per ms
     perform(score).forEach((notes, i)=>
     {
@@ -51,6 +51,23 @@ test('drums and bass stay on the grid; melodic parts drift by no more than their
         }
         if (!max) assert.deepEqual(notes.filter(n => !n.ghost).map(n => n.beat), written.map(n => n.beat), t.role);
     });
+});
+
+test("a genre's pocket: lo-fi's chords and snare sit behind the beat, and the kick holds the grid", ()=>
+{
+    const lofi = compose({ title: 'Pocket', genre: 'lo-fi-hip-hop', emotion: 'tender' });
+    const spb = 60 / lofi.tempo;
+    // mean ms later than the same score played with no genre (the same swing, no pocket)
+    const late = (score, role, keep = ()=> true)=>
+    {
+        const i = score.tracks.findIndex(t => t.role === role);
+        const pick = (notes)=> notes.filter(n => !n.ghost && !n.candy && keep(n));
+        const a = pick(perform(score)[i]), b = pick(perform({ ...score, genre: '' })[i]);
+        return a.reduce((sum, n, k)=> sum + n.beat - b[k].beat, 0) / a.length * spb * 1000;
+    };
+    assert.ok(late(lofi, 'chords') > 15, `chords ${late(lofi, 'chords').toFixed(1)} ms`);
+    assert.ok(late(lofi, 'drums', n => n.key === 38) > 15, 'the snare lies back');
+    assert.ok(Math.abs(late(lofi, 'drums', n => n.key === 36)) < 1, 'the kick holds the grid');
 });
 
 test('a repeated key always ends before it sounds again', ()=>

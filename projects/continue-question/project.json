@@ -110,7 +110,8 @@
     },
     "seed": "Continue?",
     "sound": "chip",
-    "salt": "Continue?"
+    "salt": "Continue?",
+    "genre": "Game over"
   },
   "chords": [
     {

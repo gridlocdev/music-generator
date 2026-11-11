@@ -237,7 +237,8 @@
     },
     "seed": "Clocktower Core",
     "sound": "chip",
-    "salt": "Clocktower Core"
+    "salt": "Clocktower Core",
+    "genre": "Boss fight"
   },
   "chords": [
     {

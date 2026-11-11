@@ -69,14 +69,16 @@ export const CURVE = { window: [0.5, 0.9], margin: 0.04, dip: 0.15 };
 // `down` into its cadence; the next phrase starts back at the tempo, as a pianist breathes before going on
 export const TEMPO = { push: 2, ritardando: { bars: 2, to: 0.85 }, rubato: { up: 0.07, down: 0.14, peak: 0.6, bars: 4 } };
 
-// After a change of meter the drums play a plain, accented pattern for this many bars, so the new meter is clear.
 // Ornaments (ornaments.js), for a style with `ornaments` above 0. Steps are `fast` beats at a tempo above
 // `slowAbove` bpm, else `slow` (a 60 bpm nocturne trills in eighths of a beat). The other figures are the shortest
 // note, in beats, each ornament goes on: a trill on the note before a phrase's last (`cadence` times the style's
 // chance, taking `trillShare` of the note), a turn on a long note, a mordent on a phrase's first, a grace note before a
-// leap up of `leap` semitones. `gap` seconds keep them apart; the notes after an ornament's first are `soften` quieter.
+// leap up of `leap` semitones. A genre's own: a roll on a `roll`-beat note, a run into a phrase's last note of `run`
+// beats, a slide into a note `slide` semitones or more above the last. `gap` seconds keep them apart; the notes after
+// an ornament's first are `soften` quieter.
 export const ORNAMENTS = { fast: 0.25, slow: 0.125, slowAbove: 90, trill: 1, trillShare: 0.6, cadence: 2, turn: 2, mordent: 1,
-    grace: 1, leap: 5, gap: 3, soften: 10 };
+    grace: 1, leap: 5, gap: 3, soften: 10, roll: 1, run: 1.5, slide: 2 };
+// After a change of meter the drums play a plain, accented pattern for this many bars, so the new meter is clear.
 export const METER_CHANGE = { simpleBars: 2 };
 
 // ---- The motif -------------------------------------------------------------------------------------------

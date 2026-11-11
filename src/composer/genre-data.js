@@ -3,10 +3,21 @@
 // A spec's `genre` names one (case and spaces don't matter: 'Bossa nova' is bossa-nova); a genre with no profile
 // changes nothing. Every field is optional, and anything the spec sets itself wins.
 //
-// Defaults, in place of the emotion's: mode, groove, comp, arp, style, swing, legato, form, power, tempo, sound ('chip':
+// Defaults, in place of the emotion's: mode, groove, comp, arp, style, swing, legato, form, power, sound ('chip':
 //              the chip instruments of audio/chip-instruments-data.js in place of General MIDI ones)
-//   band       instruments over the emotion's, as a spec's band: a program per part, null leaves the part out
+//   tempo      bpm, or the genre's range [slow, fast], where the emotion's arousal places the song
+//   keys       the genre's usual keys (a guitar's E, A, G, D; a horn's Bb, Eb, F), one picked by the song's seed
+//   band       instruments over the emotion's, as a spec's band: a program per part, null leaves the part out. Every
+//              profile names all seven, so a jazz song never plays the emotion's band
 //   arrange    ARRANGEMENT thresholds of its own: { arp: 0 } has the arpeggio (a piano's left hand) play throughout
+//   form       FORMS' name: head (jazz: head, solos, head), tune (celtic AABB), vamp (gospel), dub (reggae), swell (film)
+// Performance:
+//   feel       { pocket, tight }: pocket, ms each part sits behind the beat (below 0, ahead), per role and `snare`;
+//              tight, the timing drift as a multiple of EXPRESSION.jitterMs (0: sequenced, 1.6: lo-fi's drunk beat)
+//   ornaments  chances of each ornament on the lead (ornaments.js): trill, turn, mordent, grace, roll and cut (celtic),
+//              slide (from a semitone below: a fiddle, a bend), run (gospel, down into a phrase's last note)
+//   counter    per section type, how the countermelody goes: guide, harmony or contrary (parts.js)
+//   answer     the section types where the counter answers the lead in call and response
 // Harmony:
 //   progressions  per section type, in place of the emotion's; a genre that sets its mode brings them, so the chords
 //              are written for that mode; one that doesn't splits them { bright, dark } (a side left out plays the
@@ -14,6 +25,9 @@
 //   extend     (false: plain triads, whatever the emotion's colour) plays plain triads as sevenths, ninths, dominant (every major chord a dominant 7th), add9, sixths,
 //              sus2 or sus4; or a list of { how, chance }, each chord taking the first that comes up
 //   cadences   cadence chords over CADENCES', per cadence { bright, dark }; a modal mode's own cadence still wins
+// Mix:
+//   mix        { reverb, delay }: every part's sends, as multiples of MIX's (a dry funk band 0.35, a church 1.7, dub's
+//              delay 2.5); tone: a ceiling in Hz on every part's filter (lo-fi's muffled tape)
 // Accompaniment:
 //   voicing    the chord part's voicing: close (the default), shell (3rd and 7th, the root left to the bass) or
 //              drop2 (the second voice from the top an octave down: open, orchestral)
@@ -32,6 +46,11 @@
 //   develop    per section type, how its motif bars develop the motif, in place of SECTIONS' (lib/motif.js)
 export const GENRES = {
     'blues': {
+        mix: { reverb: 0.7, delay: 0.3 },
+        tempo: [70, 120], keys: ['E', 'A', 'G', 'C', 'Bb'],
+        band: { lead: 26, counter: 22, arp: null, chords: 3, pad: null, bass: 32, drums: 32 },   // jazz guitar, harmonica, honky-tonk piano, upright bass, jazz kit
+        feel: { pocket: { lead: 15, snare: 10 } }, ornaments: { slide: 0.6, grace: 0.2 },   // bends
+        arrange: { counter: 0.6 },   // the harp fills behind every chorus
         mode: 'major', groove: 'swing', swing: 0.67, comp: 'offbeat', form: 'blues',
         style: { swing: 0.67, dim7: 0.1, secondary: 0, twoFive: 0, tritone: 0, sus: 0, borrowed: 0, mediant: 0, scoops: 0.4, ghosts: 0.5, syncopation: 0.4, earCandy: 0.25, stab: 0 },
         progressions: {
@@ -44,7 +63,13 @@ export const GENRES = {
         rules: { strongNonChord: 3.5, blue: 0.4 },
     },
     'jazz': {
-        groove: 'swing', swing: 0.67, comp: 'offbeat', style: 'jazzy',
+        mix: { reverb: 0.7, delay: 0 },
+        tempo: [72, 190], keys: ['Bb', 'Eb', 'F', 'C', 'Ab'],
+        band: { lead: 66, counter: 56, arp: 11, chords: 0, pad: null, bass: 32, drums: 32 },   // tenor sax, trumpet, vibes, piano, upright bass, jazz kit
+        feel: { pocket: { lead: 18, counter: 12, bass: -6 } }, ornaments: { grace: 0.3, slide: 0.3 },   // horns lay back, the bass walks on top
+        counter: { A: 'harmony', solo: 'guide', B: 'guide' },   // the head in two horns, backgrounds under the solos
+        groove: 'swing', swing: 0.67, comp: 'offbeat', style: 'jazzy', form: 'head',
+        arrange: { chords: 0.2, bass: 0.2, drums: 0.3, arp: 0.7 },   // the rhythm section from the first bar, the vibes for the solos
         // ii–V–I and turnarounds, rhythm changes' I–vi–ii–V, the IV to #iv° walk-up, the minor iiø–V–i
         progressions: {
             bright: {
@@ -67,9 +92,13 @@ export const GENRES = {
         rules: { strongNonChord: 3, chordLeap: 0.3, turn: 0.9 },   // a 9th or 13th on the beat is colour, not a clash
         // bebop: running eighths that turn often and leap through the chord, the line pushed off the beat
         pace: 1.25, offbeat: 0.6,
-        develop: { A: ['repeat', 'sequence'], B: ['sequence', 'sequence'], chorus: ['repeat', 'diminish'] },
+        develop: { A: ['repeat', 'sequence'], B: ['sequence', 'sequence'], chorus: ['repeat', 'diminish'], solo: ['diminish', 'retrograde'] },
     },
     'bossa-nova': {
+        mix: { reverb: 0.8, delay: 0.3 },
+        tempo: [112, 140], keys: ['F', 'C', 'D', 'G', 'Bb'],
+        band: { lead: 73, counter: 66, arp: null, chords: 24, pad: null, bass: 32, drums: 40 },   // flute, tenor sax, nylon guitar, upright bass, brushes
+        feel: { pocket: { lead: 12 }, tight: 0.8 },
         groove: 'bossa', comp: 'bossa', legato: 0.9,
         // slow-moving major sevenths, the II7 a step up, the chord a half step down to slide back home
         progressions: {
@@ -92,6 +121,11 @@ export const GENRES = {
         motif: { repeat: 0, narrow: 0, range: 2, flat: 0 },
     },
     'lo-fi-hip-hop': {
+        mix: { reverb: 0.6, delay: 0.8, tone: 5000 },
+        tempo: [70, 92], keys: ['Eb', 'F', 'Ab', 'Db', 'C'],
+        band: { lead: 11, counter: 73, arp: 4, chords: 4, pad: 89, bass: 33, drums: 8 },   // vibes, flute, electric piano, warm pad, bass, a room kit
+        feel: { pocket: { lead: 25, counter: 20, chords: 30, arp: 20, snare: 25 }, tight: 1.6 },   // the drunk, lazy beat
+        arrange: { drums: 0.2, bass: 0.25 },   // the beat is the song: it plays from the start
         groove: 'boomBap', comp: 'push', arp: 'broken', legato: 0.95, style: { ghosts: 0.4, syncopation: 0.3, dim7: 0 },
         // two- and four-chord loops of sevenths that never quite land: IVmaj7 to iii7, a ii–V that goes nowhere
         progressions: {
@@ -115,6 +149,11 @@ export const GENRES = {
         phrases: 'abab',
     },
     'funk': {
+        mix: { reverb: 0.35, delay: 0.3 },
+        tempo: [92, 118], keys: ['E', 'A', 'D', 'G'],
+        band: { lead: 62, counter: 66, arp: null, chords: 7, pad: null, bass: 36, drums: 0 },   // synth brass, tenor sax, clavinet, slap bass
+        feel: { pocket: { snare: -4 }, tight: 0.35 }, counter: { chorus: 'harmony', pre: 'harmony' },   // tight; the horns in harmony
+        arrange: { drums: 0.2, bass: 0.2, counter: 0.6 },   // the groove from bar one; the horns stab early
         mode: 'dorian', groove: 'funk', comp: 'funk', style: 'funky', legato: 0.5,
         progressions: {
             intro: ['i7:2 IV7:2', 'i7:4'], verse: ['i7:2 IV7:2', 'i7:3 IV7', 'i7 i7 VII7 IV7'], pre: ['VII:2 IV:2', 'IV7:2 v7:2'],
@@ -125,7 +164,13 @@ export const GENRES = {
         cadences: { tonic: { dark: ['IV7', 'i7'] }, dominant: { dark: ['IV7'] } },
     },
     'gospel': {
-        groove: 'ballad', comp: 'pulse', swing: 0.67, arp: 'broken', legato: 0.95, style: { dim7: 0.35, scoops: 0.4 },
+        mix: { reverb: 1.7, delay: 0.3 },
+        tempo: [66, 128], keys: ['Ab', 'Bb', 'Eb', 'Db', 'F'],
+        band: { lead: 53, counter: 66, arp: 0, chords: 16, pad: 52, bass: 33, drums: 0 },   // voice, tenor sax, piano, organ, choir, bass
+        feel: { pocket: { lead: -8, chords: -5 } }, ornaments: { run: 0.7, slide: 0.4, turn: 0.15 },   // pushes ahead; runs into the cadence
+        answer: ['chorus', 'vamp'], counter: { verse: 'guide', bridge: 'harmony' },   // the choir answers the lead
+        groove: 'ballad', comp: 'pulse', swing: 0.67, arp: 'broken', legato: 0.95, style: { dim7: 0.35, scoops: 0.4 }, form: 'vamp',
+        arrange: { counter: 0.6 },   // the choir answers early
         // walk-ups in the bass (I, I/3, IV, #iv°), secondary dominants into every chord, and the 'amen' iv
         progressions: {
             bright: {
@@ -147,6 +192,10 @@ export const GENRES = {
         develop: { chorus: ['repeat', 'sequence'], verse: ['repeat', 'repeat'] },
     },
     'country': {
+        mix: { reverb: 0.6, delay: 0.5 },
+        tempo: [84, 140], keys: ['G', 'D', 'A', 'E', 'C'],
+        band: { lead: 110, counter: 22, arp: 105, chords: 25, pad: null, bass: 32, drums: 40 },   // fiddle, harmonica, banjo, steel-string guitar, upright bass, brushes
+        feel: { pocket: { snare: 5 } }, ornaments: { slide: 0.6, grace: 0.3 }, counter: { chorus: 'harmony' },   // fiddle slides, the high harmony
         groove: 'train', comp: 'offbeat', arp: 'roll',
         // three chords and the truth: I, IV, V, the II7 that pushes to V, the I7 that pushes to IV
         progressions: {
@@ -156,7 +205,6 @@ export const GENRES = {
                 bridge: ['vi IV I V', 'IV IV I I7 II7 II7 V V'], post: 'IV I', outro: ['IV V I:2', 'II7 V7 I:2'],
             },
         },
-        avoid: { bright: [4, 7] },
         cadences: { tonic: { bright: ['V7', 'I'] } },
         // a plain sung line: on the beat, by step, a word per note, the same pitch said twice
         offbeat: -0.5, avoid: { bright: [4, 7] },
@@ -164,9 +212,13 @@ export const GENRES = {
         motif: { repeat: 0.4, leap: 1.6 },
     },
     'celtic': {
-        mode: 'mixolydian', groove: 'bodhran', comp: 'waltz', style: { dim7: 0 },
+        mix: { reverb: 1.3, delay: 0.6 },
+        tempo: [90, 132], keys: ['D', 'G', 'A', 'E'],
+        band: { lead: 78, counter: 110, arp: 46, chords: 24, pad: 52, bass: 42, drums: 0 },   // tin whistle, fiddle, harp, nylon guitar, choir, cello
+        feel: { tight: 0.6 }, ornaments: { roll: 0.3, cut: 0.35, turn: 0.1 }, counter: { B: 'harmony' },   // rolls and cuts; the fiddle joins the B strain
+        mode: 'mixolydian', groove: 'bodhran', comp: 'waltz', style: { dim7: 0 }, form: 'tune',
         progressions: {
-            intro: 'I VII I VII', verse: 'I VII IV I', pre: 'IV IV VII VII', chorus: 'IV I VII I',
+            intro: 'I VII I VII', verse: 'I VII IV I', A: ['I I VII VII', 'I VII I IV'], B: ['IV IV I I', 'VII VII I I'], pre: 'IV IV VII VII', chorus: 'IV I VII I',
             bridge: 'v VII I I', post: 'VII I', outro: 'VII I:3',
         },
         avoid: { bright: [4], dark: [6] },      // the gapped hexatonic scales of the old tunes
@@ -178,7 +230,12 @@ export const GENRES = {
         develop: { verse: ['repeat', 'sequence'], chorus: ['repeat', 'repeat'] },
     },
     'reggae': {
-        groove: 'reggae', comp: 'skank', legato: 0.7,
+        mix: { reverb: 0.8, delay: 2.5 },
+        tempo: [66, 92], keys: ['G', 'A', 'C', 'D', 'F'],
+        band: { lead: 114, counter: 22, arp: null, chords: 27, pad: 16, bass: 33, drums: 0 },   // steel drums, harmonica, clean guitar skank, organ bubble, bass
+        feel: { pocket: { lead: 22, counter: 18, chords: 15, snare: 15 } }, answer: ['verse'],   // way back; the harmonica answers
+        groove: 'reggae', comp: 'skank', legato: 0.7, form: 'dub',
+        arrange: { bass: 0.2, drums: 0.25, chords: 0.3, pad: 0.6, counter: 0.85 },   // the riddim first: drums and bass, then the skank
         // a two-chord vamp a bar each: I–IV, I–V, i–iv, i–VII
         progressions: {
             bright: {
@@ -198,6 +255,10 @@ export const GENRES = {
         motif: { repeat: 0.3, range: 1.5 },
     },
     'rock': {
+        mix: { reverb: 0.6, delay: 0.6 },
+        tempo: [100, 160], keys: ['E', 'A', 'D', 'G'],
+        band: { lead: 29, counter: 30, arp: 27, chords: 30, pad: null, bass: 34, drums: 16 },   // overdriven and distorted guitars, a clean one, pick bass, the power kit
+        feel: { pocket: { snare: -3 }, tight: 0.7 }, ornaments: { slide: 0.4 }, counter: { chorus: 'harmony' },
         groove: 'rock', comp: 'eighths', power: true,
         // riffs on borrowed chords: bVII and bVI in a major key, the bIII–IV climb, the i–bVI–bVII run
         progressions: {
@@ -220,6 +281,10 @@ export const GENRES = {
         motif: { repeat: 0.3, leap: 0.6 },
     },
     'tango': {
+        mix: { reverb: 0.8, delay: 0 },
+        tempo: [100, 128], keys: ['D', 'A', 'G', 'E'],
+        band: { lead: 23, counter: 40, arp: null, chords: 0, pad: null, bass: 43, drums: null },   // bandoneon (accordion), violin, piano, contrabass, no kit
+        feel: { pocket: { lead: -6 }, tight: 0.6 }, ornaments: { mordent: 0.4, grace: 0.4 }, counter: { verse: 'contrary', bridge: 'contrary' },   // the bandoneon against the violin
         mode: 'harmonicMinor', groove: 'habanera', comp: 'march', legato: 0.6,
         progressions: {
             intro: 'i iv V7 i', verse: 'i iv V7 i', pre: 'iv iv V7 V7', chorus: 'VI iv V7 i',
@@ -234,16 +299,25 @@ export const GENRES = {
         develop: { verse: ['sequence', 'sequence'], chorus: ['repeat', 'sequence'], bridge: ['invert', 'sequence'] },
     },
     'cinematic': {
-        groove: 'halftime', comp: 'pulse', arp: 'ostinato', style: 'cinematic',
+        mix: { reverb: 2, delay: 0.5 },
+        tempo: [64, 120], keys: ['D', 'C', 'F', 'Bb'],
+        band: { lead: 60, counter: 42, arp: 45, chords: 48, pad: 52, bass: 43, drums: 48 },   // French horn, cello, pizzicato, strings, choir, contrabass, the orchestra kit
+        feel: { tight: 0.8 }, ornaments: { grace: 0.2 }, counter: { A: 'guide', B: 'contrary', C: 'contrary', E: 'harmony' },   // the second horn
+        groove: 'halftime', comp: 'pulse', arp: 'ostinato', style: 'cinematic', form: 'swell',
+        arrange: { arp: 0.5, chords: 0.6, bass: 0.7, counter: 0.78, drums: 0.85 },   // the ostinato, then strings, low end, the second horn, drums last
         // chromatic mediants (I–bVI, i–III–bII), the minor iv in a major key, chords held over a pedal
         progressions: {
             bright: {
                 intro: ['I:2 bVI:2', 'Isus2:2 IV/1:2'], verse: ['I bVI IV I', 'I iii IV iv', 'I V/7 vi IV'],
+                A: ['I bVI IV I', 'I V/7 vi IV'], B: ['vi IV bVI bVII', 'IV iv I/3 bVI'], C: ['bVI bIII bVII IV', 'IV V vi bVI'],
+                E: ['I V vi bVI bVII I IV V', 'IV I/3 bVI bVII I bIII IV V'],
                 pre: ['IV iv bVI bVII', 'vi IV bVII V'], chorus: ['I V vi bVI bVII I IV V', 'IV I/3 bVI bVII I bIII IV V'],
                 bridge: ['bVI bIII bVII IV', 'vi III vi IV'], post: 'bVI I', outro: ['IV iv I:2', 'bVI bVII I:2'],
             },
             dark: {
                 intro: ['i:2 VI:2', 'i:2 III:2'], verse: ['i VI III VII', 'i III bII i', 'i iv VI V'],
+                A: ['i VI III VII', 'i iv VI V'], B: ['VI III iv V', 'iv VI VII V'], C: ['VI III bII V', 'i VI iv V'],
+                E: ['VI III VII i iv VI V V', 'i VI III VII VI iv V V'],
                 pre: ['iv VI VII V', 'VI III iv V'], chorus: ['VI III VII i iv VI V V', 'i VI III VII VI iv V V'],
                 bridge: ['VI III bII V', 'iv IV/4 VI V'], post: 'VI V', outro: ['iv V i:2', 'VI VII I:2'],
             },
@@ -258,6 +332,10 @@ export const GENRES = {
         develop: { chorus: ['augment', 'sequence'], verse: ['repeat', 'sequence'], bridge: ['invert', 'augment'] },
     },
     'synthwave': {
+        mix: { reverb: 1.8, delay: 1.6 },
+        tempo: [84, 118], keys: ['A', 'E', 'F#', 'C'],
+        band: { lead: 81, counter: 62, arp: 80, chords: 90, pad: 95, bass: 38, drums: 24 },   // saw lead, synth brass, square arpeggio, polysynth, sweep pad, synth bass, electronic kit
+        feel: { tight: 0.2 },   // sequenced
         mode: 'minor', groove: 'synthwave', comp: 'pulse', arp: 'sixteenths', style: 'electronic',
         progressions: {
             intro: ['i VI III VII', 'i:2 VI:2'], verse: ['i VI III VII', 'i III VII VI', 'VI III VII i'], pre: ['iv VI VII VII', 'VI VI VII VII'],
@@ -273,6 +351,10 @@ export const GENRES = {
         develop: { chorus: ['repeat', 'repeat'], verse: ['repeat', 'sequence'] },
     },
     'chiptune': {
+        mix: { reverb: 0.15, delay: 0 },
+        tempo: [120, 170], keys: ['C', 'D', 'A', 'G'],
+        band: { lead: 80, counter: 81, arp: 80, chords: null, pad: null, bass: 33, drums: 2 },   // two pulses, a pulse arpeggio, triangle bass, the noise kit
+        feel: { tight: 0 },     // sequenced to the frame
         groove: 'rock', comp: 'eighths', arp: 'tracker', sound: 'chip',
         // the consoles' own moves: bVI–bVII–I fanfares, chromatic mediants, the minor iv, secondary dominants
         progressions: {
@@ -296,6 +378,10 @@ export const GENRES = {
     },
     // the hook climbs to a held high note an octave over the verse, enters off the beat, and leaps where pop steps
     'disco': {
+        mix: { reverb: 1, delay: 0.6 },
+        tempo: [112, 128], keys: ['A', 'D', 'E', 'G'],
+        band: { lead: 61, counter: 48, arp: 4, chords: 27, pad: 49, bass: 33, drums: 0 },   // brass section, strings, electric piano, clean guitar chops, string pad, bass
+        feel: { tight: 0.4 }, counter: { chorus: 'harmony' },
         mode: 'dorian', groove: 'dance', comp: 'chop', arp: 'sixteenths', style: 'funky', legato: 0.6,
         // dorian minor-seventh vamps that swing up to IV7, and the climbing ii7–III–IV7 string line
         progressions: {
@@ -311,6 +397,8 @@ export const GENRES = {
     // solo piano, Mozart to Chopin: the left hand (a HAND pattern of ARPS) under the tune in every section, the
     // tempo breathing (rubato), ornaments, appoggiaturas that sigh onto the chord, and the cadential 6/4 (I/5 V7 I)
     'classical': {
+        mix: { reverb: 1.4, delay: 0 },
+        tempo: [58, 136],
         groove: 'none', comp: 'sustain', arp: 'nocturne', style: 'romantic', legato: 1, form: 'ternary',
         band: { lead: 0, arp: 0, counter: null, chords: null, pad: null, bass: null, drums: null },
         arrange: { arp: 0 },
@@ -335,7 +423,12 @@ export const GENRES = {
         rules: { strongNonChord: 4, appoggiatura: 3 },
     },
     'edm': {
+        mix: { reverb: 1.2, delay: 1.4 },
+        tempo: [120, 128], keys: ['F', 'A', 'C', 'G'],
+        band: { lead: 81, counter: 90, arp: 81, chords: 90, pad: 95, bass: 38, drums: 24 },   // saw lead and arpeggio, polysynth, sweep pad, synth bass, electronic kit
+        feel: { tight: 0 },
         groove: 'dance', comp: 'upbeats', arp: 'sixteenths', style: 'electronic', form: 'edm',
+        arrange: { bass: 0.7, counter: 0.9 },   // a build strips out the low end, so the drop's bass hits
         // four-bar loops that never resolve: vi–IV–I–V, the 'epic' i–VI–III–VII, a suspended build
         progressions: {
             bright: {

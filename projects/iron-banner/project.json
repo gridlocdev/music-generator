@@ -188,7 +188,8 @@
     },
     "seed": "Iron Banner",
     "sound": "gm",
-    "salt": "Iron Banner"
+    "salt": "Iron Banner",
+    "genre": ""
   },
   "chords": [
     {

@@ -156,6 +156,12 @@ export const FORMS = {
     blues:   ['intro', 'blues', 'blues', 'blues', 'outro'],
     ternary: ['intro', 'A', 'B', 'A', 'outro'],                     // a nocturne or minuet: theme, contrast, theme
     rondo:   ['intro', 'A', 'B', 'A', 'C', 'A', 'outro'],           // a refrain between two episodes
+    // genre forms
+    head:    ['intro', 'A', 'A', 'B', 'A', 'solo', 'solo', 'A', 'B', 'A', 'outro'],   // jazz: the tune, choruses of solos, the tune
+    tune:    ['intro', 'A', 'A', 'B', 'B', 'A', 'A', 'B', 'B', 'outro'],             // a reel or jig: each strain twice, the whole twice
+    vamp:    ['intro', 'verse', 'chorus', 'verse', 'chorus', 'bridge', 'chorus', 'vamp', 'outro'],   // gospel: ends on a vamp that climbs
+    dub:     ['intro', 'verse', 'chorus', 'verse', 'chorus', 'dub', 'chorus', 'outro'],   // reggae: a dub break of drums and bass
+    swell:   ['intro', 'A', 'B', 'C', 'E', 'outro'],                // film: one long rise, a layer more each section, no going back
 };
 
 // ---- Section roles -----------------------------------------------------------------------------
@@ -213,6 +219,15 @@ export const SECTIONS = {
     // a 12-bar blues chorus: the I–IV–V cycle, three 4-bar lines; the last bar turns around to V
     blues:  { name: 'Blues chorus', bars: 12, energy: 0.6, progression: 'I7 IV7 I7 I7 IV7 IV7 I7 I7 V7 IV7 I7 V7',
               melody: { register: 1, density: 0.8, contour: 'wave', cadences: ['half', 'half', 'half'] }, develop: ['repeat', 'sequence'] },
+    // jazz: a chorus of improvising over the head's changes, busier and higher, the motif turned round
+    solo:   { name: 'Solo', bars: 8, energy: 0.8, progressionFrom: 'A', endOn: 'dominant',
+              melody: { register: 2, density: 1.3, contour: 'wave', cadences: ['half', 'half'] }, develop: ['retrograde', 'diminish'] },
+    // gospel: the ending vamp, a short loop climbing in energy, the choir (the counter) answering the lead
+    vamp:   { name: 'Vamp', bars: 8, energy: 0.95, progressionFrom: 'post', answer: true, endOn: 'tonic',
+              melody: { register: 4, density: 1.2, contour: 'rise', cadences: ['half', 'full'] }, develop: ['fragment', 'repeat'] },
+    // reggae: the dub, the band dropped out to drums and bass under heavy delay
+    dub:    { name: 'Dub', bars: 8, energy: 0.55, fullness: 0.6, melody: null, contrast: true, progressionFrom: 'verse',
+              mute: ['chords', 'counter', 'arp', 'pad'] },
     // one bar of 2/4 that delays what comes next: a phrase length broken on purpose
     link:   { name: 'Link', bars: 1, energy: 0.6, meter: '2/4', melody: null, endOn: 'dominant', progressionFrom: 'pre' },
 };

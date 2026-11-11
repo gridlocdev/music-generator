@@ -162,7 +162,8 @@
     },
     "seed": "Café at Closing Time",
     "sound": "gm",
-    "salt": "Café at Closing Time"
+    "salt": "Café at Closing Time",
+    "genre": "Bossa nova"
   },
   "chords": [
     {
@@ -858,8 +859,8 @@
         "solo": false,
         "lowCut": 150,
         "sends": {
-          "reverb": 0.25,
-          "delay": 0.16
+          "reverb": 0.2,
+          "delay": 0.048
         },
         "autoPan": null,
         "duck": null
@@ -881,239 +882,239 @@
         "reverb": [
           {
             "beat": 0,
-            "value": 0.25,
+            "value": 0.2,
             "curve": "set"
           },
           {
             "beat": 144,
-            "value": 0.25,
+            "value": 0.2,
             "curve": "set"
           },
           {
             "beat": 148,
-            "value": 0.3125,
+            "value": 0.25,
             "curve": "linear"
           },
           {
             "beat": 176,
-            "value": 0.3125,
+            "value": 0.25,
             "curve": "set"
           },
           {
             "beat": 180,
-            "value": 0.25,
+            "value": 0.2,
             "curve": "linear"
           },
           {
             "beat": 208,
-            "value": 0.25,
+            "value": 0.2,
             "curve": "set"
           },
           {
             "beat": 212,
-            "value": 0.4,
+            "value": 0.32000000000000006,
             "curve": "linear"
           }
         ],
         "delay": [
           {
             "beat": 0,
-            "value": 0.064,
+            "value": 0.019200000000000002,
             "curve": "set"
           },
           {
             "beat": 14,
-            "value": 0.48,
+            "value": 0.14400000000000002,
             "curve": "set"
           },
           {
             "beat": 16,
-            "value": 0.48,
+            "value": 0.14400000000000002,
             "curve": "set"
           },
           {
             "beat": 16.5,
-            "value": 0.064,
+            "value": 0.019200000000000002,
             "curve": "linear"
           },
           {
             "beat": 30,
-            "value": 0.48,
+            "value": 0.14400000000000002,
             "curve": "set"
           },
           {
             "beat": 32,
-            "value": 0.48,
+            "value": 0.14400000000000002,
             "curve": "set"
           },
           {
             "beat": 32.5,
-            "value": 0.064,
+            "value": 0.019200000000000002,
             "curve": "linear"
           },
           {
             "beat": 44,
-            "value": 0.48,
+            "value": 0.14400000000000002,
             "curve": "set"
           },
           {
             "beat": 48,
-            "value": 0.48,
+            "value": 0.14400000000000002,
             "curve": "set"
           },
           {
             "beat": 48.5,
-            "value": 0.064,
+            "value": 0.019200000000000002,
             "curve": "linear"
           },
           {
             "beat": 63,
-            "value": 0.48,
+            "value": 0.14400000000000002,
             "curve": "set"
           },
           {
             "beat": 63.9,
-            "value": 0.48,
+            "value": 0.14400000000000002,
             "curve": "set"
           },
           {
             "beat": 64.4,
-            "value": 0.064,
+            "value": 0.019200000000000002,
             "curve": "linear"
           },
           {
             "beat": 72,
-            "value": 0.48,
+            "value": 0.14400000000000002,
             "curve": "set"
           },
           {
             "beat": 76,
-            "value": 0.48,
+            "value": 0.14400000000000002,
             "curve": "set"
           },
           {
             "beat": 76.5,
-            "value": 0.064,
+            "value": 0.019200000000000002,
             "curve": "linear"
           },
           {
             "beat": 94,
-            "value": 0.48,
+            "value": 0.14400000000000002,
             "curve": "set"
           },
           {
             "beat": 96,
-            "value": 0.48,
+            "value": 0.14400000000000002,
             "curve": "set"
           },
           {
             "beat": 96.5,
-            "value": 0.064,
+            "value": 0.019200000000000002,
             "curve": "linear"
           },
           {
             "beat": 108,
-            "value": 0.48,
+            "value": 0.14400000000000002,
             "curve": "set"
           },
           {
             "beat": 112,
-            "value": 0.48,
+            "value": 0.14400000000000002,
             "curve": "set"
           },
           {
             "beat": 112.5,
-            "value": 0.064,
+            "value": 0.019200000000000002,
             "curve": "linear"
           },
           {
             "beat": 127,
-            "value": 0.48,
+            "value": 0.14400000000000002,
             "curve": "set"
           },
           {
             "beat": 127.9,
-            "value": 0.48,
+            "value": 0.14400000000000002,
             "curve": "set"
           },
           {
             "beat": 128.4,
-            "value": 0.064,
+            "value": 0.019200000000000002,
             "curve": "linear"
           },
           {
             "beat": 136,
-            "value": 0.48,
+            "value": 0.14400000000000002,
             "curve": "set"
           },
           {
             "beat": 140,
-            "value": 0.48,
+            "value": 0.14400000000000002,
             "curve": "set"
           },
           {
             "beat": 140.5,
-            "value": 0.064,
+            "value": 0.019200000000000002,
             "curve": "linear"
           },
           {
             "beat": 151,
-            "value": 0.48,
+            "value": 0.14400000000000002,
             "curve": "set"
           },
           {
             "beat": 151.9,
-            "value": 0.48,
+            "value": 0.14400000000000002,
             "curve": "set"
           },
           {
             "beat": 152.4,
-            "value": 0.064,
+            "value": 0.019200000000000002,
             "curve": "linear"
           },
           {
             "beat": 164,
-            "value": 0.48,
+            "value": 0.14400000000000002,
             "curve": "set"
           },
           {
             "beat": 167.6,
-            "value": 0.48,
+            "value": 0.14400000000000002,
             "curve": "set"
           },
           {
             "beat": 168.1,
-            "value": 0.064,
+            "value": 0.019200000000000002,
             "curve": "linear"
           },
           {
             "beat": 191,
-            "value": 0.48,
+            "value": 0.14400000000000002,
             "curve": "set"
           },
           {
             "beat": 191.9,
-            "value": 0.48,
+            "value": 0.14400000000000002,
             "curve": "set"
           },
           {
             "beat": 192.4,
-            "value": 0.064,
+            "value": 0.019200000000000002,
             "curve": "linear"
           },
           {
             "beat": 200,
-            "value": 0.48,
+            "value": 0.14400000000000002,
             "curve": "set"
           },
           {
             "beat": 204,
-            "value": 0.48,
+            "value": 0.14400000000000002,
             "curve": "set"
           },
           {
             "beat": 204.5,
-            "value": 0.064,
+            "value": 0.019200000000000002,
             "curve": "linear"
           }
         ]
@@ -1322,8 +1323,8 @@
         "solo": false,
         "lowCut": 120,
         "sends": {
-          "reverb": 0.3,
-          "delay": 0.06
+          "reverb": 0.24,
+          "delay": 0.018
         },
         "autoPan": null,
         "duck": null
@@ -1415,37 +1416,37 @@
         "reverb": [
           {
             "beat": 0,
-            "value": 0.3,
+            "value": 0.24,
             "curve": "set"
           },
           {
             "beat": 144,
-            "value": 0.3,
+            "value": 0.24,
             "curve": "set"
           },
           {
             "beat": 148,
-            "value": 0.375,
+            "value": 0.3,
             "curve": "linear"
           },
           {
             "beat": 176,
-            "value": 0.375,
+            "value": 0.3,
             "curve": "set"
           },
           {
             "beat": 180,
-            "value": 0.3,
+            "value": 0.24,
             "curve": "linear"
           },
           {
             "beat": 208,
-            "value": 0.3,
+            "value": 0.24,
             "curve": "set"
           },
           {
             "beat": 212,
-            "value": 0.48,
+            "value": 0.384,
             "curve": "linear"
           }
         ]
@@ -1536,7 +1537,7 @@
         "solo": false,
         "lowCut": 120,
         "sends": {
-          "reverb": 0.2,
+          "reverb": 0.16000000000000003,
           "delay": 0
         },
         "autoPan": null,
@@ -1659,37 +1660,37 @@
         "reverb": [
           {
             "beat": 0,
-            "value": 0.2,
+            "value": 0.16000000000000003,
             "curve": "set"
           },
           {
             "beat": 144,
-            "value": 0.2,
+            "value": 0.16000000000000003,
             "curve": "set"
           },
           {
             "beat": 148,
-            "value": 0.25,
+            "value": 0.20000000000000004,
             "curve": "linear"
           },
           {
             "beat": 176,
-            "value": 0.25,
+            "value": 0.20000000000000004,
             "curve": "set"
           },
           {
             "beat": 180,
-            "value": 0.2,
+            "value": 0.16000000000000003,
             "curve": "linear"
           },
           {
             "beat": 208,
-            "value": 0.2,
+            "value": 0.16000000000000003,
             "curve": "set"
           },
           {
             "beat": 212,
-            "value": 0.32000000000000006,
+            "value": 0.25600000000000006,
             "curve": "linear"
           }
         ]
@@ -2620,7 +2621,7 @@
         "solo": false,
         "lowCut": 20,
         "sends": {
-          "reverb": 0.08,
+          "reverb": 0.064,
           "delay": 0
         },
         "autoPan": null,
@@ -2643,37 +2644,37 @@
         "reverb": [
           {
             "beat": 0,
-            "value": 0.08,
+            "value": 0.064,
             "curve": "set"
           },
           {
             "beat": 144,
-            "value": 0.08,
+            "value": 0.064,
             "curve": "set"
           },
           {
             "beat": 148,
-            "value": 0.1,
+            "value": 0.08,
             "curve": "linear"
           },
           {
             "beat": 176,
-            "value": 0.1,
+            "value": 0.08,
             "curve": "set"
           },
           {
             "beat": 180,
-            "value": 0.08,
+            "value": 0.064,
             "curve": "linear"
           },
           {
             "beat": 208,
-            "value": 0.08,
+            "value": 0.064,
             "curve": "set"
           },
           {
             "beat": 212,
-            "value": 0.128,
+            "value": 0.1024,
             "curve": "linear"
           }
         ]

@@ -130,7 +130,8 @@
     },
     "seed": "Pixel Bazaar",
     "sound": "chip",
-    "salt": "Pixel Bazaar"
+    "salt": "Pixel Bazaar",
+    "genre": "Town"
   },
   "chords": [
     {

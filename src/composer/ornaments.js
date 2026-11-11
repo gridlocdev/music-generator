@@ -2,7 +2,10 @@
 // them: a trill on the long note before a phrase's last, a turn on a long note, a mordent on a phrase's first long
 // note, and a grace note before a leap up. Each is a chance of the style's `ornaments`, hashed so a song plays the same
 // every time, and ORNAMENTS.gap seconds apart, so they decorate the line rather than bury it. A note outside the scale
-// (a borrowed b6) is left plain: its neighbours aren't the scale's. Pure.
+// (a borrowed b6) is left plain: its neighbours aren't the scale's. A genre brings its own (`ornaments`, each a chance):
+// the celtic roll (the note, above, the note, below, round a long note) and cut (a flick from above, starting a phrase
+// or splitting a repeated note), a slide up from a semitone below (a country fiddle, a blues bend), and the gospel run
+// down into a phrase's last note. Pure.
 import { diatonicShift, hash, MODES } from '../lib/music-theory.js';
 import { ORNAMENTS } from './song-craft-data.js';
 
@@ -13,8 +16,9 @@ import { ORNAMENTS } from './song-craft-data.js';
  */
 export function ornament(lead, sec, bpm)
 {
-    const chance = sec.style.ornaments ?? 0;
-    if (chance <= 0) return lead;
+    const c = sec.style.ornaments ?? 0;
+    const chance = { trill: c, turn: c, mordent: c, grace: c, roll: 0, cut: 0, slide: 0, run: 0, ...sec.genre?.ornaments };
+    if (!Object.values(chance).some(x => x > 0)) return lead;
     const O = ORNAMENTS, step = bpm > O.slowAbove ? O.fast : O.slow;
     const near = (key, steps)=> diatonicShift(key, steps, sec.tonic, sec.mode);
     const soft = (vel)=> Math.max(1, vel - O.soften);
@@ -30,21 +34,30 @@ export function ornament(lead, sec, bpm)
         // the notes an ornament plays at the start of n, then n itself for what's left
         const run = (keys)=> keys.map((key, j)=> ({ key, beat: n.beat + j * step, beats: step, vel: j ? soft(n.vel) : n.vel, ornament: true }));
         let notes = null;
-        if (free && n.beats >= O.trill && i + 1 < lead.length && endsPhrase(i + 1) && roll('trill', n) < Math.min(1, chance * O.cadence))
+        if (free && n.beats >= O.trill && i + 1 < lead.length && endsPhrase(i + 1) && roll('trill', n) < Math.min(1, chance.trill * O.cadence))
         {
             // from the note above, alternating for most of the note, then the note itself held to the end
             const count = 2 * Math.max(1, Math.floor(n.beats * O.trillShare / step / 2));
             notes = run(Array.from({ length: count }, (_, j)=> j % 2 ? n.key : near(n.key, 1)));
         }
-        else if (free && n.beats >= O.turn && !endsPhrase(i) && roll('turn', n) < chance)
+        else if (free && n.beats >= O.roll && !endsPhrase(i) && roll('roll', n) < chance.roll)
+            notes = run([n.key, near(n.key, 1), n.key, near(n.key, -1)]);
+        else if (free && n.beats >= O.turn && !endsPhrase(i) && roll('turn', n) < chance.turn)
             notes = run([near(n.key, 1), n.key, near(n.key, -1)]);
-        else if (free && n.beats >= O.mordent && startsPhrase(i) && roll('mordent', n) < chance)
+        else if (free && n.beats >= O.run && endsPhrase(i) && roll('run', n) < chance.run)
+            notes = run([near(n.key, 3), near(n.key, 2), near(n.key, 1)]);
+        else if (free && n.beats >= O.mordent && startsPhrase(i) && roll('mordent', n) < chance.mordent)
             notes = run([n.key, near(n.key, -1)]);
-        else if (free && n.beats >= O.grace && i > 0 && n.key - lead[i - 1].key >= O.leap && roll('grace', n) < chance)
+        else if (free && n.beats >= O.grace && (startsPhrase(i) || lead[i - 1].key === n.key) && roll('cut', n) < chance.cut)
+            notes = run([near(n.key, 1)]);
+        else if (n.beats >= O.grace && i > 0 && n.key - lead[i - 1].key >= O.slide && (n.beat - last) * 60 / bpm >= O.gap
+            && roll('slide', n) < chance.slide)
+            notes = run([n.key - 1]);
+        else if (free && n.beats >= O.grace && i > 0 && n.key - lead[i - 1].key >= O.leap && roll('grace', n) < chance.grace)
             notes = run([near(n.key, -1)]);
         if (!notes) { out.push(n); return; }
         const used = notes.length * step;
-        out.push(...notes, { ...n, beat: n.beat + used, beats: n.beats - used, vel: soft(n.vel) });
+        out.push(...notes, { ...n, beat: n.beat + used, beats: n.beats - used, vel: soft(n.vel), written: n.beat });
         last = n.beat;
     });
     return out;

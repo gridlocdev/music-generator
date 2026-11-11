@@ -130,7 +130,8 @@
     },
     "seed": "Spook Swing",
     "sound": "chip",
-    "salt": "Spook Swing"
+    "salt": "Spook Swing",
+    "genre": "Halloween"
   },
   "chords": [
     {

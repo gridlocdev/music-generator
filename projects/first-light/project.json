@@ -162,7 +162,8 @@
     },
     "seed": "First Light",
     "sound": "gm",
-    "salt": "First Light"
+    "salt": "First Light",
+    "genre": ""
   },
   "chords": [
     {

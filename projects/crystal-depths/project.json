@@ -130,7 +130,8 @@
     },
     "seed": "Crystal Depths",
     "sound": "chip",
-    "salt": "Crystal Depths"
+    "salt": "Crystal Depths",
+    "genre": "Dungeon"
   },
   "chords": [
     {

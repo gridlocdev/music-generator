@@ -188,7 +188,8 @@
     },
     "seed": "Red Line",
     "sound": "gm",
-    "salt": "Red Line"
+    "salt": "Red Line",
+    "genre": ""
   },
   "chords": [
     {

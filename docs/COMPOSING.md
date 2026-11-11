@@ -119,6 +119,11 @@ A form names its sections by role. The letter forms are the classic ones:
 | `blues` | intro, three 12-bar choruses, outro | a fixed I–IV–V cycle repeated with variations |
 | `ternary` | intro, A, B, A, outro | a nocturne, minuet or song without words: theme, contrast, theme (the Classical genre's) |
 | `rondo` | intro, A, B, A, C, A, outro | a refrain between two episodes, the last movement of a sonata |
+| `head` | intro, A, A, B, A, solo, solo, A, B, A, outro | jazz: the tune (the head), choruses of solos over its changes, the tune again |
+| `tune` | intro, A, A, B, B, A, A, B, B, outro | a reel or jig: each 8-bar strain twice, and the whole tune twice |
+| `vamp` | intro, V, C, V, C, bridge, C, vamp, outro | gospel: the last chorus spills into a vamp that climbs while the choir answers |
+| `dub` | intro, V, C, V, C, dub, C, outro | reggae: a dub break of drums and bass before the last chorus |
+| `swell` | intro, A, B, C, E, outro | film: one long rise, a layer more each section and no going back |
 
 A form is a grammar of sections, and every section type carries parameters that later passes read (`SECTIONS`). **Phrases come in 4s and 8s**, and sections in 8 or 16 bars. A `link` section (one bar of 2/4) breaks that on purpose: a phrase one bar longer than the ear expects, the large-scale version of syncopation.
 
@@ -138,6 +143,9 @@ A form is a grammar of sections, and every section type carries parameters that 
 | **Breakdown** | the electronic bridge | .4 | slow, augmented motif | drums and bass out; few parts (`fullness` .2) at a bigger feel |
 | **Blues chorus** | a 12-bar line | .6 | three 4-bar lines | `I7 IV7 I7 I7 IV7 IV7 I7 I7 V7 IV7 I7 V7`, turning around to V |
 | **Link** | one bar of 2/4 | .6 | none | delays what comes next by two beats; ends on V |
+| **Solo** | jazz: a chorus of improvising | .8 | higher, busier, the motif turned round and run | over the head's changes (`progressionFrom: 'A'`); ends on V |
+| **Vamp** | gospel: the ending loop | .95 | the highest, rising | the post-chorus's two chords; the counter answers the lead |
+| **Dub** | reggae: the dub break | .55 | none | everything but drums and bass muted, under the genre's heavy delay |
 
 Each section's parameters, in `SECTIONS`:
 
@@ -523,10 +531,10 @@ The score stays on the grid. That's what the falling-notes view draws and what t
 - **Velocity is tone as well as volume.** The synth squares velocity for loudness and lowers a low-pass cutoff by up to three octaves for soft notes (`VELOCITY_CUTOFF_CENTS` in `lib/sf2-voice.js`, unless the SoundFont sets its own velocity→cutoff modulator), so a soft note is darker, not just quieter. Section energy already sets velocity, so quiet sections are darker too.
 - **Accents** (`DYNAMICS.accent`): the downbeat is loudest, then beat 3, then the other beats, then offbeat eighths, then sixteenths, so busy hi-hats alternate loud and soft.
 - **Phrases breathe.** The lead and countermelody swell across each 4-bar phrase, and the last note of each phrase tapers off.
-- **Timing drifts a little.** Melodic parts move by up to 5–15 ms either way, and drums and bass stay exactly on the grid to hold the groove.
+- **Timing drifts a little.** Melodic parts move by up to 5–15 ms either way, and drums and bass stay exactly on the grid to hold the groove. A genre's `feel` sets how much (funk is tight, lo-fi drunk, EDM sequenced) and its pocket: parts that sit behind the beat (lo-fi's chords and lazy snare, reggae's everything) or push ahead of it (gospel).
 - **Slides.** Fretless and synth bass, bowed strings, trombone and synth leads sometimes slide into a note a step or small leap from the last one, if it follows closely and isn't on a downbeat. The held voice bends to the new pitch rather than re-attacking, which is what makes a slide sound real.
 - **Vibrato arrives late.** Notes of 0.6 s or more on singing instruments (bowed strings, voices, brass, reeds, pipes, synth leads) start straight, and the vibrato fades in from 0.25 s. A section whose melody marks notes with `~` plays only those with vibrato instead (see Writing a melody by hand).
-- **Channel strips** (`MIX`): each part has a fader in dB, a pan, a low cut (100–150 Hz on everything but bass and drums, to clear the mud) and sends to one shared reverb and one tempo-synced dotted-eighth delay. Lead, bass and drums sit in the centre, and the others spread from −0.45 to +0.4. Drums and bass stay nearly dry, and pads get the most reverb.
+- **Channel strips** (`MIX`): each part has a fader in dB, a pan, a low cut (100–150 Hz on everything but bass and drums, to clear the mud) and sends to one shared reverb and one tempo-synced dotted-eighth delay. Lead, bass and drums sit in the centre, and the others spread from −0.45 to +0.4. Drums and bass stay nearly dry, and pads get the most reverb. A genre's `mix` scales the sends (a dry funk band, a church's reverb, dub delay) and can cap every filter (lo-fi's muffled tape).
 - **Ducking** (`DUCK`): on each kick the bass dips 4 dB and the pad 3 dB for 100 ms, which gives a sidechain's clean low end without a compressor.
 - **Movement** (`MOVEMENT`): the pad, arpeggio and chords close a low-pass at the start of a build (a pre-chorus, or the last two bars of a section rising into a chorus) and open it across the build. Reverb sends grow in the bridge, in quiet sections and most of all in the outro.
 - **Master** (`platform/audio-engine.js`): the mix bus leaves 3 dB of headroom, then a little high-shelf air, a gentle glue compressor and a peak limiter.
@@ -623,6 +631,13 @@ A **style** (`STYLES` in `song-craft-data.js`) sets every pass's intensity with 
 - a **turn** (above, the note, below) on a note of two beats or more that doesn't end a phrase;
 - a **mordent** (the note, below) on a phrase's first note of a beat or more;
 - a **grace note** a step below a note reached by a leap up of a fourth or more.
+
+A genre adds its own (`ornaments` in its profile, each a chance, with the same 3 seconds apart):
+
+- a **roll** (the note, above, the note, below) on a note of a beat or more that doesn't end a phrase: celtic;
+- a **cut**, a flick from the step above, at a phrase's start or splitting a repeated note: celtic;
+- a **slide** up from a semitone below into a note a step or more above the last: a country fiddle, a blues bend, a rock guitar;
+- a **run** down three steps into a phrase's last note of a beat and a half or more: gospel.
 
 Their notes take an eighth of a beat at 90 bpm and under, a quarter above, each `soften` (10) quieter than the first, and carry `ornament: true`; the decorated note keeps what's left of its length. A note outside the scale (a borrowed b6) is left plain, since its neighbours aren't the scale's. Harmony voices and a left hand kept under the tune follow the plain melody.
 
@@ -763,9 +778,17 @@ The recipes above are songs: the genre lives in what was written for them. A **p
 
 | Field | Does | Used by |
 |---|---|---|
-| `mode`, `groove`, `comp`, `arp`, `style`, `swing`, `legato`, `form`, `power`, `tempo` | defaults in place of the emotion's | every profile |
-| `band` | programs per part over the emotion's band, as a spec's `band`; null leaves a part out (the spec's own band wins) | classical: piano melody and left hand, nothing else |
-| `arrange` | `ARRANGEMENT` thresholds of its own: `{ arp: 0 }` has the arpeggio play in every section, whatever its fullness | classical: the left hand never stops |
+| `mode`, `groove`, `comp`, `arp`, `style`, `swing`, `legato`, `power` | defaults in place of the emotion's | every profile |
+| `tempo` | bpm, or a range `[slow, fast]` where the emotion's arousal places the song: a calm reggae song near 66, an excited one near 92 | every profile: reggae 66–92, lo-fi 70–92, chiptune 120–170, EDM 120–128, jazz 72–190 |
+| `keys` | the genre's usual keys, one picked by the song's seed: a guitar's E, A, D, G; a horn section's Bb, Eb, F | every profile but classical |
+| `band` | programs per part over the emotion's band, as a spec's `band`; null leaves a part out (the spec's own band wins). Every profile names all seven parts, so a genre never plays the emotion's instruments | jazz: tenor sax, trumpet, vibes, piano, upright, jazz kit · celtic: tin whistle, fiddle, harp · reggae: steel drums, skank guitar, organ · classical: piano alone |
+| `form` | a `FORMS` name | blues, jazz `head`, celtic `tune`, gospel `vamp`, reggae `dub`, cinematic `swell`, classical `ternary`, EDM |
+| `arrange` | `ARRANGEMENT` thresholds of its own: which parts play at which fullness | classical: the left hand never stops · jazz, funk, lo-fi, reggae: the rhythm section from bar one · cinematic: a layer per section, drums last · EDM: the bass out of the build, so the drop hits · blues, gospel: the counter plays early |
+| `mix` | `{ reverb, delay }`, every part's sends as multiples of `MIX`'s, and `tone`, a ceiling in Hz on every part's filter | gospel 1.7 and cinematic 2 reverb · funk 0.35, chiptune 0.15 · reggae's dub delay 2.5 · lo-fi's tape, `tone: 5000` |
+| `feel` | `{ pocket, tight }`: `pocket`, ms each part sits behind the beat (below 0, ahead), per role and `snare` (the kick stays on the grid); `tight`, the timing drift as a multiple of `EXPRESSION.jitterMs` | lo-fi: chords 30, snare 25 behind, tight 1.6 · reggae: way back · gospel, tango: ahead · funk 0.35, disco 0.4 · EDM, chiptune 0 (sequenced) |
+| `ornaments` | chances of each ornament on the lead, over the style's (section 10): `trill`, `turn`, `mordent`, `grace`, `roll`, `cut`, `slide`, `run` | celtic rolls and cuts · country, blues, rock slides · gospel runs · tango mordents |
+| `counter` | per section type, how the countermelody goes: `guide`, `harmony` or `contrary` (section 7) | jazz: the head in two horns, guide tones under the solos · cinematic: the second horn against the first · tango: contrary · celtic: the fiddle in harmony on the B strain |
+| `answer` | the section types where the counter answers the lead in call and response | gospel: chorus and vamp · reggae: verse |
 | `progressions` | per section type, in place of the emotion's whole set. A profile that sets its mode writes them for that mode; one that leaves the mode to the emotion splits them `{ bright, dark }` (a side it leaves out plays the emotion's). A section's value can be a list, and each song picks one by its seed, so two songs in a genre don't share every chord: jazz's ii–V–I and rhythm changes, bossa's slides a half step down, lo-fi's IVmaj7–iii7 loops, gospel's walk-ups (I I/3 IV #iv°), country's II7 and I7, reggae's two-chord vamps, rock's bVII and bVI riffs, cinematic mediants, chiptune fanfares, disco's dorian vamps, classical periods with secondary dominants, EDM's vi–IV–I–V | every profile |
 | `extend` | plain triads played as `sevenths` (the key's own: Cmaj7, Dm7, G7, Bm7b5), `ninths` (no b9 on iii), `dominant` (every major chord a dominant 7th), `add9`, `sixths`, `sus2` or `sus4`, or a list of `{ how, chance }` (section 4); `false` keeps triads whatever the emotion's colour; written chords stay as written | jazz, bossa, lo-fi, gospel: ninths · blues, funk: dominant · synthwave, EDM: add9 · classical: false |
 | `voicing` | the chord part: `shell` (3rd and 7th, the root left to the bass), `drop2` (the second voice from the top an octave down, where the range allows) | jazz, bossa: shell · gospel, cinematic: drop2 |
@@ -849,6 +872,7 @@ Checklist before calling it done:
 - [ ] The song ends on the tonic (or, for a loop, on V leading back to the top).
 - [ ] The energy curve has one peak, late, and at least one dip (`just compose` plots it).
 - [ ] Repeats change something: a new instrument, a varied last bar, a harmony voice.
+- [ ] A genre song sounds like the genre and not only in its chords: `just harmony` lists every genre's tempo, key, form, lead, sends and pocket, and a test fails if two genres share their band and tempo range.
 
 ## 16. Analysing songs you like
 

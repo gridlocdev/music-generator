@@ -201,7 +201,8 @@
     },
     "seed": "Hero’s Road",
     "sound": "gm",
-    "salt": "Hero’s Road"
+    "salt": "Hero’s Road",
+    "genre": "Overworld"
   },
   "chords": [
     {

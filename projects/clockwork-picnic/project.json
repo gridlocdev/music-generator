@@ -136,7 +136,8 @@
     },
     "seed": "Clockwork Picnic",
     "sound": "gm",
-    "salt": "Clockwork Picnic"
+    "salt": "Clockwork Picnic",
+    "genre": ""
   },
   "chords": [
     {

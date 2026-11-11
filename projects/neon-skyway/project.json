@@ -162,7 +162,8 @@
     },
     "seed": "Neon Skyway",
     "sound": "chip",
-    "salt": "Neon Skyway"
+    "salt": "Neon Skyway",
+    "genre": "Shoot-’em-up"
   },
   "chords": [
     {

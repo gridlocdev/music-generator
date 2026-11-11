@@ -149,7 +149,8 @@
     },
     "seed": "Neon Drop",
     "sound": "gm",
-    "salt": "Neon Drop"
+    "salt": "Neon Drop",
+    "genre": "EDM"
   },
   "chords": [
     {
@@ -1003,8 +1004,8 @@
         "solo": false,
         "lowCut": 150,
         "sends": {
-          "reverb": 0.25,
-          "delay": 0.16
+          "reverb": 0.3,
+          "delay": 0.22399999999999998
         },
         "autoPan": null,
         "duck": null
@@ -1026,204 +1027,204 @@
         "reverb": [
           {
             "beat": 0,
-            "value": 0.325,
+            "value": 0.39,
             "curve": "set"
           },
           {
             "beat": 32,
-            "value": 0.325,
+            "value": 0.39,
             "curve": "set"
           },
           {
             "beat": 36,
-            "value": 0.25,
+            "value": 0.3,
             "curve": "linear"
           },
           {
             "beat": 128,
-            "value": 0.25,
+            "value": 0.3,
             "curve": "set"
           },
           {
             "beat": 132,
-            "value": 0.3125,
+            "value": 0.375,
             "curve": "linear"
           },
           {
             "beat": 160,
-            "value": 0.3125,
+            "value": 0.375,
             "curve": "set"
           },
           {
             "beat": 164,
-            "value": 0.25,
+            "value": 0.3,
             "curve": "linear"
           },
           {
             "beat": 256,
-            "value": 0.25,
+            "value": 0.3,
             "curve": "set"
           },
           {
             "beat": 260,
-            "value": 0.4,
+            "value": 0.48,
             "curve": "linear"
           }
         ],
         "delay": [
           {
             "beat": 0,
-            "value": 0.064,
+            "value": 0.0896,
             "curve": "set"
           },
           {
             "beat": 79.75,
-            "value": 0.48,
+            "value": 0.6719999999999999,
             "curve": "set"
           },
           {
             "beat": 80.4,
-            "value": 0.48,
+            "value": 0.6719999999999999,
             "curve": "set"
           },
           {
             "beat": 80.9,
-            "value": 0.064,
+            "value": 0.0896,
             "curve": "linear"
           },
           {
             "beat": 95.75,
-            "value": 0.48,
+            "value": 0.6719999999999999,
             "curve": "set"
           },
           {
             "beat": 96.4,
-            "value": 0.48,
+            "value": 0.6719999999999999,
             "curve": "set"
           },
           {
             "beat": 96.9,
-            "value": 0.064,
+            "value": 0.0896,
             "curve": "linear"
           },
           {
             "beat": 110,
-            "value": 0.48,
+            "value": 0.6719999999999999,
             "curve": "set"
           },
           {
             "beat": 112,
-            "value": 0.48,
+            "value": 0.6719999999999999,
             "curve": "set"
           },
           {
             "beat": 112.5,
-            "value": 0.064,
+            "value": 0.0896,
             "curve": "linear"
           },
           {
             "beat": 127.75,
-            "value": 0.48,
+            "value": 0.6719999999999999,
             "curve": "set"
           },
           {
             "beat": 128.8,
-            "value": 0.48,
+            "value": 0.6719999999999999,
             "curve": "set"
           },
           {
             "beat": 129.3,
-            "value": 0.064,
+            "value": 0.0896,
             "curve": "linear"
           },
           {
             "beat": 143.75,
-            "value": 0.48,
+            "value": 0.6719999999999999,
             "curve": "set"
           },
           {
             "beat": 144.8,
-            "value": 0.48,
+            "value": 0.6719999999999999,
             "curve": "set"
           },
           {
             "beat": 145.3,
-            "value": 0.064,
+            "value": 0.0896,
             "curve": "linear"
           },
           {
             "beat": 158,
-            "value": 0.48,
+            "value": 0.6719999999999999,
             "curve": "set"
           },
           {
             "beat": 160,
-            "value": 0.48,
+            "value": 0.6719999999999999,
             "curve": "set"
           },
           {
             "beat": 160.5,
-            "value": 0.064,
+            "value": 0.0896,
             "curve": "linear"
           },
           {
             "beat": 206,
-            "value": 0.48,
+            "value": 0.6719999999999999,
             "curve": "set"
           },
           {
             "beat": 208,
-            "value": 0.48,
+            "value": 0.6719999999999999,
             "curve": "set"
           },
           {
             "beat": 208.5,
-            "value": 0.064,
+            "value": 0.0896,
             "curve": "linear"
           },
           {
             "beat": 222,
-            "value": 0.48,
+            "value": 0.6719999999999999,
             "curve": "set"
           },
           {
             "beat": 224,
-            "value": 0.48,
+            "value": 0.6719999999999999,
             "curve": "set"
           },
           {
             "beat": 224.5,
-            "value": 0.064,
+            "value": 0.0896,
             "curve": "linear"
           },
           {
             "beat": 238,
-            "value": 0.48,
+            "value": 0.6719999999999999,
             "curve": "set"
           },
           {
             "beat": 240,
-            "value": 0.48,
+            "value": 0.6719999999999999,
             "curve": "set"
           },
           {
             "beat": 240.5,
-            "value": 0.064,
+            "value": 0.0896,
             "curve": "linear"
           },
           {
             "beat": 254,
-            "value": 0.48,
+            "value": 0.6719999999999999,
             "curve": "set"
           },
           {
             "beat": 256,
-            "value": 0.48,
+            "value": 0.6719999999999999,
             "curve": "set"
           },
           {
             "beat": 256.5,
-            "value": 0.064,
+            "value": 0.0896,
             "curve": "linear"
           }
         ]
@@ -1449,8 +1450,8 @@
         "solo": false,
         "lowCut": 120,
         "sends": {
-          "reverb": 0.3,
-          "delay": 0.06
+          "reverb": 0.36,
+          "delay": 0.08399999999999999
         },
         "autoPan": null,
         "duck": null
@@ -1532,47 +1533,47 @@
         "reverb": [
           {
             "beat": 0,
-            "value": 0.39,
+            "value": 0.46799999999999997,
             "curve": "set"
           },
           {
             "beat": 32,
-            "value": 0.39,
+            "value": 0.46799999999999997,
             "curve": "set"
           },
           {
             "beat": 36,
-            "value": 0.3,
+            "value": 0.36,
             "curve": "linear"
           },
           {
             "beat": 128,
-            "value": 0.3,
+            "value": 0.36,
             "curve": "set"
           },
           {
             "beat": 132,
-            "value": 0.375,
+            "value": 0.44999999999999996,
             "curve": "linear"
           },
           {
             "beat": 160,
-            "value": 0.375,
+            "value": 0.44999999999999996,
             "curve": "set"
           },
           {
             "beat": 164,
-            "value": 0.3,
+            "value": 0.36,
             "curve": "linear"
           },
           {
             "beat": 256,
-            "value": 0.3,
+            "value": 0.36,
             "curve": "set"
           },
           {
             "beat": 260,
-            "value": 0.48,
+            "value": 0.576,
             "curve": "linear"
           }
         ]
@@ -1709,8 +1710,8 @@
         "solo": false,
         "lowCut": 150,
         "sends": {
-          "reverb": 0.3,
-          "delay": 0.1
+          "reverb": 0.36,
+          "delay": 0.13999999999999999
         },
         "autoPan": {
           "rate": 0.11,
@@ -1805,47 +1806,47 @@
         "reverb": [
           {
             "beat": 0,
-            "value": 0.39,
+            "value": 0.46799999999999997,
             "curve": "set"
           },
           {
             "beat": 32,
-            "value": 0.39,
+            "value": 0.46799999999999997,
             "curve": "set"
           },
           {
             "beat": 36,
-            "value": 0.3,
+            "value": 0.36,
             "curve": "linear"
           },
           {
             "beat": 128,
-            "value": 0.3,
+            "value": 0.36,
             "curve": "set"
           },
           {
             "beat": 132,
-            "value": 0.375,
+            "value": 0.44999999999999996,
             "curve": "linear"
           },
           {
             "beat": 160,
-            "value": 0.375,
+            "value": 0.44999999999999996,
             "curve": "set"
           },
           {
             "beat": 164,
-            "value": 0.3,
+            "value": 0.36,
             "curve": "linear"
           },
           {
             "beat": 256,
-            "value": 0.3,
+            "value": 0.36,
             "curve": "set"
           },
           {
             "beat": 260,
-            "value": 0.48,
+            "value": 0.576,
             "curve": "linear"
           }
         ]
@@ -2671,7 +2672,7 @@
         "solo": false,
         "lowCut": 120,
         "sends": {
-          "reverb": 0.2,
+          "reverb": 0.24,
           "delay": 0
         },
         "autoPan": null,
@@ -2764,47 +2765,47 @@
         "reverb": [
           {
             "beat": 0,
-            "value": 0.26,
+            "value": 0.312,
             "curve": "set"
           },
           {
             "beat": 32,
-            "value": 0.26,
+            "value": 0.312,
             "curve": "set"
           },
           {
             "beat": 36,
-            "value": 0.2,
+            "value": 0.24,
             "curve": "linear"
           },
           {
             "beat": 128,
-            "value": 0.2,
+            "value": 0.24,
             "curve": "set"
           },
           {
             "beat": 132,
-            "value": 0.25,
+            "value": 0.3,
             "curve": "linear"
           },
           {
             "beat": 160,
-            "value": 0.25,
+            "value": 0.3,
             "curve": "set"
           },
           {
             "beat": 164,
-            "value": 0.2,
+            "value": 0.24,
             "curve": "linear"
           },
           {
             "beat": 256,
-            "value": 0.2,
+            "value": 0.24,
             "curve": "set"
           },
           {
             "beat": 260,
-            "value": 0.32000000000000006,
+            "value": 0.384,
             "curve": "linear"
           }
         ]
@@ -3749,7 +3750,7 @@
         "solo": false,
         "lowCut": 100,
         "sends": {
-          "reverb": 0.55,
+          "reverb": 0.66,
           "delay": 0
         },
         "autoPan": null,
@@ -3849,257 +3850,257 @@
         "reverb": [
           {
             "beat": 0,
-            "value": 0.7150000000000001,
+            "value": 0.8580000000000001,
             "curve": "set"
           },
           {
             "beat": 0.5,
-            "value": 0.7150000000000001,
+            "value": 0.8580000000000001,
             "curve": "linear"
           },
           {
             "beat": 16,
-            "value": 1.0725000000000002,
+            "value": 1.2870000000000001,
             "curve": "linear"
           },
           {
             "beat": 16,
-            "value": 1.0725000000000002,
+            "value": 1.2870000000000001,
             "curve": "set"
           },
           {
             "beat": 16.5,
-            "value": 0.7150000000000001,
+            "value": 0.8580000000000001,
             "curve": "linear"
           },
           {
             "beat": 32,
-            "value": 1.0725000000000002,
+            "value": 1.2870000000000001,
             "curve": "linear"
           },
           {
             "beat": 32,
-            "value": 1.0725000000000002,
+            "value": 1.2870000000000001,
             "curve": "set"
           },
           {
             "beat": 32.5,
-            "value": 0.7149999587500002,
+            "value": 0.8579999505000002,
             "curve": "linear"
           },
           {
             "beat": 48,
-            "value": 0.8250000000000001,
+            "value": 0.99,
             "curve": "linear"
           },
           {
             "beat": 48,
-            "value": 0.8250000000000001,
+            "value": 0.99,
             "curve": "set"
           },
           {
             "beat": 48.5,
-            "value": 0.55,
+            "value": 0.66,
             "curve": "linear"
           },
           {
             "beat": 64,
-            "value": 0.8250000000000001,
+            "value": 0.99,
             "curve": "linear"
           },
           {
             "beat": 64,
-            "value": 0.8250000000000001,
+            "value": 0.99,
             "curve": "set"
           },
           {
             "beat": 64.5,
-            "value": 0.55,
+            "value": 0.66,
             "curve": "linear"
           },
           {
             "beat": 80,
-            "value": 0.8250000000000001,
+            "value": 0.99,
             "curve": "linear"
           },
           {
             "beat": 80,
-            "value": 0.8250000000000001,
+            "value": 0.99,
             "curve": "set"
           },
           {
             "beat": 80.5,
-            "value": 0.55,
+            "value": 0.66,
             "curve": "linear"
           },
           {
             "beat": 96,
-            "value": 0.8250000000000001,
+            "value": 0.99,
             "curve": "linear"
           },
           {
             "beat": 96,
-            "value": 0.8250000000000001,
+            "value": 0.99,
             "curve": "set"
           },
           {
             "beat": 96.5,
-            "value": 0.55,
+            "value": 0.66,
             "curve": "linear"
           },
           {
             "beat": 112,
-            "value": 0.8250000000000001,
+            "value": 0.99,
             "curve": "linear"
           },
           {
             "beat": 112,
-            "value": 0.8250000000000001,
+            "value": 0.99,
             "curve": "set"
           },
           {
             "beat": 112.5,
-            "value": 0.55,
+            "value": 0.66,
             "curve": "linear"
           },
           {
             "beat": 128,
-            "value": 0.8250000000000001,
+            "value": 0.99,
             "curve": "linear"
           },
           {
             "beat": 128,
-            "value": 0.8250000000000001,
+            "value": 0.99,
             "curve": "set"
           },
           {
             "beat": 128.5,
-            "value": 0.550000034375,
+            "value": 0.6600000412499999,
             "curve": "linear"
           },
           {
             "beat": 144,
-            "value": 1.03125,
+            "value": 1.2375,
             "curve": "linear"
           },
           {
             "beat": 144,
-            "value": 1.03125,
+            "value": 1.2375,
             "curve": "set"
           },
           {
             "beat": 144.5,
-            "value": 0.6875,
+            "value": 0.8250000000000001,
             "curve": "linear"
           },
           {
             "beat": 160,
-            "value": 1.03125,
+            "value": 1.2375,
             "curve": "linear"
           },
           {
             "beat": 160,
-            "value": 1.03125,
+            "value": 1.2375,
             "curve": "set"
           },
           {
             "beat": 160.5,
-            "value": 0.6874999656250002,
+            "value": 0.8249999587500001,
             "curve": "linear"
           },
           {
             "beat": 176,
-            "value": 0.8250000000000001,
+            "value": 0.99,
             "curve": "linear"
           },
           {
             "beat": 176,
-            "value": 0.8250000000000001,
+            "value": 0.99,
             "curve": "set"
           },
           {
             "beat": 176.5,
-            "value": 0.55,
+            "value": 0.66,
             "curve": "linear"
           },
           {
             "beat": 192,
-            "value": 0.8250000000000001,
+            "value": 0.99,
             "curve": "linear"
           },
           {
             "beat": 192,
-            "value": 0.8250000000000001,
+            "value": 0.99,
             "curve": "set"
           },
           {
             "beat": 192.5,
-            "value": 0.55,
+            "value": 0.66,
             "curve": "linear"
           },
           {
             "beat": 208,
-            "value": 0.8250000000000001,
+            "value": 0.99,
             "curve": "linear"
           },
           {
             "beat": 208,
-            "value": 0.8250000000000001,
+            "value": 0.99,
             "curve": "set"
           },
           {
             "beat": 208.5,
-            "value": 0.55,
+            "value": 0.66,
             "curve": "linear"
           },
           {
             "beat": 224,
-            "value": 0.8250000000000001,
+            "value": 0.99,
             "curve": "linear"
           },
           {
             "beat": 224,
-            "value": 0.8250000000000001,
+            "value": 0.99,
             "curve": "set"
           },
           {
             "beat": 224.5,
-            "value": 0.55,
+            "value": 0.66,
             "curve": "linear"
           },
           {
             "beat": 240,
-            "value": 0.8250000000000001,
+            "value": 0.99,
             "curve": "linear"
           },
           {
             "beat": 240,
-            "value": 0.8250000000000001,
+            "value": 0.99,
             "curve": "set"
           },
           {
             "beat": 240.5,
-            "value": 0.55,
+            "value": 0.66,
             "curve": "linear"
           },
           {
             "beat": 256,
-            "value": 0.8250000000000001,
+            "value": 0.99,
             "curve": "linear"
           },
           {
             "beat": 256,
-            "value": 0.8250000000000001,
+            "value": 0.99,
             "curve": "set"
           },
           {
             "beat": 256.5,
-            "value": 0.5500000824999998,
+            "value": 0.6600000989999997,
             "curve": "linear"
           },
           {
             "beat": 272,
-            "value": 1.3200000000000003,
+            "value": 1.5840000000000003,
             "curve": "linear"
           }
         ]
@@ -4551,58 +4552,6 @@
       "clips": [
         {
           "id": "c24",
-          "start": 32,
-          "beats": 32,
-          "notes": [
-            [0,0.4,34,98],
-            [0.5,0.4,46,81],
-            [1.5,0.4,46,81],
-            [2,0.4,34,93],
-            [2.5,0.4,46,81],
-            [3.5,0.4,46,81],
-            [4,0.4,37,98],
-            [4.5,0.4,49,81],
-            [5.5,0.4,49,81],
-            [6,0.4,37,93],
-            [6.5,0.4,49,81],
-            [7.5,0.4,49,81],
-            [8,0.4,39,98],
-            [8.5,0.4,51,81],
-            [9.5,0.4,51,81],
-            [10,0.4,39,93],
-            [10.5,0.4,51,81],
-            [11.5,0.4,51,81],
-            [12,0.4,36,98],
-            [12.5,0.4,48,81],
-            [13.5,0.4,48,81],
-            [14,0.4,36,93],
-            [14.5,0.4,48,81],
-            [15.5,0.4,48,81],
-            [16,0.4,34,98],
-            [16.5,0.4,46,81],
-            [17.5,0.4,46,81],
-            [18,0.4,34,93],
-            [18.5,0.4,46,81],
-            [19.5,0.4,44,81],
-            [20,0.4,37,98],
-            [20.5,0.4,49,81],
-            [21.5,0.4,49,81],
-            [22,0.4,37,93],
-            [22.5,0.4,49,81],
-            [23.5,0.4,46,81],
-            [24,0.4,39,98],
-            [24.5,0.4,51,81],
-            [25.5,0.4,51,81],
-            [26,0.4,39,93],
-            [26.5,0.4,51,81],
-            [27.5,0.4,51,81],
-            [28,0.4,36,98],
-            [28.5,0.4,48,81],
-            [29.5,0.4,48,81]
-          ]
-        },
-        {
-          "id": "c25",
           "start": 64,
           "beats": 64,
           "notes": [
@@ -4705,59 +4654,7 @@
           ]
         },
         {
-          "id": "c26",
-          "start": 160,
-          "beats": 32,
-          "notes": [
-            [0,0.4,46,102],
-            [0.5,0.4,46,85],
-            [1.5,0.4,46,85],
-            [2,0.4,46,96],
-            [2.5,0.4,46,85],
-            [3.5,0.4,46,85],
-            [4,0.4,49,102],
-            [4.5,0.4,49,85],
-            [5.5,0.4,49,85],
-            [6,0.4,49,96],
-            [6.5,0.4,49,85],
-            [7.5,0.4,46,85],
-            [8,0.4,51,102],
-            [8.5,0.4,51,85],
-            [9.5,0.4,51,85],
-            [10,0.4,51,96],
-            [10.5,0.4,51,85],
-            [11.5,0.4,51,85],
-            [12,0.4,48,102],
-            [12.5,0.4,48,85],
-            [13.5,0.4,48,85],
-            [14,0.4,48,96],
-            [14.5,0.4,48,85],
-            [15.5,0.4,48,85],
-            [16,0.4,46,102],
-            [16.5,0.4,46,85],
-            [17.5,0.4,46,85],
-            [18,0.4,46,96],
-            [18.5,0.4,46,85],
-            [19.5,0.4,46,85],
-            [20,0.4,49,102],
-            [20.5,0.4,49,85],
-            [21.5,0.4,49,85],
-            [22,0.4,49,96],
-            [22.5,0.4,49,85],
-            [23.5,0.4,49,85],
-            [24,0.4,51,102],
-            [24.5,0.4,51,85],
-            [25.5,0.4,51,85],
-            [26,0.4,51,96],
-            [26.5,0.4,51,85],
-            [27.5,0.4,51,85],
-            [28,0.4,48,102],
-            [28.5,0.4,48,85],
-            [29.5,0.4,48,85]
-          ]
-        },
-        {
-          "id": "c27",
+          "id": "c25",
           "start": 192,
           "beats": 64,
           "notes": [
@@ -4880,7 +4777,7 @@
         "solo": false,
         "lowCut": 20,
         "sends": {
-          "reverb": 0.08,
+          "reverb": 0.096,
           "delay": 0
         },
         "autoPan": null,
@@ -4903,54 +4800,54 @@
         "reverb": [
           {
             "beat": 0,
-            "value": 0.10400000000000001,
+            "value": 0.12480000000000001,
             "curve": "set"
           },
           {
             "beat": 32,
-            "value": 0.10400000000000001,
+            "value": 0.12480000000000001,
             "curve": "set"
           },
           {
             "beat": 36,
-            "value": 0.08,
+            "value": 0.096,
             "curve": "linear"
           },
           {
             "beat": 128,
-            "value": 0.08,
+            "value": 0.096,
             "curve": "set"
           },
           {
             "beat": 132,
-            "value": 0.1,
+            "value": 0.12,
             "curve": "linear"
           },
           {
             "beat": 160,
-            "value": 0.1,
+            "value": 0.12,
             "curve": "set"
           },
           {
             "beat": 164,
-            "value": 0.08,
+            "value": 0.096,
             "curve": "linear"
           },
           {
             "beat": 256,
-            "value": 0.08,
+            "value": 0.096,
             "curve": "set"
           },
           {
             "beat": 260,
-            "value": 0.128,
+            "value": 0.15360000000000001,
             "curve": "linear"
           }
         ]
       },
       "clips": [
         {
-          "id": "c28",
+          "id": "c26",
           "start": 32,
           "beats": 32,
           "notes": [
@@ -5044,7 +4941,7 @@
           ]
         },
         {
-          "id": "c29",
+          "id": "c27",
           "start": 64,
           "beats": 64,
           "notes": [
@@ -5468,7 +5365,7 @@
           ]
         },
         {
-          "id": "c30",
+          "id": "c28",
           "start": 160,
           "beats": 32,
           "notes": [
@@ -5562,7 +5459,7 @@
           ]
         },
         {
-          "id": "c31",
+          "id": "c29",
           "start": 192,
           "beats": 64,
           "notes": [
@@ -5986,7 +5883,7 @@
           ]
         },
         {
-          "id": "c32",
+          "id": "c30",
           "start": 256,
           "beats": 16,
           "notes": [

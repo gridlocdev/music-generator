@@ -2,7 +2,8 @@
 //   detail  ear candy (ear-candy.js), ghost notes on the snare and bass, softer inner notes in quick runs,
 //           phrases that swell and taper, +1 scoops into phrase endings and a section's last chord,
 //           slides between notes on instruments that bend, vibrato that arrives late on held notes
-//   feel    swing as one time warp over every part, then timing that breathes on top (drums and bass hold the grid)
+//   feel    swing as one time warp over every part, then timing that breathes on top (drums and bass hold the grid),
+//           and the genre's pocket: parts that sit behind or ahead of the beat (lo-fi's lazy snare), tighter or looser
 // Pure and deterministic like compose(): a hash stands in for the dice. `pass` counts the times round a loop, so
 // every pass gets its own small details while the written music stays the same.
 // The score stays on the grid for the view and the MIDI file; the Humanize MIDI FX (humanize-fx.js) runs this.
@@ -15,6 +16,7 @@ import { meterOf } from './meter-patterns.js';
 import { METERS } from './patterns-data.js';
 import { planEarCandy } from './ear-candy.js';
 import { EAR_CANDY } from './ear-candy-data.js';
+import { genreProfile } from './plan.js';
 
 /**
  * @typedef {import('./compose.js').Note & import('../audio/pitch-moves.js').PitchMoves & { grid: number, glideFrom?: number,
@@ -39,6 +41,8 @@ export function perform(score, pass = 0, candy = planEarCandy(score, pass))
     const unit = (...parts)=> hash(score.title, pass, ...parts.map(p => typeof p === 'number' ? Math.round(p * 1000) : p)) / 2 ** 32;
     const style = score.style ?? {};
     const sectionAt = (beat)=> sectionOf(score.sections, beat);
+    // the genre's pocket: how far behind (or, below 0, ahead of) the beat each part sits, and how tight it plays
+    const { pocket = {}, tight = 1 } = genreProfile(score.genre).feel ?? {};
     return score.tracks.map(t =>
     {
         let notes = /** @type {PerformedNote[]} */ (t.notes.map(({ anticipates, ...n })=> ({ ...n, grid: anticipates ?? n.beat })));
@@ -56,11 +60,13 @@ export function perform(score, pass = 0, candy = planEarCandy(score, pass))
         if (EXPRESSION.glide.roles.includes(t.role) && EXPRESSION.glide.programs.includes(t.program) && melodic) addGlides(notes, sectionAt, unit, t.role);
         if (score.sound === 'chip' && CHIP.timbre.roles.includes(t.role) && melodic) changeTimbre(notes, t.program, sectionAt);
         addVibrato(notes, t, score, sectionAt, spbAt, unit, melodic);
-        const jitter = (EXPRESSION.jitterMs[t.role] ?? 0) / 1000;      // in seconds
-        if (jitter)
+        const jitter = (EXPRESSION.jitterMs[t.role] ?? 0) * tight / 1000;      // in seconds
+        // a drum kit's snare can lie back on its own (a lazy backbeat) while the kick holds the grid
+        const late = (n)=> ((t.role === 'drums' && n.key === DRUM_KEYS.snare ? pocket.snare : null) ?? pocket[t.role] ?? 0) / 1000;
+        if (jitter || Object.keys(pocket).length)
             for (const n of notes)
             {
-                const shift = (unit(t.role, 'time', n.beat, n.key) * 2 - 1) * jitter / spbAt(n.beat);
+                const shift = ((unit(t.role, 'time', n.beat, n.key) * 2 - 1) * jitter + late(n)) / spbAt(n.beat);
                 n.beat = Math.max(0, n.beat + shift);
                 if (!n.held) n.beats = Math.max(0.05, n.beats - Math.max(0, shift));
             }

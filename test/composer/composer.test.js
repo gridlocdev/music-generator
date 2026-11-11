@@ -380,7 +380,9 @@ test('blues lines: the second 4 bars repeat the first over IV, the chord\'s 7th 
         // no passing chords, which would bend a note of one line and not the other
         style: { dim7: 0, secondary: 0, twoFive: 0, tritone: 0, sus: 0, borrowed: 0, mediant: 0 } });
     const lead = s.tracks.find(t => t.role === 'lead').notes;
-    const line = (n)=> lead.filter(x => x.beat >= n * 16 && x.beat < n * 16 + 16).map(x => [x.beat - n * 16, x.key]);
+    // the written tune: the genre's ornaments (a slide here, not there) left out
+    const line = (n)=> lead.filter(x => !x.ornament).map(x => ({ ...x, beat: x.written ?? x.beat }))
+        .filter(x => x.beat >= n * 16 && x.beat < n * 16 + 16).map(x => [x.beat - n * 16, x.key]);
     const [a1, a2] = [line(0), line(1)];
     assert.ok(a1.length > 3);
     assert.deepEqual(a2.map(([t])=> t), a1.map(([t])=> t), 'same rhythm');
@@ -501,7 +503,8 @@ test('a lead leaps through its chords: a fourth to a sixth is common, and lands 
     for (const spec of GAME_SONGS)
     {
         const s = compose(spec);
-        const notes = [...s.tracks.find(t => t.role === 'lead').notes].sort((a, b)=> a.beat - b.beat);
+        // the written line: a genre's ornaments (a blues slide) are left out
+        const notes = s.tracks.find(t => t.role === 'lead').notes.filter(n => !n.ornament).sort((a, b)=> a.beat - b.beat);
         for (let i = 1; i < notes.length; i++)
         {
             moves++;
