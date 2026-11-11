@@ -676,6 +676,7 @@ A song is a plain object. Only `title` (or `id`) and `emotion` are needed; every
 {
     id: 'first-light',              // for menus, URLs and the CLI
     title: 'First Light',           // also seeds the tie-breaks
+    seed: 'a1b2',                   // seeds the choices in place of the title: another song in the same style (File → New's Seed)
     emotion: 'hopeful',             // a key of EMOTIONS: sets everything not given below
     key: 'D',                       // C, C#, Db … B
     mode: 'major',                  // major, minor, dorian, phrygian, lydian, mixolydian, locrian, harmonicMinor, melodicMinor

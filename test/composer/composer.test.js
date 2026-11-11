@@ -708,3 +708,12 @@ test('a lead moves at the song\'s pace: quicker when excited, slower when calm, 
     const slow = gap(song('joyful', 70));
     assert.ok(slow >= 0.5 * 60 / 70 - 1e-9, `at 70 bpm it keeps to eighths (${slow.toFixed(2)} s)`);
 });
+
+test('a seed writes another song in the style, and the same seed writes it again (File → New: Seed)', ()=>
+{
+    const lead = (spec)=> compose(spec).tracks.find(t => t.role === 'lead').notes.map(n => `${n.beat}:${n.key}`).join(' ');
+    const usual = lead({ id: 'country', genre: 'country', title: 'Country' });
+    const seeded = lead({ id: 'country', genre: 'country', title: 'Country #a1b2', seed: 'a1b2' });
+    assert.notEqual(seeded, usual);
+    assert.equal(lead({ id: 'country', genre: 'country', title: 'Something else', seed: 'a1b2' }), seeded);
+});

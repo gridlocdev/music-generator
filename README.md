@@ -14,7 +14,7 @@ It's laid out like a DAW: a transport, a browser, an arrangement, a piano roll a
 - **Keeps projects.** A project is a folder in `projects/` with a `project.json`: tracks,
   clips of notes, instruments, the mixer, tempo, meter, markers and a chord track. The 38 songs
   it ships with are projects you can open, edit and save.
-- **Composes new projects.** **New…** writes one from a feeling, a genre or one of the songs.
+- **Composes new projects.** **New…** writes one from a feeling, a genre or one of the songs. Each choice always comes out the same; **Roll** a seed for another song in that style, and type a seed back in to get it again.
   Twelve genre songs each tell a story, scene by scene: bossa nova, reggae, funk, synthwave,
   lo-fi hip hop, tango, country, celtic, chiptune, gospel, cinematic and blues, plus solo piano
   pieces with a left hand, rubato and ornaments. The game music loops; a boss fight switches
