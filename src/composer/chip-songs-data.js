@@ -202,4 +202,83 @@ export const CHIP_SONGS = [
             outro: 'It rises until it is a star.',
         },
     },
+    {
+        id: 'waltz-of-the-lit-windows', title: 'Waltz of the Lit Windows', genre: 'Haunted ballroom',
+        story: 'A mansion on the hill, every window glowing amber at midnight. Nobody has lived there for a century, '
+            + 'and someone is still dancing in the ballroom. The door is open. Go in.',
+        sound: 'chip', emotion: 'mysterious', key: 'E', mode: 'harmonicMinor', tempo: 108, groove: 'waltz', comp: 'waltz', arp: 'updown',
+        style: { scoops: 0.3, earCandy: 0.45 },   // the ghosts glide into their notes
+        legato: 0.85, dynamics: 0.55, loop: true,
+        band: { lead: 85, counter: 83, arp: 46, chords: null, pad: 90, bass: 38, drums: 0 },   // soft triangle and hollow square, a music-box pluck, a PWM mist
+        form: ['intro', 'verse', 'chorus', 'verse', 'bridge', 'chorus'],
+        names: { verse: 'The open door', chorus: 'The dance', bridge: 'The floor tilts' },
+        sections: {
+            // the music box alone, over a tonic that won't move
+            intro: { progression: 'i iv i V', pedal: 1, mute: ['drums', 'lead'], energy: 0.35 },
+            verse: { progression: 'i VI iv V', contour: 'valley', counter: 'contrary', energy: 0.5 },
+            // the waltz itself: harmonic minor's raised seventh pulls hard at every V
+            chorus: { progression: 'i iv V i VI iv V i', counter: 'harmony', energy: 0.7,
+                melody: '5:1.5 4:0.5 3 | 4 6 8 | 7:1.5 6:0.5 5 | 3:2 r | 8:1.5 6:0.5 3 | 4:0.5 6:0.5 8 11 | 9:0.5 7:0.5 5 2 | 1:3' },
+            // five beats to the bar: a step that shouldn't be there, as if the room leans
+            bridge: { meter: '5/4', progression: 'VI bII VI V', answer: true, energy: 0.4, mute: ['drums'], endOn: 'dominant' },
+        },
+        scenes: {
+            intro: 'Midnight. Every window is lit.',
+            'verse 1': 'The front door swings open on its own.',
+            'chorus 1': 'In the ballroom, couples made of mist.',
+            'verse 2': 'A portrait’s eyes follow you up the stairs.',
+            bridge: 'The floor tilts. The chandelier sways, though there is no wind.',
+            'chorus 2': 'A cold hand takes yours. One more dance.',
+        },
+    },
+    {
+        id: 'creaking-halls', title: 'Creaking Halls', genre: 'Haunted house',
+        story: 'The upstairs corridors of the same mansion, candles out. Every board creaks, and something is walking '
+            + 'a few steps behind, stopping when you stop.',
+        sound: 'chip', emotion: 'tense', key: 'E', mode: 'phrygian', meter: '7/8', tempo: 96, groove: 'halftime', comp: 'sustain', arp: 'threes',
+        legato: 0.6, dynamics: 0.6, loop: true,
+        band: { lead: 82, counter: 85, arp: 46, chords: null, pad: 90, bass: 38, drums: 1 },   // a thin 12.5% pulse, the NES triangle and kit
+        form: ['intro', 'verse', 'chorus', 'verse', 'bridge', 'chorus'],
+        names: { verse: 'The corridor', chorus: 'Footsteps', bridge: 'Hold your breath' },
+        sections: {
+            // a tolling tonic and the flat second: seven beats that trip on the last one, like a step that isn't yours
+            intro: { progression: 'i bII i bII', pedal: 1, mute: ['drums'], energy: 0.35 },
+            verse: { progression: 'i bII vii i', contour: 'valley', density: 0.8, energy: 0.5 },
+            chorus: { progression: 'iv bII i vii', counter: 'contrary', energy: 0.72 },
+            // everything stops but the pulse, alone over the pedal
+            bridge: { progression: 'VI VI bII bII', pedal: 1, texture: 'solo', energy: 0.3, endOn: 'dominant' },
+        },
+        scenes: {
+            intro: 'The candles go out.',
+            'verse 1': 'A long corridor of doors. Creak. Creak.',
+            'chorus 1': 'Footsteps behind you. They stop when you stop.',
+            'verse 2': 'One of the doors is open now.',
+            bridge: 'Hold your breath.',
+            'chorus 2': 'Run.',
+        },
+    },
+    {
+        id: 'spook-swing', title: 'Spook Swing', genre: 'Halloween',
+        story: 'The same mansion on Halloween night, and the ghosts are throwing a party: sheets with eyeholes, a skeleton '
+            + 'on the piano, pumpkins grinning in every window. Everyone is invited, alive or not.',
+        sound: 'chip', emotion: 'playful', key: 'E', mode: 'minor', tempo: 120, groove: 'bounce', swing: 0.6, comp: 'offbeat', arp: 'broken',
+        legato: 0.6, dynamics: 0.7, loop: true,
+        band: { lead: 87, counter: 82, arp: 46, chords: null, pad: null, bass: 33, drums: 2 },   // the NES pulse over the sample channel's bass and kit
+        form: ['intro', 'verse', 'chorus', 'verse', 'chorus', 'bridge'],
+        names: { verse: 'Trick', chorus: 'Treat', bridge: 'The skeleton’s solo' },
+        sections: {
+            intro: { progression: 'i iv V i', energy: 0.5 },
+            verse: { progression: 'i iv i V', answer: true, energy: 0.6 },
+            chorus: { progression: 'VI VII i i iv V i V', energy: 0.8 },
+            // a walking bass under a chromatic turn, and the pulse showing off
+            bridge: { progression: 'iv iv i i bII bII V V', energy: 0.65, counter: 'contrary', endOn: 'dominant' },
+        },
+        scenes: {
+            intro: 'Knock, knock.',
+            'verse 1': 'The door is opened by a sheet with two eyeholes.',
+            'chorus 1': 'The whole house is dancing.',
+            bridge: 'The skeleton takes a solo on the piano.',
+            'chorus 2': 'Even the portraits tap their feet.',
+        },
+    },
 ];
