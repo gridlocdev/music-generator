@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 // Reports how alike the composer's harmony is: per genre (each composed the same way, bright and dark), the share
 // of plain triads, the colours it uses and how it ends; then across the written songs, the four-chord windows most
-// of them share and the most alike pairs. Sameness shows up here before it's heard.
+// of them share and the most alike pairs; then each genre's melody (pace, steps and leaps, syncopation, range, notes
+// outside the key) and the genres whose tunes are nearest. Sameness shows up here before it's heard.
 //
 //   node tools/harmony-report.mjs [song-id ...]     (no ids: the genres, then every written song)
 import { compose } from '../src/composer/compose.js';
 import { CATALOG } from '../src/composer/catalog.js';
 import { GENRES } from '../src/composer/genre-data.js';
-import { harmonyStats, overlap } from '../src/composer/harmony-report.js';
+import { harmonyStats, melodyDistance, melodyStats, overlap } from '../src/composer/harmony-report.js';
 
 const ids = process.argv.slice(2);
 const pct = (x)=> `${Math.round(x * 100)}%`.padStart(4);
@@ -25,6 +26,22 @@ if (!ids.length)
             console.log(`${`${genre} ${emotion}`.padEnd(26)} triads ${pct(s.triads)}  ${top(s.qualities).padEnd(48)} ends ${[...new Set(s.endings)].join(', ')}`);
         }
     report(fingerprints, 'genres');
+
+    console.log('\nMelodies (the lead, joyful and melancholy averaged)\n');
+    console.log(`${''.padEnd(16)}  pace  steps leaps  rept  offb   len range  out`);
+    const tunes = Object.keys(GENRES).map((genre)=>
+    {
+        const both = ['joyful', 'melancholy'].map(emotion => melodyStats(compose({ title: `Report ${genre}`, genre, emotion })));
+        const m = Object.fromEntries(Object.keys(both[0]).map(k => [k, (both[0][k] + both[1][k]) / 2]));
+        console.log(`${genre.padEnd(16)} ${Object.values(m).map(v => v.toFixed(2).padStart(5)).join(' ')}`);
+        return { genre, m };
+    });
+    const near = [];
+    for (let i = 0; i < tunes.length; i++) for (let j = i + 1; j < tunes.length; j++) near.push([melodyDistance(tunes[i].m, tunes[j].m), tunes[i].genre, tunes[j].genre]);
+    near.sort((a, b)=> a[0] - b[0]);
+    console.log('Nearest melodies:');
+    for (const [x, a, b] of near.slice(0, 6)) console.log(`  ${x.toFixed(2)}  ${a} ~ ${b}`);
+    console.log(`Mean distance ${(near.reduce((t, p)=> t + p[0], 0) / near.length).toFixed(2)}`);
 }
 
 const songs = CATALOG.filter(c => !ids.length || ids.includes(c.id));

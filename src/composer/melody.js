@@ -156,12 +156,13 @@ function fitMotif(motif, sec)
  * @param {number | null} before  the MIDI key of the lead's note just before the section, which the line leads on from
  * @returns {{ beat: number, beats: number, degree: number, accidental: number, last?: boolean }[]}
  */
-/** notes per beat for a section's density: the density times the song's pace (MELODY_PACE) at its tempo */
+/** notes per beat for a section's density: the density times the song's pace (MELODY_PACE) at its tempo, times the
+ *  genre's own (GENRES pace: a chip lead runs, a film theme holds its notes) */
 export function notesPerBeat(sec, density)
 {
     const { calm, excited, perBeat: [lo, hi] } = MELODY_PACE;
     const a = clamp(sec.arousal ?? 0.5, 0, 1);
-    return density * clamp((calm + (excited - calm) * a) * 60 / sec.tempo, lo, hi);
+    return density * clamp((calm + (excited - calm) * a) * 60 / sec.tempo, lo, hi) * (sec.genre?.pace ?? 1);
 }
 
 export function writeMelody(sec, cfg, variant, motif, timeline, before = null)
@@ -192,7 +193,7 @@ export function writeMelody(sec, cfg, variant, motif, timeline, before = null)
         && [...halves].sort((a, b)=> noteCount(b) - noteCount(a)).find(h => noteCount(h) >= 2 && h[0] > 0);
     const fragment = busier ? [...busier, ...busier] : null;
     const continuation = fragment ?? ranked.find(c => noteCount(c) > noteCount(ranked[0])) ?? ranked[2] ?? ranked[0];
-    const develops = sec.over.develop ?? sec.base.develop ?? ['repeat', 'sequence'];
+    const develops = sec.over.develop ?? sec.genre.develop?.[type] ?? sec.base.develop ?? ['repeat', 'sequence'];
     const finalCadence = sec.endOn ? CADENCES[sec.endOn].melody : null;
     const lastPhrase = Math.floor((sec.bars - 1) / 4);
     const firstBar = Math.floor((cfg.from ?? 0) * sec.bars);

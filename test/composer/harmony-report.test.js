@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { compose } from '../../src/composer/compose.js';
 import { GENRES } from '../../src/composer/genre-data.js';
-import { harmonyStats, overlap, readChordName } from '../../src/composer/harmony-report.js';
+import { harmonyStats, melodyDistance, melodyStats, overlap, readChordName } from '../../src/composer/harmony-report.js';
 
 test('readChordName reads a root and a quality; overlap is shared over all', ()=>
 {
@@ -51,4 +51,30 @@ test('styles bring their own passing chords: tritone substitutes in jazz, median
     assert.ok(jazz.some(n => /^(Db|Eb|Gb|Ab|Bb)7$/.test(n)), `a tritone substitute in ${jazz.join(' ')}`);
     const film = harmonyStats(compose({ title: 'Passing', emotion: 'joyful', key: 'C', style: 'cinematic' }));
     assert.ok(['bVI', 'bIII', '#IV', 'bII'].some(r => [...film.windows].some(w => w.includes(r))), 'a chromatic mediant or borrowed chord');
+});
+
+// The same for the lead: every genre has a melodic profile, and no two genres' tunes come out alike. Today the
+// nearest pair is about 0.11 apart and the mean about 0.46 (`just harmony`).
+test('genres sing different melodies: pace, steps and leaps, syncopation, range', ()=>
+{
+    const genres = Object.keys(GENRES);
+    const MELODIC = ['pace', 'span', 'offbeat', 'rules', 'motif', 'avoid', 'blue', 'phrases', 'develop'];
+    for (const g of genres) assert.ok(MELODIC.some(k => k in GENRES[g]), `${g} has a melody of its own`);
+    const tunes = genres.map((genre)=>
+    {
+        const both = ['joyful', 'melancholy'].map(emotion => melodyStats(compose({ title: `Report ${genre}`, genre, emotion })));
+        return Object.fromEntries(Object.keys(both[0]).map(k => [k, (both[0][k] + both[1][k]) / 2]));
+    });
+    const d = [];
+    for (let i = 0; i < tunes.length; i++) for (let j = i + 1; j < tunes.length; j++)
+    {
+        const x = melodyDistance(tunes[i], tunes[j]);
+        assert.ok(x > 0.07, `${genres[i]} and ${genres[j]} sing alike (${x.toFixed(2)})`);
+        d.push(x);
+    }
+    assert.ok(d.reduce((t, x)=> t + x, 0) / d.length > 0.38, 'genres\' melodies are far apart on average');
+    const by = Object.fromEntries(genres.map((g, i)=> [g, tunes[i]]));
+    assert.ok(by.cinematic.length > by.chiptune.length * 1.5, 'a film theme holds its notes, a chip lead runs');
+    assert.ok(by.chiptune.pace > by.cinematic.pace * 1.5);
+    assert.ok(by.celtic.steps > by.synthwave.steps + 0.3, 'a reel steps, a synth hook leaps');
 });

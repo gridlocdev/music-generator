@@ -27,6 +27,9 @@
 //   span       how far the contours reach, as a multiple of CONTOURS' heights: 1.75 takes an arch up an octave
 //   motif      MOTIF.cost weights of its own, for the motif it invents
 //   offbeat    how much nearer the section's density a rhythm cell with an offbeat entry counts, in notes
+//              (below 0, straight cells win: a film theme lands on the beat)
+//   pace       the lead's notes per beat, as a multiple of the emotion's: 1.4 runs like a chip lead, 0.65 holds notes
+//   develop    per section type, how its motif bars develop the motif, in place of SECTIONS' (lib/motif.js)
 export const GENRES = {
     'blues': {
         mode: 'major', groove: 'swing', swing: 0.67, comp: 'offbeat', form: 'blues',
@@ -61,7 +64,10 @@ export const GENRES = {
         },
         extend: 'ninths', voicing: 'shell',
         cadences: { tonic: { bright: ['V7', 'Imaj7'], dark: ['V7', 'i7'] }, dominant: { bright: ['V7'], dark: ['V7'] } },
-        rules: { strongNonChord: 3 },           // a 9th or 13th on the beat is colour, not a clash
+        rules: { strongNonChord: 3, chordLeap: 0.3, turn: 0.9 },   // a 9th or 13th on the beat is colour, not a clash
+        // bebop: running eighths that turn often and leap through the chord, the line pushed off the beat
+        pace: 1.25, offbeat: 0.6,
+        develop: { A: ['repeat', 'sequence'], B: ['sequence', 'sequence'], chorus: ['repeat', 'diminish'] },
     },
     'bossa-nova': {
         groove: 'bossa', comp: 'bossa', legato: 0.9,
@@ -80,7 +86,10 @@ export const GENRES = {
         },
         extend: 'ninths', voicing: 'shell',
         cadences: { tonic: { bright: ['V7', 'Imaj7'], dark: ['V7', 'i7'] } },
-        rules: { strongNonChord: 3.5 },
+        // a quiet, close line: long notes, the same pitch sung again as the chord moves under it, small steps
+        pace: 0.8, span: 0.7, offbeat: 1,
+        rules: { strongNonChord: 3.5, repeatOnce: 0.1, repeat: 0.8, leap: 1.8, skip: 0.8 },
+        motif: { repeat: 0, narrow: 0, range: 2, flat: 0 },
     },
     'lo-fi-hip-hop': {
         groove: 'boomBap', comp: 'push', arp: 'broken', legato: 0.95, style: { ghosts: 0.4, syncopation: 0.3, dim7: 0 },
@@ -98,6 +107,12 @@ export const GENRES = {
             },
         },
         cadences: { tonic: { bright: ['iv7', 'Imaj7'], dark: ['v7', 'i7'] } },
+        // a lazy, sparse hook behind the beat: few notes, held, circling a few steps; the 9ths and 7ths sung on the beat
+        pace: 0.7, span: 0.75, offbeat: 0.8, avoid: { bright: [4], dark: [6] },
+        rules: { strongNonChord: 3, repeatOnce: 0.3, skip: 0.6, leap: 1.6, turn: 0.8 },
+        motif: { repeat: 0.3, narrow: 0, range: 2, flat: 0.5 },
+        develop: { verse: ['repeat', 'repeat'], chorus: ['repeat', 'fragment'] },
+        phrases: 'abab',
     },
     'funk': {
         mode: 'dorian', groove: 'funk', comp: 'funk', style: 'funky', legato: 0.5,
@@ -125,6 +140,11 @@ export const GENRES = {
         },
         extend: 'ninths', voicing: 'drop2',
         cadences: { tonic: { bright: ['iv', 'I'] }, plagal: { bright: ['iv', 'I'] } },    // the minor plagal "amen"
+        // the call and its answer, soaring: pentatonic with the blue 3rd and 7th, big climbs, runs into the cadence
+        span: 1.6, blue: [3, 7], avoid: { bright: [4, 7] }, phrases: 'aab', pace: 1.1, offbeat: 0.8,
+        rules: { blue: 0.5, strongNonChord: 3.5, leap: 0.9, chordLeap: 0.2, turn: 1, repeatOnce: 0.5 },
+        motif: { leap: 0.6, peakFirst: 0.3, narrow: 1.5 },
+        develop: { chorus: ['repeat', 'sequence'], verse: ['repeat', 'repeat'] },
     },
     'country': {
         groove: 'train', comp: 'offbeat', arp: 'roll',
@@ -138,6 +158,10 @@ export const GENRES = {
         },
         avoid: { bright: [4, 7] },
         cadences: { tonic: { bright: ['V7', 'I'] } },
+        // a plain sung line: on the beat, by step, a word per note, the same pitch said twice
+        offbeat: -0.5, avoid: { bright: [4, 7] },
+        rules: { repeatOnce: 0.4, skip: 0.8, leap: 1.4, turn: 1.2 },
+        motif: { repeat: 0.4, leap: 1.6 },
     },
     'celtic': {
         mode: 'mixolydian', groove: 'bodhran', comp: 'waltz', style: { dim7: 0 },
@@ -147,6 +171,11 @@ export const GENRES = {
         },
         avoid: { bright: [4], dark: [6] },      // the gapped hexatonic scales of the old tunes
         cadences: { dominant: { bright: ['v'] } },
+        // a reel's running notes, turning round a note (an ornament in itself), the leap of a sixth up to the top
+        pace: 1.3, offbeat: -0.5,
+        rules: { turn: 0.4, skip: 0.6, chordLeap: 0.3, repeatOnce: 1.5 },
+        motif: { zigzag: 0.2, flat: 2, repeat: 2 },
+        develop: { verse: ['repeat', 'sequence'], chorus: ['repeat', 'repeat'] },
     },
     'reggae': {
         groove: 'reggae', comp: 'skank', legato: 0.7,
@@ -163,6 +192,10 @@ export const GENRES = {
         },
         cadences: { tonic: { bright: ['IV', 'I'], dark: ['v', 'i'] } },
         avoid: { bright: [4, 7], dark: [2, 6] },
+        // a laid-back, sparse line answering the skank, off the beat, a few notes said again
+        pace: 0.8, offbeat: 1.2,
+        rules: { repeatOnce: 0.3, skip: 0.6, leap: 1.4 },
+        motif: { repeat: 0.3, range: 1.5 },
     },
     'rock': {
         groove: 'rock', comp: 'eighths', power: true,
@@ -181,6 +214,10 @@ export const GENRES = {
         },
         avoid: { bright: [4, 7], dark: [2, 6] },
         cadences: { tonic: { bright: ['bVII', 'I'], dark: ['VI', 'VII', 'i'] }, dominant: { bright: ['bVII'] } },
+        // a riff's hook: the blue 3rd over a major chord, pentatonic, notes hammered, a leap up to a held top note
+        blue: [3], pace: 1.1, span: 1.3,
+        rules: { blue: 0.8, repeatOnce: 0.3, repeat: 1.5, chordLeap: 0.2, leap: 0.9 },
+        motif: { repeat: 0.3, leap: 0.6 },
     },
     'tango': {
         mode: 'harmonicMinor', groove: 'habanera', comp: 'march', legato: 0.6,
@@ -189,6 +226,12 @@ export const GENRES = {
             bridge: 'iv7 bVII7 IIImaj7 VImaj7 iiø V7 i i', post: 'iv V7', outro: 'iv V7 i:2',
         },
         cadences: { tonic: { dark: ['V7', 'i'] }, dominant: { dark: ['V7'] } },
+        // dramatic and clipped: short notes on the habanera's push, a tune that starts high and falls in sequences,
+        // wide leaps caught by a step back
+        pace: 1.15, offbeat: 0.9, span: 1.4,
+        rules: { leap: 0.8, chordLeap: 0.15, bigLeap: 4, recover: 8, repeatOnce: 1.4, strongNonChord: 4, appoggiatura: 2 },
+        motif: { leap: 0.5, peakFirst: -1, narrow: 1.5, repeat: 2 },
+        develop: { verse: ['sequence', 'sequence'], chorus: ['repeat', 'sequence'], bridge: ['invert', 'sequence'] },
     },
     'cinematic': {
         groove: 'halftime', comp: 'pulse', arp: 'ostinato', style: 'cinematic',
@@ -207,6 +250,12 @@ export const GENRES = {
         },
         cadences: { tonic: { bright: ['bVI', 'bVII', 'I'], dark: ['iv', 'V', 'i'] }, deceptive: { bright: ['V', 'bVI'] } },
         voicing: 'drop2',
+        // the film theme: long notes on the beat, a horn call's 4ths and 5ths answered by steps, phrases that climb, and
+        // the motif slowed down (augmented) when it comes back big
+        pace: 0.6, span: 1.6, offbeat: -1,
+        rules: { skip: 0.7, leap: 0.8, chordLeap: 0.25, recover: 8, repeatOnce: 1.6, turn: 1.2 },
+        motif: { leap: 0.3, skip: 0.4, narrow: 2, peakFirst: 1.5, repeat: 2 },
+        develop: { chorus: ['augment', 'sequence'], verse: ['repeat', 'sequence'], bridge: ['invert', 'augment'] },
     },
     'synthwave': {
         mode: 'minor', groove: 'synthwave', comp: 'pulse', arp: 'sixteenths', style: 'electronic',
@@ -217,6 +266,11 @@ export const GENRES = {
         },
         cadences: { tonic: { dark: ['VI', 'VII', 'i'] } },
         extend: 'add9',
+        // a pentatonic hook of held notes and repeats, sung over the arpeggios, in four-bar loops
+        pace: 0.8, offbeat: 0.5, avoid: { dark: [2, 6] }, phrases: 'aaba',
+        rules: { repeatOnce: 0.4, repeat: 1.5, skip: 0.5, leap: 1.3, chordLeap: 0.5 },
+        motif: { repeat: 0.3, skip: 0, leap: 0.8, narrow: 1 },
+        develop: { chorus: ['repeat', 'repeat'], verse: ['repeat', 'sequence'] },
     },
     'chiptune': {
         groove: 'rock', comp: 'eighths', arp: 'tracker', sound: 'chip',
@@ -234,6 +288,11 @@ export const GENRES = {
             },
         },
         cadences: { tonic: { bright: ['bVI', 'bVII', 'I'], dark: ['VI', 'VII', 'i'] } },
+        // the console lead: fast runs, arpeggiated leaps up through the chord, a wide range, sequences climbing a step
+        pace: 1.4, span: 1.5, offbeat: -0.6,
+        rules: { skip: 0.3, leap: 0.7, chordLeap: 0.05, recover: 3, turn: 0.8, repeatOnce: 1.2 },
+        motif: { skip: 0, leap: 0.5, range: 1.5, narrow: 2, flat: 2 },
+        develop: { verse: ['sequence', 'sequence'], chorus: ['repeat', 'sequence'] },
     },
     // the hook climbs to a held high note an octave over the verse, enters off the beat, and leaps where pop steps
     'disco': {
@@ -291,5 +350,10 @@ export const GENRES = {
             },
         },
         extend: 'add9',
+        // the drop's hook: a few pitches hammered in syncopated rhythm, repeated bar after bar
+        pace: 1.1, span: 0.6, offbeat: 1.5, phrases: 'aaab',
+        rules: { repeatOnce: 0.1, repeat: 0.6, skip: 0.5, leap: 0.9, chordLeap: 0.2, turn: 0.5, contour: 0.6 },
+        motif: { repeat: 0, narrow: 0, range: 2, flat: 0, zigzag: 0.3 },
+        develop: { chorus: ['repeat', 'repeat'], build: ['diminish', 'diminish'], verse: ['repeat', 'fragment'] },
     },
 };

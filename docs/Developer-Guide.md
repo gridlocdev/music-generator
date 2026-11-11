@@ -61,7 +61,7 @@ just compose feel:tender
 `just harmony` (`tools/harmony-report.mjs`) checks that songs don't all share the same chords. It
 composes every genre bright and dark, then the catalog, and prints each one's share of plain
 triads, its chord colours and cadences, the 4-chord progressions shared across songs and the most
-alike pairs. Name songs to see only those (`just harmony spook-swing feel:tender`).
+alike pairs, and each genre's melody (pace, steps and leaps, syncopation, range) with the nearest. Name songs to see only those (`just harmony spook-swing feel:tender`).
 
 ### Transcribing a whistled melody
 
