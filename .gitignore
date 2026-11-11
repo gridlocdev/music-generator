@@ -24,5 +24,8 @@ dist/
 # icon renders on the way to assets/icon/; `just icons` makes them
 build/
 
+# songs exported as MIDI, WAV and MP3; `just export` makes them
+/export/
+
 # release builds; `just package` makes them
 release/

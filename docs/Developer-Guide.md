@@ -46,6 +46,20 @@ be edited and saved. `just projects` (`tools/make-projects.mjs`) writes them aga
 all of them, or the ids you name (`just projects first-light`). It overwrites the edits made to
 those projects in the app, so commit or save under another name first.
 
+### Exporting the songs
+
+`just export` (`tools/export.mjs`) exports the projects in `projects/` to `export/` (not committed):
+a `.mid` and a `.wav` of each, as the app's Export as MIDI and Export as Audio File make them (the
+whole song, the mix, a 3 s tail, not normalized). The WAVs are rendered offline by
+`tools/export/export.html` in a hidden Electron window, about ten seconds a song.
+
+```bash
+just export                                   # every project
+just export first-light creaking-halls        # just these
+just export first-light --mp3                 # and an MP3 (320 kbps; needs ffmpeg)
+just export --library fluidr3                  # on another SoundFont library: generaluser (the default), fluidr3, musescore
+```
+
 ### Composing from the command line
 
 `just compose` (`tools/compose.mjs`) composes a song in Node and prints its plan. It takes a

@@ -94,6 +94,11 @@ harmony *songs:
 projects *songs:
     node tools/make-projects.mjs {{songs}}
 
+# export songs from projects/ to export/<name>.mid and .wav (all of them without names); --mp3 adds an MP3 (ffmpeg)
+# e.g. just export   ·   just export first-light creaking-halls --mp3
+export *args: deps
+    node tools/export.mjs {{args}}
+
 # A/B listening: render each song with an older commit and with this checkout, side by side
 # e.g. just ab   ·   just ab a913205   (then open the URL it prints; port 8010 or the next free one)
 ab rev="main": deps
