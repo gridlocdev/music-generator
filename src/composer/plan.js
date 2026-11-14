@@ -11,7 +11,7 @@ import { bpmAt } from '../lib/tempo-map.js';
 import { meterOf, nativeMeter } from './meter-patterns.js';
 
 /**
- * @param {object} spec  see docs/COMPOSING.md, "The song spec"
+ * @param {object} spec  see docs/composing.md, "The song spec"
  */
 export function planSong(spec)
 {

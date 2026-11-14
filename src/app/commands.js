@@ -218,7 +218,7 @@ export const COMMANDS = {
     follow: { label: 'Follow Playhead', run: ()=> setSettings({ follow: !settings.value.follow }), checked: ()=> settings.value.follow },
     ghosts: { label: 'Show Other Tracks’ Notes', run: ()=> setSettings({ ghosts: !settings.value.ghosts }), checked: ()=> settings.value.ghosts },
     // Help
-    composing: { label: 'How It Composes', run: ()=> appMenu.open('docs/COMPOSING.md') },
+    composing: { label: 'How It Composes', run: ()=> appMenu.open('docs/composing.md') },
     readme: { label: 'Read Me', run: ()=> appMenu.open('README.md') },
 };
 

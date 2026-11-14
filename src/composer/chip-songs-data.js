@@ -1,6 +1,6 @@
 // Chiptune songs in different moods: each plays the chip instruments (sound: 'chip') and picks its own from
 // audio/chip-instruments-data.js, from the raw NES pulses and triangle to the softer modern voices and the sample
-// channel's bass and kit. Content only, imports nothing. Format: docs/COMPOSING.md, "The song spec".
+// channel's bass and kit. Content only, imports nothing. Format: docs/composing.md, "The song spec".
 //
 // Chip programs: leads 80 pulse 25%, 81 saw, 82 thin pulse 12.5%, 83 hollow square, 84 PWM, 85 soft triangle,
 // 86/87 raw NES pulse 25%/50%; 46 pluck; 90 PWM pad; bass 38 NES triangle, 39 pulse, 33 DPCM; kits 0 chip, 1 NES, 2 DPCM.

@@ -1,5 +1,5 @@
 // How each genre plays: its usual groove, comping and style, and the harmonic and melodic language that make it that
-// genre rather than a pop song in its clothes. Content only, imports nothing. docs/COMPOSING.md, "Genre profiles".
+// genre rather than a pop song in its clothes. Content only, imports nothing. docs/composing.md, "Genre profiles".
 // A spec's `genre` names one (case and spaces don't matter: 'Bossa nova' is bossa-nova); a genre with no profile
 // changes nothing. Every field is optional, and anything the spec sets itself wins.
 //

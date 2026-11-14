@@ -1,6 +1,6 @@
 // How a score is played and mixed: the performance's expression (timing, phrasing, ghost notes, slides, scoops,
 // vibrato) and each part's channel strip, ducking and mix movement. Content only, imports nothing.
-// docs/COMPOSING.md, "Performance and mix" and "Detail passes", explains them.
+// docs/composing.md, "Performance and mix" and "Detail passes", explains them.
 
 // ---- Performance ---------------------------------------------------------------------------------
 // What perform() adds to the written notes when a song plays. The score itself stays on the grid.

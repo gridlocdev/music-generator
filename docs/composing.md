@@ -404,7 +404,7 @@ The rules make a good, singable line; a hook you write yourself will usually be 
 
 A hand-written chorus also becomes the song's motif, so the verses and bridge grow out of the hook.
 
-To whistle a hook instead of typing it, record it anywhere and run `just whistle <file> --tempo <bpm>` (see the [Developer Guide](Developer-Guide.md#transcribing-a-whistled-melody)).
+To whistle a hook instead of typing it, record it anywhere and run `just whistle <file> --tempo <bpm>` (see the [development guide](development.md#transcribing-a-whistled-melody)).
 
 When writing one, put chord tones on strong beats. Check the progression: in `IV I V vi` the first bar's chord is IV, whose tones are degrees 4, 6 and 1. Step between them on weak beats, peak once per phrase, and end the last phrase on 1 (or 3 or 5 for an open ending). Read it back with `just compose <song> --melody`.
 

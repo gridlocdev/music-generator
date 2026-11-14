@@ -4,7 +4,7 @@ A desktop app (Electron) with a DAW-style UI in [Preact](https://preactjs.com) a
 
 ## This app
 
-A small DAW (projects of tracks and clips of notes, played with sampled instruments from three openly licensed General MIDI SoundFont libraries in `soundfonts/`) with two things on top: a rule-based composer that writes a new project from a feeling, a genre or a song spec, and whistle-to-MIDI recording onto any track. The DAW (`src/daw/`) knows nothing of either. The composing method is in [COMPOSING.md](COMPOSING.md).
+A small DAW (projects of tracks and clips of notes, played with sampled instruments from three openly licensed General MIDI SoundFont libraries in `soundfonts/`) with two things on top: a rule-based composer that writes a new project from a feeling, a genre or a song spec, and whistle-to-MIDI recording onto any track. The DAW (`src/daw/`) knows nothing of either. The composing method is in [composing.md](composing.md).
 
 The window has a transport bar at the top, a browser on the left (projects, instruments, the open project's takes), the arrangement in the middle (a ruler with the markers, the chord track, a row per track) and an editor at the bottom (the piano roll for the selected track, or the mixer).
 
@@ -84,7 +84,7 @@ The synth covers the parts of SF2 that matter for these files: key/velocity spli
 
 ### SoundFont libraries
 
-The libraries live in `soundfonts/<folder>/`, ignored by git and downloaded by `just soundfonts`; `src/audio/soundfont-libraries-data.js` lists them. The instrument menu is built from `soundfont-catalog-data.js`, generated from the files by `just catalog`, so no `.sf2` (32–216 MB each) is fetched until one of its instruments is picked. `soundfont.js` then downloads it once and keeps it in memory. Run from the checkout, the app serves `soundfonts/` as it is; a release build serves its bundled GeneralUser GS and the libraries downloaded into its user data folder under the same urls, and `app/libraries.js` falls back to an installed library while the picked one isn't (`platform/soundfonts.js` asks the desktop app which are there and downloads the others). `soundfont-library.js` holds the library in use: switching it reloads the instrument musical typing plays, and the project (restarted if it's playing) loads its instruments from the new library. How to add one is in [Developer-Guide.md](Developer-Guide.md#soundfont-libraries).
+The libraries live in `soundfonts/<folder>/`, ignored by git and downloaded by `just soundfonts`; `src/audio/soundfont-libraries-data.js` lists them. The instrument menu is built from `soundfont-catalog-data.js`, generated from the files by `just catalog`, so no `.sf2` (32–216 MB each) is fetched until one of its instruments is picked. `soundfont.js` then downloads it once and keeps it in memory. Run from the checkout, the app serves `soundfonts/` as it is; a release build serves its bundled GeneralUser GS and the libraries downloaded into its user data folder under the same urls, and `app/libraries.js` falls back to an installed library while the picked one isn't (`platform/soundfonts.js` asks the desktop app which are there and downloads the others). `soundfont-library.js` holds the library in use: switching it reloads the instrument musical typing plays, and the project (restarted if it's playing) loads its instruments from the new library. How to add one is in [development.md](development.md#soundfont-libraries).
 
 ### Project files
 
@@ -130,4 +130,4 @@ just check    # syntax check, the UI bundle, then tools/coupling-report.mjs --st
 just test     # node --test
 ```
 
-Setting up, the other `just` recipes and the tools are in [Developer-Guide.md](Developer-Guide.md).
+Setting up, the other `just` recipes and the tools are in [development.md](development.md).

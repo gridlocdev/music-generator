@@ -1,4 +1,4 @@
-# Installing
+# Getting started
 
 Music Generator comes as a ready-to-run download for each platform. Every download includes
 everything it needs, including the GeneralUser GS sound library, so you don't have to install
@@ -54,7 +54,7 @@ Flatseal.
 - **Sound libraries:** GeneralUser GS comes with the app. FluidR3_GM (148 MB) and
   MuseScore_General (216 MB) download when you press **Download** in the **Instruments** tab.
 
-## Building it yourself
+## Run it from source
 
 If you'd rather build from source, you need Node.js and [just](https://github.com/casey/just).
 From the project folder:
@@ -68,4 +68,4 @@ just package     # make the downloads above for this system, in release/
 
 The app made by `just install` runs the project folder itself, so it uses its sound libraries and
 its `projects/` folder, and picks up your changes the next time it opens (run `just build`
-first). More detail is in the [developer guide](Developer-Guide.md).
+first). More detail is in the [development guide](development.md).

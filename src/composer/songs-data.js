@@ -1,5 +1,5 @@
 // Songs written as specs for compose(). Content only, imports nothing.
-// Format: docs/COMPOSING.md, "The song spec". Any field left out comes from the emotion's defaults.
+// Format: docs/composing.md, "The song spec". Any field left out comes from the emotion's defaults.
 export const SONGS = [
     {
         id: 'first-light',

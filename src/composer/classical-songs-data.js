@@ -1,6 +1,6 @@
 // Solo piano pieces in the Classical genre (genre-data.js): a left hand under the tune in every section, rubato,
 // ornaments, appoggiaturas and the cadential 6/4. Each is original, written in the manner of a composer, not after
-// any one of their pieces. Content only, imports nothing. Format: docs/COMPOSING.md, "The song spec".
+// any one of their pieces. Content only, imports nothing. Format: docs/composing.md, "The song spec".
 //
 // Left hands (ARPS with a `hand`): nocturne (Chopin's wide broken chords, pedalled), oompah (a waltz's bass, chord,
 // chord), albertiLow (Mozart's bottom, top, middle, top), octaves (Beethoven's broken octaves in the bass).

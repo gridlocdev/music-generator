@@ -1,5 +1,5 @@
 // Keys, modes, scale degrees and Roman-numeral chords, as MIDI numbers. Pure. Voicings are in voicing.js.
-// The rules behind these choices are in docs/COMPOSING.md.
+// The rules behind these choices are in docs/composing.md.
 
 const PITCH_CLASSES = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
 const SHARP_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];

@@ -1,5 +1,5 @@
 // Songs for a game: loops, a boss that changes meter, a leitmotif heard in two moods, a build and drop, a blues.
-// Content only, imports nothing. Format: docs/COMPOSING.md, "The song spec"; the game-music fields are in
+// Content only, imports nothing. Format: docs/composing.md, "The song spec"; the game-music fields are in
 // "Adaptive music". Play a loop and move the Intensity slider, fire a stinger, or skip to the next section.
 export const GAME_SONGS = [
     {

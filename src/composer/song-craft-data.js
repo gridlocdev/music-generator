@@ -1,6 +1,6 @@
 // How a song develops over its length: style presets for the detail passes, how repeated sections vary, the shape
 // of the energy curve, tempo moves, the motif and the leitmotifs. Content only, imports nothing.
-// docs/COMPOSING.md, "Song plan" and "Detail passes", explains them.
+// docs/composing.md, "Song plan" and "Detail passes", explains them.
 
 // ---- Styles -------------------------------------------------------------------------------------------
 // One setting per pass, so one name sets a whole feel. A spec's `style` names one, or gives some of the values

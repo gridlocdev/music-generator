@@ -1,6 +1,6 @@
 ## Architecture
 
-This app follows the layered layout in `docs/ARCHITECTURE.md`. Read it before adding or moving code. In short:
+This app follows the layered layout in `docs/architecture.md`. Read it before adding or moving code. In short:
 
 - `lib → platform → audio → daw → (composer, sketch) → app`; imports only point down that chain.
 - `daw/` is the generic DAW: projects, their file format, edits with undo, playback and the MIDI FX hook. It knows nothing of songs, specs or whistling.

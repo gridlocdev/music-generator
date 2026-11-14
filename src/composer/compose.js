@@ -1,6 +1,6 @@
 // Song spec → multi-instrument score. Pure and deterministic: the same spec always gives the same notes.
 // Every choice is made by a rule from the *-data.js tables; where rules tie, a hash of the song and position decides,
-// so nothing is random. docs/COMPOSING.md describes the method and the spec format.
+// so nothing is random. docs/composing.md describes the method and the spec format.
 //
 // The pipeline, top down:
 //   1. song plan (plan.js): form, keys, meters, energy curve, cadences, tempo map, loop; and the motif (melody.js)
@@ -56,7 +56,7 @@ export function instrumentFor(role, program, sound = 'gm')
 }
 
 /**
- * @param {object} spec  see docs/COMPOSING.md, "The song spec"
+ * @param {object} spec  see docs/composing.md, "The song spec"
  * @returns {Score}
  */
 export function compose(spec)

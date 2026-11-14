@@ -1,5 +1,5 @@
 // Drum grooves and the bass, comping and arpeggio patterns the composer plays chords with. Content only, imports nothing.
-// docs/COMPOSING.md, "Rhythm and grooves", explains them.
+// docs/composing.md, "Rhythm and grooves", explains them.
 
 // ---- Meters ----------------------------------------------------------------------------------------
 // A meter is beat groupings, not just a count: the groups drive the accents, the drum, bass and comping patterns

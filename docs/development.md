@@ -1,4 +1,4 @@
-# Developer guide
+# Development
 
 Music Generator is an Electron app. Its interface is [Preact](https://preactjs.com) with
 [signals](https://preactjs.com/guide/v10/signals/), written in JSX and bundled by
@@ -6,7 +6,7 @@ Music Generator is an Electron app. Its interface is [Preact](https://preactjs.c
 composer, the whistle transcription, the SoundFont 2 parser and the Web Audio sampler, all written
 from scratch) is plain JavaScript ES modules that also run as they are in Node, for the tools and
 tests. The rules in `AGENTS.md` at the repository root apply to everyone working on it, and the
-code layout and its layer rules are in [ARCHITECTURE.md](ARCHITECTURE.md).
+code layout and its layer rules are in [architecture.md](architecture.md).
 
 ## Getting set up
 
@@ -39,7 +39,7 @@ Songs are plain specs in `src/composer/`: `songs-data.js`, `genre-songs-data.js`
 per genre, each with a story), `game-songs-data.js` (the game music), `chip-songs-data.js`
 (chiptune in different moods) and `classical-songs-data.js` (solo piano). Each is a preset in the
 app's New dialog (New → Song), which composes it into a new project. The spec format and how the
-composer reads it are in [COMPOSING.md](COMPOSING.md#12-the-song-spec-writing-a-song).
+composer reads it are in [composing.md](composing.md#12-the-song-spec-writing-a-song).
 
 The songs are also kept as project files in `projects/`, which open like any other project and can
 be edited and saved. `just projects` (`tools/make-projects.mjs`) writes them again from the specs:
@@ -303,4 +303,4 @@ the composer itself. Every change to the project goes through `edit(p => …)` w
 edits in `src/daw/project.js`, so it can be undone; add a new edit there, with a test. DAW logic that isn't about
 songs goes in `src/daw/`; music logic goes in `src/composer/` or `src/sketch/`, which know nothing of the interface and don't import each other,
 and content goes in a `*-data.js` file with a test. Show a control only when there is code behind
-it. The full rules are in [ARCHITECTURE.md](ARCHITECTURE.md#rules).
+it. The full rules are in [architecture.md](architecture.md#rules).

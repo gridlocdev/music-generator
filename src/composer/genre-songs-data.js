@@ -1,5 +1,5 @@
 // Songs across genres, each with a story told section by section. Content only, imports nothing.
-// Format: docs/COMPOSING.md, "The song spec". Each genre's recipe: docs/COMPOSING.md, "Genre recipes".
+// Format: docs/composing.md, "The song spec". Each genre's recipe: docs/composing.md, "Genre recipes".
 // Hooks are written by hand in scale degrees, with chord tones on the strong beats; everything else is composed.
 export const GENRE_SONGS = [
     {
