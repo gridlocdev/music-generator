@@ -148,6 +148,33 @@ export const GENRE_SONGS = [
         },
     },
     {
+        id: 'rooftop-laundry', title: 'Laundry on the Rooftop', genre: 'Jazz hop',
+        story: 'A late-summer Sunday on a city roof: sheets drying in the wind, and a neighbour across the street practising saxophone with the window open.',
+        emotion: 'nostalgic', key: 'C', mode: 'minor', tempo: 90, dynamics: 0.6,
+        form: 'ballad',
+        sections: {
+            intro: { progression: 'i9 iv9 VImaj7 v7', energy: 0.45 },
+            verse: { progression: 'i9 iv9 VII9 IIImaj7', contour: 'wave', energy: 0.55 },
+            chorus: {
+                progression: 'iv9 VII9 IIImaj7 VImaj7 iiø V7 i9 i9', energy: 0.75,
+                melody: 'r:0.5 8:0.5 10 9:0.5 8:1.5 | 7:1.5 6:0.5 4:2 | r:0.5 5:0.5 7 9:1.5 7:0.5 | 8:3 r | '
+                      + 'r:0.5 6:0.5 8 11:1.5 10:0.5 | 9 #7 5 4 | 3:1.5 5:0.5 7 9 | 8:4',
+            },
+            bridge: { progression: 'VImaj7:2 bIImaj7:2', contour: 'valley', mute: ['drums'], energy: 0.5 },
+            outro: { progression: 'iv9 bIImaj7 i9:2' },
+        },
+        scenes: {
+            intro: 'The needle drops. A clothes peg in each hand.',
+            'verse 1': 'The first sheet goes up and fills like a sail.',
+            'chorus 1': 'Across the street, the saxophone finds the tune.',
+            'verse 2': 'Pigeons on the water tank, judging the pegs.',
+            'chorus 2': 'The wind takes a pillowcase. Nobody chases it.',
+            bridge: 'The beat drops out. Just strings, and the sheets breathing.',
+            'chorus 3': 'Everything is dry. Nobody takes it down yet.',
+            outro: 'The sax player closes the window. Sunset.',
+        },
+    },
+    {
         id: 'two-rivals', title: 'Two Rivals, One Floor', genre: 'Tango',
         story: 'Buenos Aires, 1931. Two dancers who swore never to share a floor, and a bandoneon player who has decided otherwise.',
         emotion: 'tense', key: 'D', mode: 'harmonicMinor', tempo: 116, groove: 'habanera', comp: 'march', legato: 0.6, dynamics: 0.75,

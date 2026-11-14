@@ -159,6 +159,45 @@ export const GENRES = {
         develop: { verse: ['repeat', 'repeat'], chorus: ['repeat', 'fragment'] },
         phrases: 'abab',
     },
+    // jazz hop, after Nujabes and his circle: a crisp swung MPC beat under a chopped Rhodes loop, a piano and strings
+    // from a jazz record, a flute or tenor sax singing a long lyrical line, and an upright bass; minor ninths falling
+    // round the cycle of fifths, maj7 chords sliding down a half step (the Neapolitan bIImaj7 into i9)
+    'jazz-hop': {
+        mix: { reverb: 0.9, delay: 0.6, tone: 7500 },
+        tempo: [82, 98], keys: ['C', 'Eb', 'F', 'Ab', 'D'],
+        band: { lead: 73, counter: 66, arp: 0, chords: 4, pad: 48, bass: 32, drums: 8 },   // flute, tenor sax, piano, electric piano, strings, upright bass, a room kit
+        feel: { pocket: { lead: 15, counter: 12, chords: 18, arp: 12, snare: 15 }, tight: 1.1 },   // behind the beat, but crisper than lo-fi
+        ornaments: { grace: 0.25, slide: 0.3, turn: 0.1 },   // a flautist's grace notes, a saxophone's scoop
+        counter: { chorus: 'harmony', bridge: 'contrary' }, answer: ['verse'],   // the sax answers the flute
+        arrange: { drums: 0.2, bass: 0.25, chords: 0.2, arp: 0.55 },   // the loop and the beat from bar one, the piano when it fills
+        groove: 'jazzHop', comp: 'chopped', arp: 'updown', swing: 0.6, legato: 0.85,
+        style: { swing: 0.6, dim7: 0, secondary: 0, twoFive: 0.04, tritone: 0, sus: 0.04, borrowed: 0, mediant: 0, ghosts: 0.5, syncopation: 0.4, scoops: 0.3, earCandy: 0.3 },   // a loop: few passing chords
+        // minor-ninth vamps, the cycle of fifths (iv9 VII9 IIImaj7 VImaj7), maj7 chords planing down to the tonic, and
+        // the backdoor bVII9 into a major home
+        progressions: {
+            bright: {
+                intro: ['Imaj9 iii7', 'IVmaj7 bVII9'], verse: ['Imaj9 iii7 vi9 vi9', 'IVmaj7 bVII9 Imaj9 vi9', 'ii9 iii7 IVmaj7 iii7'],
+                pre: ['IVmaj7 iii7 ii9 bIImaj7', 'vi9 iii7 IVmaj7 V9sus4'],
+                chorus: ['IVmaj7 bVII9 iii7 vi9 ii9 bIImaj7 Imaj9 Imaj9', 'vi9 ii9 V9sus4 Imaj9'],
+                bridge: ['bVImaj7 bIIImaj7 IVmaj7 iv7', 'bIIImaj7:2 bVImaj7:2'], post: 'IVmaj7 bVII9',
+                outro: ['IVmaj7 bVII9 Imaj9:2', 'ii9 bIImaj7 Imaj9:2'],
+            },
+            dark: {
+                intro: ['i9 iv9', 'VImaj7 v7 i9 i9'], verse: ['i9 iv9 VII9 IIImaj7', 'i9 i9 iv9 v7', 'VImaj7 v7 iv9 i9'],
+                pre: ['VImaj7 VImaj7 v7 V7', 'iv9 v7 VImaj7 V9sus4'],
+                chorus: ['VImaj7 VII9 v7 i9', 'iv9 v7 VImaj7 VII9 IIImaj7 VImaj7 V9sus4 V7'],
+                bridge: ['VImaj7:2 bIImaj7:2', 'iv9 IIImaj7 bIImaj7 i9'], post: 'iv9 VII9',
+                outro: ['iv9 bIImaj7 i9:2', 'VImaj7 v7 i9:2'],
+            },
+        },
+        extend: 'ninths',
+        cadences: { tonic: { bright: ['bVII9', 'Imaj9'], dark: ['bIImaj7', 'i9'] }, dominant: { dark: ['V9sus4'] } },
+        // a long, singing line: syncopated, by step and third, a motif said again and sequenced, the four phrases a b a c
+        pace: 0.95, span: 1.15, offbeat: 1.1, avoid: { dark: [6] }, phrases: 'abac',
+        rules: { strongNonChord: 2.8, turn: 0.7, skip: 0.7, leap: 1.1, chordLeap: 0.4, repeatOnce: 0.7 },
+        motif: { repeat: 0.8, range: 1.5, leap: 0.8, peakFirst: 0.5 },
+        develop: { verse: ['repeat', 'sequence'], chorus: ['repeat', 'sequence'], bridge: ['invert', 'fragment'] },
+    },
     'funk': {
         mix: { reverb: 0.35, delay: 0.3 },
         tempo: [92, 118], keys: ['E', 'A', 'D', 'G'],

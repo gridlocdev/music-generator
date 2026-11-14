@@ -132,6 +132,13 @@ export const GROOVES = {
         high: { kick: 'X......x..X..x..', snare: '....X.......X...', hat: 'x.xox.x.x.xox.x.' },
         fill: { kick: 'X......x..X.....', snare: '....X.......X.o.', hat: 'x.x.x.x.........' },
     },
+    jazzHop: {                          // jazz hop: a crisp swung MPC beat, kick on 1 and the "and" of 2, open hat into the bar
+        beats: 4, kit: 8, swing: 0.6,
+        low:  { kick: 'X.........X.....', stick: '....x.......x...', hat: 'x.x.x.x.x.x.x.x.' },
+        mid:  { kick: 'X.....x...X.....', snare: '....X.......X...', hat: 'x.x.x.x.x.x.x.xo' },
+        high: { kick: 'X.....x...X.x...', snare: '....X.......X...', hat: 'x.xxx.x.x.xxx.x.', open: '..............x.' },
+        fill: { kick: 'X.....x...X.....', snare: '....X.......X.xo', hat: 'x.x.x.x.x.x.....', open: '..............x.' },
+    },
     habanera: {                         // tango: the habanera bass rhythm marked by a soft kick and rim
         beats: 4, kit: 0,
         low:  { stick: 'x..x....x..x....' },
@@ -181,6 +188,7 @@ export const BASS = {
     reggae:   { low: [[0, 'R', 8], [10, '5', 4]], high: [[2, 'R', 3], [6, 'R', 2], [8, '5', 2], [10, '8', 2], [12, 'R', 2], [14, 'A', 2]] },
     funk:     { low: [[0, 'R', 3], [3, '8', 1], [8, 'R', 4]], high: [[0, 'R', 2], [3, '8', 1], [6, 'R', 1], [7, 'R', 1], [8, '5', 2], [10, 'R', 1], [11, '8', 1], [14, 'A', 2]] },
     boomBap:  { low: [[0, 'R', 10], [10, 'R', 6]], high: [[0, 'R', 6], [7, 'R', 3], [10, '5', 4], [14, 'A', 2]] },
+    jazzHop:  { low: [[0, 'R', 7], [7, 'R', 1], [10, '5', 6]], high: [[0, 'R', 5], [6, 'R', 2], [10, '5', 2], [12, '8', 2], [14, 'A', 2]] },
     habanera: { low: [[0, 'R', 3], [3, 'R', 1], [4, '5', 4], [8, 'R', 3], [11, 'R', 1], [12, '5', 4]], high: [[0, 'R', 3], [3, 'R', 1], [4, '5', 2], [6, 'R', 2], [8, 'R', 3], [11, 'R', 1], [12, '5', 2], [14, 'A', 2]] },
     train:    { low: [[0, 'R', 8], [8, '5', 8]], high: [[0, 'R', 4], [4, '5', 4], [8, 'R', 4], [12, 'A', 4]] },
     synthwave: { low: [[0, 'R', 8], [8, 'R', 8]], high: [[0, 'R', 2], [2, '8', 2], [4, 'R', 2], [6, '8', 2], [8, 'R', 2], [10, '8', 2], [12, 'R', 2], [14, '8', 2]] },
@@ -204,13 +212,14 @@ export const COMPING = {
     funk:    [[0, 1], [3, 1], [6, 1], [7, 1], [10, 1], [12, 1], [14, 1]],   // sixteenth clav stabs
     habanera: [[0, 3], [3, 1], [4, 2], [6, 2], [8, 3], [11, 1], [12, 2], [14, 2]],
     upbeats: [[2, 2], [6, 2], [10, 2], [14, 2]],                 // stabs on every offbeat eighth: drives forward
+    chopped: [[0, 5], [6, 2, 0.75], [10, 4], [14, 2, 0.6]],       // a chopped Rhodes loop: 1, the "and" of 2 and 3, a ghost on the "and" of 4
     chop:    [[0, 1, 0.25], [2, 1], [4, 1, 0.25], [6, 1], [8, 1, 0.25], [10, 1], [12, 1, 0.25], [14, 1]],   // a ghost downstroke, then the offbeat
 };
 // comp styles that sit between the beats; in a meter without its own pattern they play every beat that isn't a group start
 export const OFFBEAT_COMPS = ['offbeat', 'skank', 'bubble', 'waltz', 'upbeats', 'chop'];
 
 // what each comp style plays below 0.5 energy; styles not listed keep their rhythm, because the rhythm is the genre
-export const COMP_QUIET = { push: 'sustain', pulse: 'sustain', eighths: 'sustain', march: 'sustain', funk: 'skank' };
+export const COMP_QUIET = { push: 'sustain', pulse: 'sustain', eighths: 'sustain', march: 'sustain', funk: 'skank', chopped: 'sustain' };
 
 // arpeggio: indexes into the chord's notes (low to high, plus the octave above), and note length in steps.
 // cycle: a tracker arpeggio instead, each strike one note stepping through the chord every few frames (CHIP.arp)

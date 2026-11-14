@@ -262,6 +262,7 @@ Major, minor, harmonic and melodic minor keep V. A progression written with a ma
 | cinematic | bVI bVII I · iv V i | the fanfare; the minor iv before the dominant |
 | chiptune, rock (dark), synthwave | VI VII i | the consoles' fanfare in minor |
 | lo-fi | iv7 Imaj7 · v7 i7 | never a V7: it doesn't want to resolve hard |
+| jazz hop | bVII9 Imaj9 · bIImaj7 i9 | the backdoor dominant; a maj7 sliding down a half step home |
 | reggae | IV I · v i | the plagal vamp |
 | disco, funk | (VII) IV7 i7 | dorian: the major IV7 is the pull |
 
@@ -435,6 +436,7 @@ pop, mid:   kick  X.....x.X.......      X accent · x normal · o ghost · . res
 | reggae | one drop | nothing on beat 1; kick and rim together on 3; light swing |
 | funk | sixteenth-note pocket | sixteenth hats with ghost notes, kick dancing around the one, ghost snares |
 | boomBap | lo-fi hip hop | lazy swung kick, fat snare on 2 and 4, room kit |
+| jazzHop | jazz hop | crisp swung MPC beat: kick on 1 and the "and" of 2, open hat into the next bar |
 | habanera | tango | dotted-eighth, sixteenth, two eighths: the habanera rhythm under everything |
 | train | country | brushes on every sixteenth, accents on 2 and 4, like wheels on rails |
 | synthwave | 80s | four-on-the-floor kick under a gated snare, electronic kit |
@@ -478,7 +480,7 @@ Orchestration rules:
 3. **Contrast timbres.** Pair a breathy lead (flute) with plucked support (harp, piano), and a bowed lead (violin) with a struck one (piano, vibes). Avoid two instruments of the same family in the same register.
 4. **Match the instrument to the emotion.** Brass is bold, woodwinds intimate, plucked strings light, bowed strings emotional, synths modern or cold, bells magical, distortion aggressive.
 5. **Bass patterns** (`BASS`): roots on strong beats, fifths and octaves for motion, and an **approach note** (A) one step from the next chord's root at the end of the bar, to pull the ear into the change.
-6. **Comping patterns** (`COMPING`): sustain (calm), push (anticipating beat 3, pop), pulse (quarters, tension), eighths (rock), offbeat (2 and 4 stabs, bounce or swing), march, waltz (beats 2 and 3), skank (reggae chops on 2 and 4), bubble (reggae organ on every offbeat), bossa (syncopated guitar), funk (sixteenth clav stabs), habanera, charleston (jazz piano: on 1 and short on the "and" of 2, leaving room for the horns). Below .5 energy the busy styles (push, pulse, eighths, march) sustain and funk drops to a skank (`COMP_QUIET`). The others keep their rhythm, because in reggae or bossa the rhythm *is* the genre.
+6. **Comping patterns** (`COMPING`): sustain (calm), push (anticipating beat 3, pop), pulse (quarters, tension), eighths (rock), offbeat (2 and 4 stabs, bounce or swing), march, waltz (beats 2 and 3), skank (reggae chops on 2 and 4), bubble (reggae organ on every offbeat), bossa (syncopated guitar), funk (sixteenth clav stabs), habanera, charleston (jazz piano: on 1 and short on the "and" of 2, leaving room for the horns), chopped (a jazz-hop Rhodes loop: 1, the "and" of 2 and 3, a ghost on the "and" of 4). Below .5 energy the busy styles (push, pulse, eighths, march) sustain and funk drops to a skank (`COMP_QUIET`); so does chopped. The others keep their rhythm, because in reggae or bossa the rhythm *is* the genre.
 7. **Arpeggio patterns** (`ARPS`): up, up-down, Alberti (low–high–mid–high, classical), broken, ostinato (a repeated low note against the others, for tension), sixteenths (synth arpeggiator over two octaves), roll (banjo forward roll), chip (an 8-bit chord spelled out in sixteenths), and tracker (an 8-bit chord faked by one voice stepping through its notes every frame; see Chip songs).
    **A piano's left hand** is an arpeggio with a `hand`: a list of tokens per bar, played every `step` sixteenths from the chord's bass note (its slash note when it has one), placed in `HAND.range` (A1–A2) nearest the last. `R` is the bass, `O` its octave, `F` its fifth, `C` the chord's three upper tones together an octave up, and a number the nth chord tone, close above the bass, or with `wide` the fifth and then up to `HAND.reach` (31) semitones, two octaves and more. `pedal` holds each note to the end of its chord, as the sustain pedal would; the bass note is `HAND.accent` louder. `nocturne` (R 1 3 4 5 4 3 1, wide, pedalled: Chopin), `oompah` (R C C in 3/4, R C F C in 4/4: a waltz's bass, chord, chord), `albertiLow` (R 2 1 2, close: Mozart) and `octaves` (R O, wide: Beethoven's broken octaves). A left hand plays to the last chord of the song, where an arpeggio leaves the ending to the others.
 
@@ -750,6 +752,7 @@ A genre is mostly a groove, a comping rhythm, a bass pattern and a band. Harmony
 | Synthwave | Neon Coastline, 1986 | A minor | 100 | synthwave · pulse · sixteenths | saw lead / synth brass / polysynth / synth bass, sweep pad, square arpeggio | i–VI–III–VII; key lift into a major-chord ending (a sunrise) |
 | Lo-fi hip hop | Homework at 2 A.M. | D major | 78 | boomBap · push | vibraphone / flute / e-piano / fingered bass, warm pad, room kit | maj7, m7, m9 and maj9: every chord a little blurry; swing 0.55 |
 | Jazz | The Late Set at the Blue Lantern | Bb major | 138 | swing · charleston | tenor sax (an octave down) / muted trumpet / piano / upright bass, jazz kit | a 32-bar AABA head: I–VI7–ii–V, a bridge to IV and home by the backdoor iv7–bVII7; the changes as written, a tritone sub now and then, no passing diminished chords |
+| Jazz hop | Laundry on the Rooftop | C minor | 90 | jazzHop · chopped · updown | flute / tenor sax / e-piano / upright bass, piano, strings, room kit | m9 vamps, the cycle of fifths (iv9–VII9–IIImaj7–VImaj7–iiø–V7), the Neapolitan bIImaj7 planing into i9 |
 | Tango | Two Rivals, One Floor | D harmonic minor | 116 | habanera · march | bandoneon / violin / piano / contrabass, no drums | i–iv–V7–i; a circle-of-fifths bridge (iv7–bVII7–IIImaj7–VImaj7–iiø–V7) |
 | Country | Mile Marker 500 | G major | 112 | train · offbeat · roll | fiddle / harmonica / steel guitar / acoustic bass, banjo rolls, brushes | three chords (I, IV, V); a semitone key change for the last chorus |
 | Celtic | The Selkie's Return | D mixolydian | 104, 3/4 | bodhran · waltz · updown | whistle / fiddle / nylon guitar / cello, harp, choir | I–bVII (mixolydian), the modal v in the bridge |
@@ -767,6 +770,7 @@ Moves that carry each genre:
 - **Synthwave**: four-on-the-floor, gated snare, pulsing eighth-note synth bass in octaves, sixteenth arpeggiator, minor key, big saw lead.
 - **Lo-fi hip hop**: swung, lazy drums; jazzy seventh and ninth chords on e-piano; soft dynamics; small melodies with space between them.
 - **Jazz** (a 1950s quintet record): the time is the ride cymbal and the walking bass, the hi-hat closing on 2 and 4 and the kick feathered so it's felt more than heard. The piano comps sparse rootless (shell) voicings on the Charleston rhythm. The head is an AABA tune in two horns, chord tones on the beat with chromatic notes leaning into them between; the solos run over the same changes; the head comes back, then a tag. A tenor plays in a tenor's range, and the horns sit a step behind the rhythm section in the mix. The changes are played as written, with a ii–V or tritone sub now and then, not a passing diminished chord in every bar.
+- **Jazz hop** (after Nujabes): a crisp swung beat under a chopped Rhodes loop; a piano and strings as if sampled from a jazz record; a flute or tenor sax singing a long, syncopated line that the other answers; minor ninths round the cycle of fifths, and few passing chords, because the loop is the song.
 - **Tango**: habanera rhythm in the bass; marcato quarter-note chords; harmonic minor with a strong V7; dotted, dramatic melody with sharp pickups (`5:0.75 4:0.25`).
 - **Country**: train beat on brushes; boom-chick bass (root and fifth); I–IV–V; fiddle lead, banjo rolls; a semitone key change at the end.
 - **Celtic**: 3/4 lilt; mixolydian (I–bVII); tin whistle and fiddle trading the tune; a drone-like pad; melodies that run in steps with quick turns.
